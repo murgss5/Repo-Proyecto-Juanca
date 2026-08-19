@@ -34,7 +34,7 @@ $nombre_rol = $_SESSION["nombre_rol"];
     <title>Panel del Instructor | Control de Asistencia</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="../../assets/css/estilos.css">
+    <link rel="stylesheet" href="../../assets/estilos.css">
 
 </head>
 
