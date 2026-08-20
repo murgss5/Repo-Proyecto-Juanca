@@ -1,0 +1,208 @@
+/* ============================================================
+   ESTILOS PERSONALIZADOS
+   Sistema de Control de Ingreso de Aprendices - SENA
+   Colores institucionales: verde, blanco y gris.
+   ============================================================ */
+
+:root {
+  --sena-verde: #39a900;
+  --sena-verde-oscuro: #2b7d00;
+  --sena-verde-claro: #eaf6e3;
+  --sena-verde-oscuro-fondo: #143a2a;
+  --sena-gris: #6c757d;
+}
+
+/* ---------- Utilidades de color SENA ---------- */
+.text-sena { color: var(--sena-verde) !important; }
+.bg-sena { background-color: var(--sena-verde) !important; }
+.badge-sena { background-color: var(--sena-verde) !important; color: #fff !important; }
+.bg-sena-oscuro { background-color: var(--sena-verde-oscuro) !important; }
+
+/* ---------- Fondo general ---------- */
+body {
+  background-color: #f4f6f9;
+  font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* ---------- Barra superior (navbar) ---------- */
+.main-header.navbar {
+  background-color: #ffffff;
+  border-bottom: 3px solid var(--sena-verde);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.main-header .nav-link { color: #495057; }
+.main-header .nav-link:hover { color: var(--sena-verde); }
+
+/* ---------- Menú lateral ---------- */
+.sidebar-dark-sena.main-sidebar,
+.sidebar-dark-primary.main-sidebar {
+  background: linear-gradient(180deg, #173b2b 0%, #0e2b1e 100%);
+}
+.sidebar-dark-sena .brand-link,
+.sidebar-dark-primary .brand-link {
+  background-color: #0e2b1e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.sidebar-dark-sena .nav-sidebar > .nav-item > .nav-link,
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link {
+  color: #c8d6c2;
+}
+.sidebar-dark-sena .nav-sidebar > .nav-item > .nav-link:hover,
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover {
+  background-color: rgba(57, 169, 0, 0.25);
+  color: #ffffff;
+}
+.sidebar-dark-sena .nav-sidebar > .nav-item > .nav-link.active,
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+  background-color: var(--sena-verde);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(57, 169, 0, 0.4);
+}
+.sidebar-dark-sena .nav-treeview > .nav-item > .nav-link,
+.sidebar-dark-primary .nav-treeview > .nav-item > .nav-link {
+  color: #b7c7b1;
+}
+.sidebar-dark-sena .nav-treeview > .nav-item > .nav-link:hover,
+.sidebar-dark-primary .nav-treeview > .nav-item > .nav-link:hover {
+  color: #ffffff;
+  background-color: rgba(57, 169, 0, 0.18);
+}
+.sidebar-dark-sena .nav-treeview > .nav-item > .nav-link.active,
+.sidebar-dark-primary .nav-treeview > .nav-item > .nav-link.active {
+  color: #ffffff;
+  background-color: rgba(57, 169, 0, 0.35);
+}
+.sidebar-dark-sena .nav-header,
+.sidebar-dark-primary .nav-header {
+  color: #7fb069;
+  font-size: 0.72rem;
+}
+.sidebar-dark-sena .user-panel .info,
+.sidebar-dark-primary .user-panel .info {
+  color: #eef6ea;
+}
+.sidebar-dark-sena .user-panel .info .text-muted,
+.sidebar-dark-primary .user-panel .info .text-muted {
+  color: #9fc08d !important;
+}
+
+/* ---------- Botones ---------- */
+.btn-primary {
+  background-color: var(--sena-verde);
+  border-color: var(--sena-verde);
+}
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: var(--sena-verde-oscuro);
+  border-color: var(--sena-verde-oscuro);
+}
+.btn-outline-sena {
+  color: var(--sena-verde);
+  border-color: var(--sena-verde);
+}
+.btn-outline-sena:hover {
+  background-color: var(--sena-verde);
+  color: #ffffff;
+}
+
+/* ---------- Tarjetas ---------- */
+.card {
+  border-radius: 8px;
+  border: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.card-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #f0f2f5;
+}
+.card-header .card-title {
+  color: #173b2b;
+  font-weight: 600;
+}
+
+/* ---------- Tarjetas de estadística (info-box) ---------- */
+.info-box {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.info-box .info-box-icon { border-radius: 8px 0 0 8px; }
+.info-box-sena { background: #ffffff; }
+.info-box-sena .info-box-icon { background: var(--sena-verde); color: #fff; }
+.info-box-sena-oscuro .info-box-icon { background: var(--sena-verde-oscuro); color: #fff; }
+.info-box-gris .info-box-icon { background: var(--sena-gris); color: #fff; }
+.info-box-amarillo .info-box-icon { background: #f39c12; color: #fff; }
+.info-box-rojo .info-box-icon { background: #dc3545; color: #fff; }
+.info-box-azul .info-box-icon { background: #007bff; color: #fff; }
+
+/* ---------- Tablas ---------- */
+.table thead th {
+  background-color: #f0f5ee;
+  color: #173b2b;
+  border-bottom: 2px solid var(--sena-verde);
+  white-space: nowrap;
+}
+.table td { vertical-align: middle; }
+
+/* Oculta el buscador por defecto de DataTables (se usa uno propio) */
+.dataTables_filter { display: none; }
+
+/* ---------- Badges de estado ---------- */
+.badge-estado { font-size: 0.78rem; padding: 0.4em 0.7em; }
+
+/* ---------- Breadcrumb ---------- */
+.breadcrumb {
+  background-color: transparent;
+  padding: 0;
+  margin-bottom: 0;
+}
+.breadcrumb-item a { color: var(--sena-verde-oscuro); }
+.breadcrumb-item.active { color: var(--sena-gris); }
+
+/* ---------- Formularios ---------- */
+.form-control:focus {
+  border-color: var(--sena-verde);
+  box-shadow: 0 0 0 0.2rem rgba(57, 169, 0, 0.25);
+}
+.custom-control-input:checked ~ .custom-control-label::before {
+  border-color: var(--sena-verde);
+  background-color: var(--sena-verde);
+}
+
+/* ---------- Login ---------- */
+.pagina-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #173b2b 0%, #0e2b1e 45%, #39a900 100%);
+  padding: 1.5rem;
+}
+.pagina-login .login-card {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- Avatar / perfil ---------- */
+.avatar-grande {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid var(--sena-verde);
+}
+
+/* ---------- Sombra sutil para tarjetas de acción ---------- */
+.tarjeta-accion { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.tarjeta-accion:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 767.98px) {
+  .breadcrumb.float-sm-right { float: none !important; margin-top: 0.5rem; }
+  .content-header .col-sm-6 h1 { font-size: 1.4rem; }
+}
