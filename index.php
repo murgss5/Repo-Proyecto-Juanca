@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 /**
  * ============================================================
  * PUNTO DE ENTRADA DEL SISTEMA (PROTOTIPO VISUAL)
@@ -14,4 +15,9 @@
  */
 
 header('Location: views/auth/login.php');
+=======
+
+header("Location: views/login.php");
+
+>>>>>>> 8c23837ccfb0d70c1750120ce236a5cadc781462
 exit;
