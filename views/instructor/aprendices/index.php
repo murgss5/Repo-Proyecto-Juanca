@@ -8,7 +8,9 @@
  * ============================================================
  */
 
-require_once dirname(__DIR__) . '/../includes/constantes.php';
+require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
+exigirRol(2);
+require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 
 // --- Variables del layout ---
 $paginaTitulo = 'Aprendices de mis fichas';

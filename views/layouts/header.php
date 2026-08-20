@@ -20,8 +20,9 @@ $menuActivo   = $menuActivo ?? '';
 $rolDemo      = $rolDemo ?? 'admin';
 $rolNombre    = $rolNombre ?? 'Usuario';
 
-// Usuario de demostración (simula la sesión visualmente)
-$usuarioDemo = $usuarioDemo ?? 'Juan Carlos SENA';
+// Datos visibles del usuario autenticado.
+$usuarioDemo = $usuarioDemo ?? trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? ''));
+$usuarioDemo = $usuarioDemo !== '' ? $usuarioDemo : 'Usuario';
 $fotoUsuario = $fotoUsuario ?? RUTA_BASE . 'assets/img/avatar.png';
 ?>
 <!DOCTYPE html>

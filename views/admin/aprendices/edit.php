@@ -10,6 +10,8 @@
  * ============================================================
  */
 
+require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
+exigirRol(1);
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
 
 // Aprendiz de demostración (prellenado)

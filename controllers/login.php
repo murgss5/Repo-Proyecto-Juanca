@@ -6,7 +6,7 @@ require_once "../config/conexion.php";
 //Verifica que el formulario fue enviado
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    header("Location: ../views/login.php");
+    header("Location: ../views/auth/login.php");
     exit;
 }
 //obtiene los datos del formulario
@@ -18,7 +18,7 @@ $contrasena = $_POST["contrasena"]?? "";
 
 if ($nombre_usuario === "" || $contrasena=== "")
     {
-        header("Location: ../views/login.php?error=Todos los campos son obligatorios");
+        header("Location: ../views/auth/login.php?error=Todos los campos son obligatorios");
         exit;
     }
 
@@ -44,7 +44,7 @@ if ($nombre_usuario === "" || $contrasena=== "")
 
     if (!$usuario || !password_verify($contrasena, $usuario["contrasena"]))
         {
-            header("Location: ../views/login.php?error=Usuario o contraseña incorrectos");
+            header("Location: ../views/auth/login.php?error=Usuario o contraseña incorrectos");
             exit;
         }
 
@@ -65,17 +65,17 @@ if ($nombre_usuario === "" || $contrasena=== "")
 
         switch ($usuario["fk_rol"])
         {
-            case 1: header("Location: ../views/dashboard/admin.php");
+            case 1: header("Location: ../views/admin/dashboard.php");
             break;
 
-            case 2: header("Location: ../views/dashboard/instructor.php");
+            case 2: header("Location: ../views/instructor/dashboard.php");
             break;
 
-            case 3: header("Location: ../views/dashboard/aprendiz.php");
+            case 3: header("Location: ../views/aprendiz/dashboard.php");
             break;
             
             default: session_destroy();
-            header("Location: ../views/login.php?error=El usuario no tiene un rol valido");
+            header("Location: ../views/auth/login.php?error=El usuario no tiene un rol valido");
             break;
         }
         exit;

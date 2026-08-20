@@ -87,7 +87,7 @@ if ($rolDemo === 'admin') {
           <small class="float-right text-muted"><?= htmlspecialchars($rolNombre) ?></small>
         </a>
         <div class="dropdown-divider"></div>
-        <a href="<?= RUTA_BASE ?>views/auth/login.php" class="dropdown-item text-danger">
+        <a href="<?= RUTA_BASE ?>controllers/logout.php" class="dropdown-item text-danger">
           <i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesión
         </a>
       </div>

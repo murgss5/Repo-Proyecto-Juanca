@@ -44,7 +44,7 @@ if ($rolDemo === 'admin') {
         ['tipo' => 'enlace', 'clave' => 'reportes', 'icono' => 'fa-chart-bar', 'texto' => 'Reportes', 'url' => RUTA_BASE . 'views/admin/reportes/index.php'],
         ['tipo' => 'header', 'texto' => 'SISTEMA'],
         ['tipo' => 'enlace', 'clave' => 'configuracion', 'icono' => 'fa-cog', 'texto' => 'Configuración', 'url' => '#'],
-        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'views/auth/login.php'],
+        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/logout.php'],
     ];
 } elseif ($rolDemo === 'instructor') {
     $itemsMenu = [
@@ -55,7 +55,7 @@ if ($rolDemo === 'admin') {
         ['tipo' => 'enlace', 'clave' => 'excusas', 'icono' => 'fa-file-medical', 'texto' => 'Excusas médicas', 'url' => RUTA_BASE . 'views/instructor/excusas/index.php'],
         ['tipo' => 'enlace', 'clave' => 'reportes', 'icono' => 'fa-chart-bar', 'texto' => 'Reportes', 'url' => RUTA_BASE . 'views/admin/reportes/index.php'],
         ['tipo' => 'header', 'texto' => 'SISTEMA'],
-        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'views/auth/login.php'],
+        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/logout.php'],
     ];
 } else {
     $itemsMenu = [
@@ -66,7 +66,7 @@ if ($rolDemo === 'admin') {
         ['tipo' => 'enlace', 'clave' => 'excusas', 'icono' => 'fa-file-medical', 'texto' => 'Mis excusas', 'url' => RUTA_BASE . 'views/aprendiz/excusas/index.php'],
         ['tipo' => 'enlace', 'clave' => 'subir-excusa', 'icono' => 'fa-cloud-upload-alt', 'texto' => 'Subir excusa', 'url' => RUTA_BASE . 'views/aprendiz/excusas/create.php'],
         ['tipo' => 'header', 'texto' => 'SISTEMA'],
-        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'views/auth/login.php'],
+        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/logout.php'],
     ];
 }
 
