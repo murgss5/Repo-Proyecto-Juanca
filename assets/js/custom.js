@@ -28,6 +28,12 @@
     }
     if (ficha !== undefined && ficha !== "") {
       $(this).find(".ficha-numero").text(ficha);
+      $(this).find(".ficha-aprendiz").text(ficha);
+    }
+    if ($(this).is("#modalVer")) {
+      $(this).find(".documento-aprendiz").text(boton.data("documento") || "");
+      $(this).find(".telefono-aprendiz").text(boton.data("telefono") || "Sin registro");
+      $(this).find(".rfid-aprendiz").text(boton.data("rfid") || "");
     }
   });
 
@@ -147,14 +153,20 @@
 
     // Gráfica: Asistencia semanal del instructor
     if (document.getElementById("graficoSemanaInstructor")) {
+      var datosSemanaInstructor = window.datosGraficaSemanaInstructor || {
+        labels: etiquetasSemana,
+        puntuales: [0, 0, 0, 0, 0, 0],
+        retardos: [0, 0, 0, 0, 0, 0]
+      };
+
       new Chart(document.getElementById("graficoSemanaInstructor"), {
         type: "line",
         data: {
-          labels: etiquetasSemana,
+          labels: datosSemanaInstructor.labels,
           datasets: [
             {
-              label: "Asistencias",
-              data: [18, 16, 19, 15, 17, 12],
+              label: "Puntuales",
+              data: datosSemanaInstructor.puntuales,
               borderColor: "#39a900",
               backgroundColor: "rgba(57,169,0,0.15)",
               fill: true,
@@ -162,7 +174,7 @@
             },
             {
               label: "Retardos",
-              data: [2, 3, 1, 4, 2, 3],
+              data: datosSemanaInstructor.retardos,
               borderColor: "#f39c12",
               backgroundColor: "rgba(243,156,18,0.12)",
               fill: true,

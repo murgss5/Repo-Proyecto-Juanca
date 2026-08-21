@@ -4,13 +4,14 @@
  * VISTA: ASISTENCIAS (INSTRUCTOR)
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * SOLO INTERFAZ VISUAL con datos de demostración estáticos.
+ * Lista las asistencias reales de los aprendices del instructor.
  * ============================================================
  */
 
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(2);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
+require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
 // --- Variables del layout ---
 $paginaTitulo = 'Asistencias de mis fichas';
@@ -20,8 +21,86 @@ $miga = [
     ['label' => 'Asistencias'],
 ];
 
-// Fichas del instructor (demostración)
-$fichasInstructor = ['2693854', '2743910', '2890345'];
+$conexion = (new Conexion())->conectar();
+
+$consultaFichas = $conexion->prepare(
+    'SELECT id_ficha FROM ficha WHERE fk_usuario = :id_instructor ORDER BY id_ficha'
+);
+$consultaFichas->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaFichas->execute();
+$fichasInstructor = $consultaFichas->fetchAll();
+
+function esFechaValida(string $fecha): bool
+{
+    $fechaConvertida = DateTime::createFromFormat('Y-m-d', $fecha);
+
+    return $fechaConvertida !== false && $fechaConvertida->format('Y-m-d') === $fecha;
+}
+
+$fechaDesde = trim($_GET['desde'] ?? '');
+$fechaHasta = trim($_GET['hasta'] ?? '');
+
+if ($fechaDesde !== '' && !esFechaValida($fechaDesde)) {
+    $fechaDesde = '';
+}
+
+if ($fechaHasta !== '' && !esFechaValida($fechaHasta)) {
+    $fechaHasta = '';
+}
+
+$sqlAsistencias = "SELECT
+    asistencia.fecha_asistencia,
+    CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
+    ficha.id_ficha,
+    DATE_FORMAT(asistencia.entrada, '%H:%i') AS entrada,
+    DATE_FORMAT(asistencia.salida, '%H:%i') AS salida,
+    asistencia.estado_entrada,
+    asistencia.estado_salida,
+    asistencia.minutos_retardo
+ FROM asistencia
+ INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
+ INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
+ INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
+ WHERE ficha.fk_usuario = :id_instructor";
+
+if ($fechaDesde !== '') {
+    $sqlAsistencias .= ' AND asistencia.fecha_asistencia >= :fecha_desde';
+}
+
+if ($fechaHasta !== '') {
+    $sqlAsistencias .= ' AND asistencia.fecha_asistencia <= :fecha_hasta';
+}
+
+$sqlAsistencias .= ' ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC';
+
+$consultaAsistencias = $conexion->prepare(
+    $sqlAsistencias
+);
+$consultaAsistencias->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
+
+if ($fechaDesde !== '') {
+    $consultaAsistencias->bindValue(':fecha_desde', $fechaDesde, PDO::PARAM_STR);
+}
+
+if ($fechaHasta !== '') {
+    $consultaAsistencias->bindValue(':fecha_hasta', $fechaHasta, PDO::PARAM_STR);
+}
+
+$consultaAsistencias->execute();
+$asistenciasInstructor = $consultaAsistencias->fetchAll();
+
+foreach ($asistenciasInstructor as &$asistencia) {
+    if ($asistencia['estado_entrada'] === 'INASISTENCIA') {
+        $asistencia['estado'] = 'Inasistencia';
+    } elseif ($asistencia['estado_salida'] === 'SALIDA_ANTICIPADA') {
+        $asistencia['estado'] = 'Salida temprana';
+    } elseif ($asistencia['estado_entrada'] === 'RETARDO') {
+        $asistencia['estado'] = 'Retardo';
+    } else {
+        $asistencia['estado'] = 'Presente';
+    }
+}
+unset($asistencia);
 
 function claseEstadoAsistencia($estado) {
     switch ($estado) {
@@ -44,21 +123,21 @@ ob_start();
   </div>
 
   <div class="card-body">
-    <div class="row mb-3">
+    <form method="get" class="row mb-3">
       <div class="col-md-3 col-sm-6 mb-2">
         <label class="small text-muted mb-1">Desde</label>
-        <input type="date" class="form-control form-control-sm" value="2026-08-19">
+        <input type="date" name="desde" class="form-control form-control-sm" value="<?= htmlspecialchars($fechaDesde) ?>">
       </div>
       <div class="col-md-3 col-sm-6 mb-2">
         <label class="small text-muted mb-1">Hasta</label>
-        <input type="date" class="form-control form-control-sm" value="2026-08-20">
+        <input type="date" name="hasta" class="form-control form-control-sm" value="<?= htmlspecialchars($fechaHasta) ?>">
       </div>
       <div class="col-md-3 col-sm-6 mb-2">
         <label class="small text-muted mb-1">Ficha</label>
         <select class="form-control form-control-sm filtro-tabla" data-col="2">
           <option value="">Todas mis fichas</option>
-          <?php foreach ($fichasInstructor as $numero): ?>
-            <option value="<?= htmlspecialchars($numero) ?>"><?= htmlspecialchars($numero) ?></option>
+          <?php foreach ($fichasInstructor as $ficha): ?>
+            <option value="Ficha #<?= htmlspecialchars($ficha['id_ficha']) ?>">Ficha #<?= htmlspecialchars($ficha['id_ficha']) ?></option>
           <?php endforeach; ?>
         </select>
       </div>
@@ -72,7 +151,10 @@ ob_start();
           <option>Inasistencia</option>
         </select>
       </div>
-    </div>
+      <div class="col-md-3 col-sm-6 mb-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-outline-sena btn-sm btn-block"><i class="fas fa-filter"></i> Filtrar fechas</button>
+      </div>
+    </form>
 
     <div class="table-responsive">
       <table class="table table-hover table-bordered tabla-datos">
@@ -88,14 +170,16 @@ ob_start();
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($asistencias as $asistencia): ?>
-            <?php if (!in_array($asistencia['ficha'], $fichasInstructor)) { continue; } ?>
+          <?php if ($asistenciasInstructor === []): ?>
+            <tr><td colspan="7" class="text-center text-muted">No hay asistencias registradas para sus fichas.</td></tr>
+          <?php else: ?>
+          <?php foreach ($asistenciasInstructor as $asistencia): ?>
             <tr>
-              <td><?= htmlspecialchars($asistencia['fecha']) ?></td>
+              <td><?= htmlspecialchars($asistencia['fecha_asistencia']) ?></td>
               <td><?= htmlspecialchars($asistencia['aprendiz']) ?></td>
-              <td><span class="badge badge-info"><?= htmlspecialchars($asistencia['ficha']) ?></span></td>
-              <td><?= htmlspecialchars($asistencia['entrada']) ?></td>
-              <td><?= htmlspecialchars($asistencia['salida']) ?></td>
+              <td><span class="badge badge-info">Ficha #<?= htmlspecialchars($asistencia['id_ficha']) ?></span></td>
+              <td><?= htmlspecialchars($asistencia['entrada'] ?? '--') ?></td>
+              <td><?= htmlspecialchars($asistencia['salida'] ?? '--') ?></td>
               <td><span class="badge badge-estado <?= claseEstadoAsistencia($asistencia['estado']) ?>"><?= htmlspecialchars($asistencia['estado']) ?></span></td>
               <td>
                 <?php if ($asistencia['minutos_retardo'] > 0): ?>
@@ -106,15 +190,16 @@ ob_start();
               </td>
             </tr>
           <?php endforeach; ?>
+          <?php endif; ?>
         </tbody>
       </table>
     </div>
 
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Datos de demostración: la paginación, búsqueda y filtros funcionan visualmente.</p>
+    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Las asistencias y fichas provienen de la base de datos. El filtro por fecha consulta la base de datos; la exportación PDF se implementará después.</p>
   </div>
 </div>
 <?php
 $contenido = ob_get_clean();
 
 // --- Render del layout según el rol ---
-include __DIR__ . '/../layouts/layout_instructor.php';
+include __DIR__ . '/../../layouts/layout_instructor.php';
