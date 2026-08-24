@@ -26,6 +26,9 @@
       $(this).find(".nombre-aprendiz").text(nombre);
       $(this).find(".nombre-instructor").text(nombre);
     }
+    if (boton.data("id-excusa") !== undefined) {
+      $(this).find(".id-excusa").val(boton.data("id-excusa"));
+    }
     if (ficha !== undefined && ficha !== "") {
       $(this).find(".ficha-numero").text(ficha);
       $(this).find(".ficha-aprendiz").text(ficha);
@@ -193,12 +196,13 @@
 
     // Gráfica de dona: Asistencia personal del aprendiz
     if (document.getElementById("graficoMiAsistencia")) {
+      var datosGraficaAprendiz = window.datosGraficaAprendiz || [0, 0, 0, 0];
       new Chart(document.getElementById("graficoMiAsistencia"), {
         type: "doughnut",
         data: {
           labels: ["Asistencias", "Retardos", "Inasistencias", "Salidas tempranas"],
           datasets: [{
-            data: [18, 3, 2, 1],
+            data: datosGraficaAprendiz,
             backgroundColor: ["#39a900", "#f39c12", "#dc3545", "#007bff"]
           }]
         },

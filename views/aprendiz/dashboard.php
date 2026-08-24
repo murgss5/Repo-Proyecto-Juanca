@@ -4,13 +4,14 @@
  * VISTA: MI DASHBOARD (APRENDIZ)
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * SOLO INTERFAZ VISUAL con datos de demostración estáticos.
+ * Resume las asistencias y excusas reales del aprendiz autenticado.
  * ============================================================
  */
 
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(3);
 require_once dirname(__DIR__) . '/../includes/constantes.php';
+require_once dirname(__DIR__) . '/../config/conexion.php';
 
 // --- Variables del layout ---
 $paginaTitulo = 'Mi dashboard';
@@ -19,6 +20,55 @@ $miga = [
     ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/aprendiz/dashboard.php'],
     ['label' => 'Mi dashboard'],
 ];
+
+$conexion = (new Conexion())->conectar();
+$consultaResumen = $conexion->prepare(
+    "SELECT
+        SUM(CASE WHEN asistencia.estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS puntuales,
+        SUM(CASE WHEN asistencia.estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos,
+        SUM(CASE WHEN asistencia.estado_entrada = 'INASISTENCIA' THEN 1 ELSE 0 END) AS inasistencias,
+        SUM(CASE WHEN asistencia.estado_salida = 'SALIDA_ANTICIPADA' THEN 1 ELSE 0 END) AS salidas_tempranas
+     FROM asistencia
+     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
+     WHERE aprendiz.fk_usuario = :id_usuario
+       AND YEAR(asistencia.fecha_asistencia) = YEAR(CURDATE())
+       AND MONTH(asistencia.fecha_asistencia) = MONTH(CURDATE())"
+);
+$consultaResumen->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaResumen->execute();
+$resumenMes = $consultaResumen->fetch() ?: [];
+
+$datosGraficaAprendiz = [
+    (int) ($resumenMes['puntuales'] ?? 0),
+    (int) ($resumenMes['retardos'] ?? 0),
+    (int) ($resumenMes['inasistencias'] ?? 0),
+    (int) ($resumenMes['salidas_tempranas'] ?? 0),
+];
+
+$consultaExcusas = $conexion->prepare(
+    "SELECT asistencia.fecha_asistencia, excusa.fecha_subida, excusa.estado
+     FROM excusa
+     INNER JOIN asistencia ON excusa.fk_asistencia = asistencia.id_asistencia
+     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
+     WHERE aprendiz.fk_usuario = :id_usuario
+     ORDER BY excusa.fecha_subida DESC, excusa.id_excusa DESC
+     LIMIT 5"
+);
+$consultaExcusas->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaExcusas->execute();
+$excusasAprendiz = $consultaExcusas->fetchAll();
+
+$consultaExcusasPendientes = $conexion->prepare(
+    "SELECT COUNT(*)
+     FROM excusa
+     INNER JOIN asistencia ON excusa.fk_asistencia = asistencia.id_asistencia
+     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
+     WHERE aprendiz.fk_usuario = :id_usuario
+       AND excusa.estado = 'PENDIENTE'"
+);
+$consultaExcusasPendientes->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaExcusasPendientes->execute();
+$excusasPendientes = (int) $consultaExcusasPendientes->fetchColumn();
 
 ob_start();
 ?>
@@ -29,7 +79,7 @@ ob_start();
       <span class="info-box-icon"><i class="fas fa-user-check"></i></span>
       <div class="info-box-content">
         <span class="info-box-text">Asistencias del mes</span>
-        <span class="info-box-number">18</span>
+        <span class="info-box-number"><?= $datosGraficaAprendiz[0] ?></span>
       </div>
     </div>
   </div>
@@ -38,7 +88,7 @@ ob_start();
       <span class="info-box-icon"><i class="fas fa-clock"></i></span>
       <div class="info-box-content">
         <span class="info-box-text">Retardos del mes</span>
-        <span class="info-box-number">3</span>
+        <span class="info-box-number"><?= $datosGraficaAprendiz[1] ?></span>
       </div>
     </div>
   </div>
@@ -47,7 +97,7 @@ ob_start();
       <span class="info-box-icon"><i class="fas fa-user-slash"></i></span>
       <div class="info-box-content">
         <span class="info-box-text">Inasistencias del mes</span>
-        <span class="info-box-number">2</span>
+        <span class="info-box-number"><?= $datosGraficaAprendiz[2] ?></span>
       </div>
     </div>
   </div>
@@ -56,7 +106,7 @@ ob_start();
       <span class="info-box-icon"><i class="fas fa-file-medical"></i></span>
       <div class="info-box-content">
         <span class="info-box-text">Excusas pendientes</span>
-        <span class="info-box-number">1</span>
+        <span class="info-box-number"><?= $excusasPendientes ?></span>
       </div>
     </div>
   </div>
@@ -71,6 +121,7 @@ ob_start();
       </div>
       <div class="card-body">
         <div style="height: 260px;">
+          <script>window.datosGraficaAprendiz = <?= json_encode($datosGraficaAprendiz) ?>;</script>
           <canvas id="graficoMiAsistencia"></canvas>
         </div>
       </div>
@@ -98,17 +149,17 @@ ob_start();
             </tr>
           </thead>
           <tbody>
-            <?php foreach ($excusas as $excusa): ?>
+            <?php foreach ($excusasAprendiz as $excusa): ?>
               <?php
                 $claseBadge = 'badge-secondary';
-                if ($excusa['estado'] === 'Pendiente') { $claseBadge = 'badge-warning'; }
-                if ($excusa['estado'] === 'Aprobada')  { $claseBadge = 'badge-success'; }
-                if ($excusa['estado'] === 'Rechazada') { $claseBadge = 'badge-danger'; }
+                if ($excusa['estado'] === 'PENDIENTE') { $claseBadge = 'badge-warning'; }
+                if ($excusa['estado'] === 'APROBADA')  { $claseBadge = 'badge-success'; }
+                if ($excusa['estado'] === 'RECHAZADA') { $claseBadge = 'badge-danger'; }
               ?>
               <tr>
-                <td><?= htmlspecialchars($excusa['fecha_inasistencia']) ?></td>
-                <td><?= htmlspecialchars($excusa['fecha_envio']) ?></td>
-                <td><span class="badge badge-estado <?= $claseBadge ?>"><?= htmlspecialchars($excusa['estado']) ?></span></td>
+                <td><?= htmlspecialchars($excusa['fecha_asistencia']) ?></td>
+                <td><?= htmlspecialchars($excusa['fecha_subida']) ?></td>
+                <td><span class="badge badge-estado <?= $claseBadge ?>"><?= htmlspecialchars(ucfirst(strtolower($excusa['estado']))) ?></span></td>
               </tr>
             <?php endforeach; ?>
           </tbody>
@@ -150,7 +201,7 @@ ob_start();
 </div>
 
 <div class="alert alert-info py-2" role="alert">
-  <i class="fas fa-info-circle"></i> Datos de <strong>demostración</strong>. Esta vista se conectará a la base de datos cuando se implementen los modelos y controladores.
+  <i class="fas fa-info-circle"></i> El resumen mensual y las excusas provienen de la base de datos.
 </div>
 <?php
 $contenido = ob_get_clean();

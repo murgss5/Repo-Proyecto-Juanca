@@ -4,13 +4,14 @@
  * VISTA: MI HISTORIAL (APRENDIZ)
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * SOLO INTERFAZ VISUAL con datos de demostración estáticos.
+ * Muestra el historial real del aprendiz autenticado.
  * ============================================================
  */
 
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(3);
 require_once dirname(__DIR__) . '/../includes/constantes.php';
+require_once dirname(__DIR__) . '/../config/conexion.php';
 
 // --- Variables del layout ---
 $paginaTitulo = 'Mi historial';
@@ -19,6 +20,47 @@ $miga = [
     ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/aprendiz/dashboard.php'],
     ['label' => 'Mi historial'],
 ];
+
+$conexion = (new Conexion())->conectar();
+$consultaHistorial = $conexion->prepare(
+    "SELECT
+        asistencia.fecha_asistencia,
+        DATE_FORMAT(asistencia.entrada, '%H:%i') AS entrada,
+        DATE_FORMAT(asistencia.salida, '%H:%i') AS salida,
+        asistencia.estado_entrada,
+        asistencia.estado_salida
+     FROM asistencia
+     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
+     WHERE aprendiz.fk_usuario = :id_usuario
+     ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC"
+);
+$consultaHistorial->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaHistorial->execute();
+$historialAprendiz = $consultaHistorial->fetchAll();
+
+$resumenHistorial = [
+    'presentes' => 0,
+    'retardos' => 0,
+    'inasistencias' => 0,
+    'salidas_tempranas' => 0,
+];
+
+foreach ($historialAprendiz as &$registro) {
+    if ($registro['estado_entrada'] === 'INASISTENCIA') {
+        $registro['estado'] = 'Inasistencia';
+        $resumenHistorial['inasistencias']++;
+    } elseif ($registro['estado_salida'] === 'SALIDA_ANTICIPADA') {
+        $registro['estado'] = 'Salida temprana';
+        $resumenHistorial['salidas_tempranas']++;
+    } elseif ($registro['estado_entrada'] === 'RETARDO') {
+        $registro['estado'] = 'Retardo';
+        $resumenHistorial['retardos']++;
+    } else {
+        $registro['estado'] = 'Presente';
+        $resumenHistorial['presentes']++;
+    }
+}
+unset($registro);
 
 function claseEstadoHistorial($estado) {
     switch ($estado) {
@@ -39,7 +81,7 @@ ob_start();
       <span class="info-box-icon"><i class="fas fa-user-check"></i></span>
       <div class="info-box-content">
         <span class="info-box-text">Asistencias</span>
-        <span class="info-box-number">18</span>
+        <span class="info-box-number"><?= $resumenHistorial['presentes'] ?></span>
       </div>
     </div>
   </div>
@@ -48,7 +90,7 @@ ob_start();
       <span class="info-box-icon"><i class="fas fa-clock"></i></span>
       <div class="info-box-content">
         <span class="info-box-text">Retardos</span>
-        <span class="info-box-number">3</span>
+        <span class="info-box-number"><?= $resumenHistorial['retardos'] ?></span>
       </div>
     </div>
   </div>
@@ -57,7 +99,7 @@ ob_start();
       <span class="info-box-icon"><i class="fas fa-user-slash"></i></span>
       <div class="info-box-content">
         <span class="info-box-text">Inasistencias</span>
-        <span class="info-box-number">2</span>
+        <span class="info-box-number"><?= $resumenHistorial['inasistencias'] ?></span>
       </div>
     </div>
   </div>
@@ -66,7 +108,7 @@ ob_start();
       <span class="info-box-icon"><i class="fas fa-sign-out-alt"></i></span>
       <div class="info-box-content">
         <span class="info-box-text">Salidas tempranas</span>
-        <span class="info-box-number">1</span>
+        <span class="info-box-number"><?= $resumenHistorial['salidas_tempranas'] ?></span>
       </div>
     </div>
   </div>
@@ -109,11 +151,11 @@ ob_start();
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($historialPersonal as $registro): ?>
+          <?php foreach ($historialAprendiz as $registro): ?>
             <tr>
-              <td><?= htmlspecialchars($registro['fecha']) ?></td>
-              <td><?= htmlspecialchars($registro['entrada']) ?></td>
-              <td><?= htmlspecialchars($registro['salida']) ?></td>
+              <td><?= htmlspecialchars($registro['fecha_asistencia']) ?></td>
+              <td><?= htmlspecialchars($registro['entrada'] ?? '--') ?></td>
+              <td><?= htmlspecialchars($registro['salida'] ?? '--') ?></td>
               <td><span class="badge badge-estado <?= claseEstadoHistorial($registro['estado']) ?>"><?= htmlspecialchars($registro['estado']) ?></span></td>
             </tr>
           <?php endforeach; ?>
@@ -121,7 +163,7 @@ ob_start();
       </table>
     </div>
 
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Datos de demostración: la paginación, búsqueda y filtros funcionan visualmente.</p>
+    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> El historial y su resumen provienen de la base de datos.</p>
   </div>
 </div>
 <?php

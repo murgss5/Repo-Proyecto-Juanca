@@ -4,13 +4,14 @@
  * VISTA: EXCUSAS MÉDICAS (INSTRUCTOR)
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * SOLO INTERFAZ VISUAL con datos de demostración estáticos.
+ * Lista las excusas reales de los aprendices de las fichas del instructor.
  * ============================================================
  */
 
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(2);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
+require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
 // --- Variables del layout ---
 $paginaTitulo = 'Excusas médicas de mis fichas';
@@ -19,6 +20,38 @@ $miga = [
     ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
     ['label' => 'Excusas médicas'],
 ];
+
+$conexion = (new Conexion())->conectar();
+$consultaExcusas = $conexion->prepare(
+    "SELECT
+        excusa.id_excusa,
+        CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
+        ficha.id_ficha,
+        asistencia.fecha_asistencia,
+        excusa.archivo,
+        excusa.fecha_subida,
+        excusa.estado,
+        excusa.observacion
+     FROM excusa
+     INNER JOIN asistencia ON excusa.fk_asistencia = asistencia.id_asistencia
+     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
+     INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
+     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
+     WHERE ficha.fk_usuario = :id_instructor
+     ORDER BY excusa.fecha_subida DESC, excusa.id_excusa DESC"
+);
+$consultaExcusas->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaExcusas->execute();
+$excusasInstructor = $consultaExcusas->fetchAll();
+
+if (empty($_SESSION['token_csrf'])) {
+    $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
+}
+
+foreach ($excusasInstructor as &$excusa) {
+    $excusa['estado_mostrado'] = ucfirst(strtolower($excusa['estado']));
+}
+unset($excusa);
 
 function claseEstadoExcusa($estado) {
     switch ($estado) {
@@ -37,6 +70,12 @@ ob_start();
   </div>
 
   <div class="card-body">
+    <?php if (isset($_GET['mensaje'])): ?>
+      <div class="alert alert-success" role="alert"><?= htmlspecialchars($_GET['mensaje']) ?></div>
+    <?php endif; ?>
+    <?php if (isset($_GET['error'])): ?>
+      <div class="alert alert-danger" role="alert"><?= htmlspecialchars($_GET['error']) ?></div>
+    <?php endif; ?>
     <div class="row mb-3">
       <div class="col-md-5 col-sm-12 mb-2">
         <div class="input-group">
@@ -71,32 +110,36 @@ ob_start();
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($excusas as $excusa): ?>
+          <?php foreach ($excusasInstructor as $excusa): ?>
             <tr>
               <td><?= htmlspecialchars($excusa['aprendiz']) ?></td>
-              <td><span class="badge badge-info"><?= htmlspecialchars($excusa['ficha']) ?></span></td>
-              <td><?= htmlspecialchars($excusa['fecha_inasistencia']) ?></td>
+              <td><span class="badge badge-info">Ficha #<?= htmlspecialchars($excusa['id_ficha']) ?></span></td>
+              <td><?= htmlspecialchars($excusa['fecha_asistencia']) ?></td>
               <td>
-                <a href="#" class="text-sena" data-toggle="tooltip" title="Descargar (visual)">
-                  <i class="fas fa-paperclip"></i> <?= htmlspecialchars($excusa['archivo']) ?>
-                </a>
+                <i class="fas fa-paperclip text-sena"></i> <?= htmlspecialchars($excusa['archivo']) ?>
               </td>
-              <td><?= htmlspecialchars($excusa['fecha_envio']) ?></td>
-              <td><span class="badge badge-estado <?= claseEstadoExcusa($excusa['estado']) ?>"><?= htmlspecialchars($excusa['estado']) ?></span></td>
+              <td><?= htmlspecialchars($excusa['fecha_subida']) ?></td>
+              <td><span class="badge badge-estado <?= claseEstadoExcusa($excusa['estado_mostrado']) ?>"><?= htmlspecialchars($excusa['estado_mostrado']) ?></span></td>
               <td>
-                <?php if ($excusa['observaciones'] !== ''): ?>
-                  <span class="small"><?= htmlspecialchars($excusa['observaciones']) ?></span>
+                <?php if (!empty($excusa['observacion'])): ?>
+                  <span class="small"><?= htmlspecialchars($excusa['observacion']) ?></span>
                 <?php else: ?>
                   <span class="text-muted">&mdash;</span>
                 <?php endif; ?>
               </td>
               <td class="text-center">
-                <?php if ($excusa['estado'] === 'Pendiente'): ?>
+                <?php if ($excusa['estado'] === 'PENDIENTE'): ?>
                   <div class="btn-group btn-group-sm" role="group">
                     <button type="button" class="btn btn-success" data-toggle="modal" data-target="#modalAprobar"
-                            data-nombre="<?= htmlspecialchars($excusa['aprendiz']) ?>" title="Aprobar"><i class="fas fa-check"></i></button>
+                            data-id-excusa="<?= htmlspecialchars($excusa['id_excusa']) ?>"
+                            data-nombre="<?= htmlspecialchars($excusa['aprendiz']) ?>" title="Aprobar">
+                      <i class="fas fa-check"></i>
+                    </button>
                     <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#modalRechazar"
-                            data-nombre="<?= htmlspecialchars($excusa['aprendiz']) ?>" title="Rechazar"><i class="fas fa-times"></i></button>
+                            data-id-excusa="<?= htmlspecialchars($excusa['id_excusa']) ?>"
+                            data-nombre="<?= htmlspecialchars($excusa['aprendiz']) ?>" title="Rechazar">
+                      <i class="fas fa-times"></i>
+                    </button>
                   </div>
                 <?php else: ?>
                   <span class="text-muted small">Sin acciones</span>
@@ -108,57 +151,48 @@ ob_start();
       </table>
     </div>
 
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Datos de demostración: la paginación, búsqueda y filtros funcionan visualmente.</p>
+    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Las excusas provienen de la base de datos. La descarga de archivos se implementará después.</p>
   </div>
 </div>
 
-<!-- Modal: aprobar excusa -->
 <div class="modal fade" id="modalAprobar" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title"><i class="fas fa-check-circle"></i> Aprobar excusa</h5>
-        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
-      </div>
+  <div class="modal-dialog" role="document"><div class="modal-content">
+    <div class="modal-header bg-success text-white">
+      <h5 class="modal-title"><i class="fas fa-check-circle"></i> Aprobar excusa</h5>
+      <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+    </div>
+    <form action="<?= RUTA_BASE ?>controllers/revisar_excusa.php" method="post">
       <div class="modal-body">
         ¿Desea aprobar la excusa presentada por <strong class="nombre-aprendiz"></strong>?
-        <div class="form-group mt-3">
-          <label>Observaciones (opcional)</label>
-          <textarea class="form-control" rows="2" placeholder="Comentarios sobre la aprobación..."></textarea>
-        </div>
+        <input type="hidden" name="id_excusa" class="id-excusa">
+        <input type="hidden" name="decision" value="APROBADA">
+        <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-success"><i class="fas fa-check"></i> Aprobar</button>
-      </div>
-    </div>
-  </div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-success">Aprobar</button></div>
+    </form>
+  </div></div>
 </div>
 
-<!-- Modal: rechazar excusa -->
 <div class="modal fade" id="modalRechazar" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title"><i class="fas fa-times-circle"></i> Rechazar excusa</h5>
-        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
-      </div>
+  <div class="modal-dialog" role="document"><div class="modal-content">
+    <div class="modal-header bg-danger text-white">
+      <h5 class="modal-title"><i class="fas fa-times-circle"></i> Rechazar excusa</h5>
+      <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+    </div>
+    <form action="<?= RUTA_BASE ?>controllers/revisar_excusa.php" method="post">
       <div class="modal-body">
         ¿Desea rechazar la excusa presentada por <strong class="nombre-aprendiz"></strong>?
-        <div class="form-group mt-3">
-          <label>Motivo del rechazo <span class="text-danger">*</span></label>
-          <textarea class="form-control" rows="2" placeholder="Indique el motivo del rechazo..." required></textarea>
-        </div>
+        <input type="hidden" name="id_excusa" class="id-excusa">
+        <input type="hidden" name="decision" value="RECHAZADA">
+        <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-danger"><i class="fas fa-times"></i> Rechazar</button>
-      </div>
-    </div>
-  </div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-danger">Rechazar</button></div>
+    </form>
+  </div></div>
 </div>
+
 <?php
 $contenido = ob_get_clean();
 
 // --- Render del layout según el rol ---
-include __DIR__ . '/../layouts/layout_instructor.php';
+include __DIR__ . '/../../layouts/layout_instructor.php';
