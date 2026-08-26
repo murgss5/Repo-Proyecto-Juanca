@@ -4,14 +4,33 @@
  * VISTA: SUBIR EXCUSA MÉDICA (APRENDIZ)
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * SOLO INTERFAZ VISUAL. El archivo no se sube realmente;
- * la carga y el guardado se implementarán más adelante.
+ * Formulario funcional para registrar una excusa médica.
  * ============================================================
  */
 
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(3);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
+require_once dirname(__DIR__, 3) . '/config/conexion.php';
+
+$conexion = (new Conexion())->conectar();
+
+// Cargar inasistencias del aprendiz que no tengan excusa
+$consultaInasistencias = $conexion->prepare(
+    "SELECT
+        a.id_asistencia,
+        a.fecha_asistencia
+     FROM asistencia a
+     INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
+     LEFT JOIN excusa e ON e.fk_asistencia = a.id_asistencia
+     WHERE ap.fk_usuario = :id_usuario
+     AND a.estado_entrada = 'INASISTENCIA'
+     AND e.id_excusa IS NULL
+     ORDER BY a.fecha_asistencia DESC"
+);
+$consultaInasistencias->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaInasistencias->execute();
+$inasistenciasDisponibles = $consultaInasistencias->fetchAll();
 
 // --- Variables del layout ---
 $paginaTitulo = 'Subir excusa médica';
@@ -24,70 +43,99 @@ $miga = [
 
 ob_start();
 ?>
-<div class="alert alert-warning py-2" role="alert">
-  <i class="fas fa-info-circle"></i> Formulario de <strong>demostración</strong>. La carga real del archivo y el guardado se implementarán con el controlador y el modelo correspondiente.
-</div>
+<?php if (isset($_GET['mensaje'])): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i> <?= htmlspecialchars($_GET['mensaje']) ?>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+<?php endif; ?>
+<?php if (isset($_GET['error'])): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle"></i> <?= htmlspecialchars($_GET['error']) ?>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+<?php endif; ?>
 
 <div class="row">
-  <div class="col-md-8">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-cloud-upload-alt text-sena"></i> Nueva excusa médica</h3>
-      </div>
-      <form action="#" method="post" enctype="multipart/form-data">
-        <div class="card-body">
-          <div class="form-group">
-            <label for="fecha_inasistencia">Fecha de inasistencia <span class="text-danger">*</span></label>
-            <input type="date" id="fecha_inasistencia" name="fecha_inasistencia" class="form-control" required>
-            <small class="form-text text-muted">Seleccione la fecha en la que faltó a la formación.</small>
-          </div>
-
-          <div class="form-group">
-            <label for="archivo">Adjuntar excusa médica <span class="text-danger">*</span></label>
-            <div class="custom-file">
-              <input type="file" class="custom-file-input" id="archivo" name="archivo" accept=".pdf,.jpg,.jpeg,.png" required>
-              <label class="custom-file-label" for="archivo">Seleccione un archivo (PDF, JPG o PNG)</label>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-cloud-upload-alt text-sena"></i> Nueva excusa médica</h3>
             </div>
-            <small class="form-text text-muted">Tamaño máximo permitido: 5 MB.</small>
-          </div>
+            <form action="<?= RUTA_BASE ?>controllers/subir_excusa.php" method="post" enctype="multipart/form-data">
+                <div class="card-body">
+                    <?php if (empty($inasistenciasDisponibles)): ?>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No tienes inasistencias pendientes de justificar.
+                            <br>Todas tus inasistencias ya tienen una excusa registrada.
+                        </div>
+                    <?php else: ?>
+                        <div class="form-group">
+                            <label for="id_asistencia">Inasistencia a justificar <span class="text-danger">*</span></label>
+                            <select id="id_asistencia" name="id_asistencia" class="form-control" required>
+                                <option value="">-- Seleccione una inasistencia --</option>
+                                <?php foreach ($inasistenciasDisponibles as $inasistencia): ?>
+                                    <option value="<?= htmlspecialchars($inasistencia['id_asistencia']) ?>">
+                                        <?= htmlspecialchars(date('d/m/Y', strtotime($inasistencia['fecha_asistencia']))) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small class="form-text text-muted">Seleccione la fecha en la que faltó a la formación.</small>
+                        </div>
 
-          <div class="form-group">
-            <label for="observaciones">Observaciones</label>
-            <textarea id="observaciones" name="observaciones" class="form-control" rows="3"
-                      placeholder="Describa brevemente el motivo de la inasistencia (opcional)..."></textarea>
-          </div>
-        </div>
+                        <div class="form-group">
+                            <label for="archivo">Adjuntar excusa médica <span class="text-danger">*</span></label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="archivo" name="archivo" accept=".pdf,.jpg,.jpeg,.png" required>
+                                <label class="custom-file-label" for="archivo">Seleccione un archivo (PDF, JPG o PNG)</label>
+                            </div>
+                            <small class="form-text text-muted">Tamaño máximo permitido: 5 MB. Formatos: PDF, JPG, PNG.</small>
+                        </div>
 
-        <div class="card-footer text-right">
-          <a href="<?= RUTA_BASE ?>views/aprendiz/excusas/index.php" class="btn btn-secondary">
-            <i class="fas fa-times"></i> Cancelar
-          </a>
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-cloud-upload-alt"></i> Enviar excusa
-          </button>
+                        <div class="form-group">
+                            <label for="observaciones">Observaciones</label>
+                            <textarea id="observaciones" name="observaciones" class="form-control" rows="3"
+                                      placeholder="Describa brevemente el motivo de la inasistencia (opcional)..."></textarea>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="card-footer text-right">
+                    <a href="<?= RUTA_BASE ?>views/aprendiz/excusas/index.php" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                    <?php if (!empty($inasistenciasDisponibles)): ?>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-cloud-upload-alt"></i> Enviar excusa
+                        </button>
+                    <?php endif; ?>
+                </div>
+            </form>
         </div>
-      </form>
     </div>
-  </div>
 
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-info-circle text-sena"></i> ¿Cómo funciona?</h3>
-      </div>
-      <div class="card-body">
-        <ol class="pl-3 small">
-          <li>Seleccione la fecha de la inasistencia.</li>
-          <li>Adjunte la excusa médica en formato PDF, JPG o PNG.</li>
-          <li>Escriba una breve observación si lo desea.</li>
-          <li>Envié la solicitud; el instructor podrá aprobarla o rechazarla.</li>
-        </ol>
-        <div class="alert alert-warning py-2 small mb-0">
-          <i class="fas fa-info-circle"></i> En este prototipo visual el botón "Enviar excusa" no realiza la carga real.
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-info-circle text-sena"></i> ¿Cómo funciona?</h3>
+            </div>
+            <div class="card-body">
+                <ol class="pl-3 small">
+                    <li>Seleccione la inasistencia que desea justificar.</li>
+                    <li>Adjunte la excusa médica en formato PDF, JPG o PNG.</li>
+                    <li>Escriba una breve observación si lo desea.</li>
+                    <li>Envíe la solicitud; el instructor podrá aprobarla o rechazarla.</li>
+                </ol>
+                <div class="alert alert-warning py-2 small mb-0">
+                    <i class="fas fa-info-circle"></i> La excusa quedará en estado <strong>PENDIENTE</strong> hasta que el instructor la revise.
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  </div>
 </div>
 <?php
 $contenido = ob_get_clean();

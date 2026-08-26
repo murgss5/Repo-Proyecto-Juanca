@@ -1,0 +1,30 @@
+# Impedir la ejecución de scripts en esta carpeta
+# Solo permitir descarga de archivos
+
+# Deshabilitar la ejecución de PHP
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# Para CGI/FastCGI
+<IfModule mod_fcgid.c>
+    FcgidWrapper Off
+</IfModule>
+
+# Impedir ejecución de scripts mediante AddHandler
+RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .phar
+AddType text/plain .php .php3 .php4 .php5 .php7 .php8 .phtml .phar
+
+# Impedir acceso directo a archivos .htaccess y ocultar listado de directorios
+<Files ~ "^\.">
+    Order allow,deny
+    Deny from all
+</Files>
+
+Options -Indexes
+
+# Permitir solo métodos GET y HEAD para descarga
+<LimitExcept GET HEAD>
+    Order allow,deny
+    Deny from all
+</LimitExcept>
