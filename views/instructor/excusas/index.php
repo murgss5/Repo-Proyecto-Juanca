@@ -116,7 +116,9 @@ ob_start();
               <td><span class="badge badge-info">Ficha #<?= htmlspecialchars($excusa['id_ficha']) ?></span></td>
               <td><?= htmlspecialchars($excusa['fecha_asistencia']) ?></td>
               <td>
-                <i class="fas fa-paperclip text-sena"></i> <?= htmlspecialchars($excusa['archivo']) ?>
+                <a href="<?= RUTA_BASE ?>views/instructor/excusas/descargar.php?id_excusa=<?= htmlspecialchars($excusa['id_excusa']) ?>" class="text-sena" title="Descargar archivo">
+                  <i class="fas fa-paperclip"></i> <?= htmlspecialchars($excusa['archivo']) ?>
+                </a>
               </td>
               <td><?= htmlspecialchars($excusa['fecha_subida']) ?></td>
               <td><span class="badge badge-estado <?= claseEstadoExcusa($excusa['estado_mostrado']) ?>"><?= htmlspecialchars($excusa['estado_mostrado']) ?></span></td>
@@ -151,7 +153,7 @@ ob_start();
       </table>
     </div>
 
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Las excusas provienen de la base de datos. La descarga de archivos se implementará después.</p>
+    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Las excusas y sus archivos provienen de la base de datos.</p>
   </div>
 </div>
 

@@ -53,7 +53,7 @@ if ($rolDemo === 'admin') {
         ['tipo' => 'enlace', 'clave' => 'aprendices', 'icono' => 'fa-users', 'texto' => 'Aprendices de mis fichas', 'url' => RUTA_BASE . 'views/instructor/aprendices/index.php'],
         ['tipo' => 'enlace', 'clave' => 'asistencias', 'icono' => 'fa-clipboard-check', 'texto' => 'Asistencias', 'url' => RUTA_BASE . 'views/instructor/asistencias/index.php'],
         ['tipo' => 'enlace', 'clave' => 'excusas', 'icono' => 'fa-file-medical', 'texto' => 'Excusas médicas', 'url' => RUTA_BASE . 'views/instructor/excusas/index.php'],
-        ['tipo' => 'enlace', 'clave' => 'reportes', 'icono' => 'fa-chart-bar', 'texto' => 'Reportes', 'url' => RUTA_BASE . 'views/admin/reportes/index.php'],
+        ['tipo' => 'enlace', 'clave' => 'reportes', 'icono' => 'fa-chart-bar', 'texto' => 'Reportes', 'url' => RUTA_BASE . 'views/instructor/reportes/index.php'],
         ['tipo' => 'header', 'texto' => 'SISTEMA'],
         ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/logout.php'],
     ];

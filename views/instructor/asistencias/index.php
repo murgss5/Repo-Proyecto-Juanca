@@ -39,6 +39,9 @@ function esFechaValida(string $fecha): bool
 
 $fechaDesde = trim($_GET['desde'] ?? '');
 $fechaHasta = trim($_GET['hasta'] ?? '');
+$fichaSeleccionada = filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: '';
+$estadoSeleccionado = $_GET['estado'] ?? '';
+$estadosPermitidos = ['Presente', 'Retardo', 'Salida temprana', 'Inasistencia'];
 
 if ($fechaDesde !== '' && !esFechaValida($fechaDesde)) {
     $fechaDesde = '';
@@ -46,6 +49,10 @@ if ($fechaDesde !== '' && !esFechaValida($fechaDesde)) {
 
 if ($fechaHasta !== '' && !esFechaValida($fechaHasta)) {
     $fechaHasta = '';
+}
+
+if (!in_array($estadoSeleccionado, $estadosPermitidos, true)) {
+    $estadoSeleccionado = '';
 }
 
 $sqlAsistencias = "SELECT
@@ -71,6 +78,22 @@ if ($fechaHasta !== '') {
     $sqlAsistencias .= ' AND asistencia.fecha_asistencia <= :fecha_hasta';
 }
 
+if ($fichaSeleccionada !== '') {
+    $sqlAsistencias .= ' AND ficha.id_ficha = :id_ficha';
+}
+
+if ($estadoSeleccionado === 'Presente') {
+    $sqlAsistencias .= " AND asistencia.estado_entrada = 'PUNTUAL'
+                          AND (asistencia.estado_salida IS NULL OR asistencia.estado_salida <> 'SALIDA_ANTICIPADA')";
+} elseif ($estadoSeleccionado === 'Retardo') {
+    $sqlAsistencias .= " AND asistencia.estado_entrada = 'RETARDO'
+                          AND (asistencia.estado_salida IS NULL OR asistencia.estado_salida <> 'SALIDA_ANTICIPADA')";
+} elseif ($estadoSeleccionado === 'Salida temprana') {
+    $sqlAsistencias .= " AND asistencia.estado_salida = 'SALIDA_ANTICIPADA'";
+} elseif ($estadoSeleccionado === 'Inasistencia') {
+    $sqlAsistencias .= " AND asistencia.estado_entrada = 'INASISTENCIA'";
+}
+
 $sqlAsistencias .= ' ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC';
 
 $consultaAsistencias = $conexion->prepare(
@@ -84,6 +107,10 @@ if ($fechaDesde !== '') {
 
 if ($fechaHasta !== '') {
     $consultaAsistencias->bindValue(':fecha_hasta', $fechaHasta, PDO::PARAM_STR);
+}
+
+if ($fichaSeleccionada !== '') {
+    $consultaAsistencias->bindValue(':id_ficha', $fichaSeleccionada, PDO::PARAM_INT);
 }
 
 $consultaAsistencias->execute();
@@ -134,25 +161,24 @@ ob_start();
       </div>
       <div class="col-md-3 col-sm-6 mb-2">
         <label class="small text-muted mb-1">Ficha</label>
-        <select class="form-control form-control-sm filtro-tabla" data-col="2">
+        <select name="ficha" class="form-control form-control-sm">
           <option value="">Todas mis fichas</option>
           <?php foreach ($fichasInstructor as $ficha): ?>
-            <option value="Ficha #<?= htmlspecialchars($ficha['id_ficha']) ?>">Ficha #<?= htmlspecialchars($ficha['id_ficha']) ?></option>
+            <option value="<?= htmlspecialchars($ficha['id_ficha']) ?>" <?= (string) $fichaSeleccionada === (string) $ficha['id_ficha'] ? 'selected' : '' ?>>Ficha #<?= htmlspecialchars($ficha['id_ficha']) ?></option>
           <?php endforeach; ?>
         </select>
       </div>
       <div class="col-md-3 col-sm-6 mb-2">
         <label class="small text-muted mb-1">Estado</label>
-        <select class="form-control form-control-sm filtro-tabla" data-col="5" data-exacto="true">
+        <select name="estado" class="form-control form-control-sm">
           <option value="">Todos los estados</option>
-          <option>Presente</option>
-          <option>Retardo</option>
-          <option>Salida temprana</option>
-          <option>Inasistencia</option>
+          <?php foreach ($estadosPermitidos as $estado): ?>
+            <option value="<?= htmlspecialchars($estado) ?>" <?= $estadoSeleccionado === $estado ? 'selected' : '' ?>><?= htmlspecialchars($estado) ?></option>
+          <?php endforeach; ?>
         </select>
       </div>
       <div class="col-md-3 col-sm-6 mb-2 d-flex align-items-end">
-        <button type="submit" class="btn btn-outline-sena btn-sm btn-block"><i class="fas fa-filter"></i> Filtrar fechas</button>
+        <button type="submit" class="btn btn-outline-sena btn-sm btn-block"><i class="fas fa-filter"></i> Filtrar</button>
       </div>
     </form>
 
@@ -170,9 +196,6 @@ ob_start();
           </tr>
         </thead>
         <tbody>
-          <?php if ($asistenciasInstructor === []): ?>
-            <tr><td colspan="7" class="text-center text-muted">No hay asistencias registradas para sus fichas.</td></tr>
-          <?php else: ?>
           <?php foreach ($asistenciasInstructor as $asistencia): ?>
             <tr>
               <td><?= htmlspecialchars($asistencia['fecha_asistencia']) ?></td>
@@ -190,12 +213,11 @@ ob_start();
               </td>
             </tr>
           <?php endforeach; ?>
-          <?php endif; ?>
         </tbody>
       </table>
     </div>
 
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Las asistencias y fichas provienen de la base de datos. El filtro por fecha consulta la base de datos; la exportación PDF se implementará después.</p>
+    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Los filtros por fecha, ficha y estado consultan la base de datos. La exportación PDF se implementará después.</p>
   </div>
 </div>
 <?php

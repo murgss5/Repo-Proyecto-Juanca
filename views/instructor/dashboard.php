@@ -237,7 +237,7 @@ ob_start();
         </a>
       </div>
       <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/reportes/index.php" class="btn btn-outline-sena btn-block tarjeta-accion py-3">
+        <a href="<?= RUTA_BASE ?>views/instructor/reportes/index.php" class="btn btn-outline-sena btn-block tarjeta-accion py-3">
           <i class="fas fa-chart-bar fa-2x mb-2"></i><br>Reportes
         </a>
       </div>
