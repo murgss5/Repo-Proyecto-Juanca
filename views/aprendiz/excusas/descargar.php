@@ -5,8 +5,8 @@
  */
 
 session_start();
-require_once __DIR__ . '/../../config/conexion.php';
-require_once __DIR__ . '/../../includes/autenticacion.php';
+require_once __DIR__ . '/../../../config/conexion.php';
+require_once __DIR__ . '/../../../includes/autenticacion.php';
 
 // Validar sesión y rol
 if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -56,10 +56,10 @@ try {
     // Construir ruta absoluta del archivo
     // Usamos basename para evitar path traversal
     $nombreSeguro = basename($nombreArchivoBD);
-    $rutaArchivo = __DIR__ . '/../../uploads/excusas/' . $nombreSeguro;
+    $rutaArchivo = __DIR__ . '/../../../uploads/excusas/' . $nombreSeguro;
 
     // Validar que el archivo exista y esté dentro de la carpeta permitida
-    $rutaCarpetaPermitida = realpath(__DIR__ . '/../../uploads/excusas');
+    $rutaCarpetaPermitida = realpath(__DIR__ . '/../../../uploads/excusas');
     $rutaArchivoReal = realpath($rutaArchivo);
 
     if (!$rutaArchivoReal || !$rutaCarpetaPermitida) {

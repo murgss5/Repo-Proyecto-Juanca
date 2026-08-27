@@ -102,24 +102,28 @@
     // Gráfica: Asistencia de la semana (Panel administrador)
     if (document.getElementById("graficoAsistenciaSemanal")) {
       var etiquetasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+      var datosGraficaAdminSemana = window.datosGraficaAdminSemana || {
+        labels: etiquetasSemana,
+        presentes: [0, 0, 0, 0, 0, 0], retardos: [0, 0, 0, 0, 0, 0], inasistencias: [0, 0, 0, 0, 0, 0]
+      };
       new Chart(document.getElementById("graficoAsistenciaSemanal"), {
         type: "bar",
         data: {
-          labels: etiquetasSemana,
+          labels: datosGraficaAdminSemana.labels,
           datasets: [
             {
               label: "Presentes",
-              data: [32, 30, 34, 28, 31, 25],
+              data: datosGraficaAdminSemana.presentes,
               backgroundColor: "#39a900"
             },
             {
               label: "Retardos",
-              data: [4, 6, 3, 8, 5, 9],
+              data: datosGraficaAdminSemana.retardos,
               backgroundColor: "#f39c12"
             },
             {
               label: "Inasistencias",
-              data: [3, 5, 2, 6, 4, 7],
+              data: datosGraficaAdminSemana.inasistencias,
               backgroundColor: "#dc3545"
             }
           ]
@@ -137,12 +141,13 @@
 
     // Gráfica de dona: Distribución de asistencia de hoy (Panel administrador)
     if (document.getElementById("graficoAsistenciaHoy")) {
+      var datosGraficaAdminHoy = window.datosGraficaAdminHoy || [0, 0, 0, 0];
       new Chart(document.getElementById("graficoAsistenciaHoy"), {
         type: "doughnut",
         data: {
           labels: ["Presentes", "Retardos", "Inasistencias", "Salidas tempranas"],
           datasets: [{
-            data: [25, 4, 3, 1],
+            data: datosGraficaAdminHoy,
             backgroundColor: ["#39a900", "#f39c12", "#dc3545", "#007bff"]
           }]
         },

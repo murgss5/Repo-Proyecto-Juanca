@@ -141,4 +141,4 @@ ob_start();
 $contenido = ob_get_clean();
 
 // --- Render del layout según el rol ---
-include __DIR__ . '/../layouts/layout_aprendiz.php';
+include __DIR__ . '/../../layouts/layout_aprendiz.php';

@@ -121,15 +121,7 @@ ob_start();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($excusas)): ?>
-                        <tr>
-                            <td colspan="7" class="text-center py-4">
-                                <i class="fas fa-file-medical fa-2x text-muted mb-2"></i>
-                                <p class="text-muted mb-0">No has enviado ninguna excusa médica aún.</p>
-                            </td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($excusas as $excusa): ?>
+                    <?php foreach ($excusas as $excusa): ?>
                             <tr>
                                 <td><?= htmlspecialchars(date('d/m/Y', strtotime($excusa['fecha_asistencia']))) ?></td>
                                 <td>
@@ -159,8 +151,7 @@ ob_start();
                                     </a>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
@@ -172,4 +163,4 @@ ob_start();
 $contenido = ob_get_clean();
 
 // --- Render del layout según el rol ---
-include __DIR__ . '/../layouts/layout_aprendiz.php';
+include __DIR__ . '/../../layouts/layout_aprendiz.php';

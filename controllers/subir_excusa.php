@@ -32,11 +32,6 @@ if ($idAsistencia === false || $idAsistencia === null) {
     exit;
 }
 
-if ($observacion === '') {
-    header('Location: ../views/aprendiz/excusas/create.php?error=La observación es obligatoria');
-    exit;
-}
-
 if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK) {
     header('Location: ../views/aprendiz/excusas/create.php?error=Debe seleccionar un archivo');
     exit;

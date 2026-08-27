@@ -4,13 +4,14 @@
  * VISTA: LISTADO DE APRENDICES (ADMIN)
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * SOLO INTERFAZ VISUAL con datos de demostración estáticos.
+ * Lista los aprendices registrados en la base de datos.
  * ============================================================
  */
 
 require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
 exigirRol(1);
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
+require_once dirname(__DIR__) . '/../../config/conexion.php';
 
 // --- Variables del layout ---
 $paginaTitulo = 'Aprendices';
@@ -20,16 +21,24 @@ $miga = [
     ['label' => 'Aprendices'],
 ];
 
-// --- Clase del badge según el estado del aprendiz ---
-function claseEstadoAprendiz($estado) {
-    switch ($estado) {
-        case 'Activo':     return 'badge-success';
-        case 'Suspendido': return 'badge-warning';
-        case 'Inactivo':   return 'badge-secondary';
-        case 'Retirado':   return 'badge-danger';
-        default:           return 'badge-secondary';
-    }
-}
+$conexion = (new Conexion())->conectar();
+$consultaFichas = $conexion->query('SELECT id_ficha FROM ficha ORDER BY id_ficha');
+$fichasRegistradas = $consultaFichas->fetchAll();
+
+$consultaAprendices = $conexion->query(
+    'SELECT
+        aprendiz.id_aprendiz,
+        usuario.identificacion AS documento,
+        CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS nombre,
+        usuario.telefono,
+        ficha.id_ficha,
+        aprendiz.codigo_rfid
+     FROM aprendiz
+     INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
+     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
+     ORDER BY usuario.apellido, usuario.nombre'
+);
+$aprendicesRegistrados = $consultaAprendices->fetchAll();
 
 ob_start();
 ?>
@@ -57,24 +66,10 @@ ob_start();
       <div class="col-md-3 col-sm-6 mb-2">
         <select class="form-control filtro-tabla" data-col="3">
           <option value="">Todas las fichas</option>
-          <?php foreach ($fichas as $ficha): ?>
-            <option value="<?= htmlspecialchars($ficha['numero']) ?>"><?= htmlspecialchars($ficha['numero']) ?></option>
+          <?php foreach ($fichasRegistradas as $ficha): ?>
+            <option value="Ficha #<?= htmlspecialchars($ficha['id_ficha']) ?>">Ficha #<?= htmlspecialchars($ficha['id_ficha']) ?></option>
           <?php endforeach; ?>
         </select>
-      </div>
-      <div class="col-md-3 col-sm-6 mb-2">
-        <select class="form-control filtro-tabla" data-col="5" data-exacto="true">
-          <option value="">Todos los estados</option>
-          <option>Activo</option>
-          <option>Suspendido</option>
-          <option>Inactivo</option>
-          <option>Retirado</option>
-        </select>
-      </div>
-      <div class="col-md-2 col-sm-12 mb-2 text-right">
-        <button type="button" class="btn btn-outline-sena btn-block" data-toggle="modal" data-target="#modalFiltrosAvanzados">
-          <i class="fas fa-sliders-h"></i> Filtros
-        </button>
       </div>
     </div>
 
@@ -84,117 +79,29 @@ ob_start();
           <tr>
             <th>Documento</th>
             <th>Nombre completo</th>
-            <th>Correo</th>
+            <th>Teléfono</th>
             <th>Ficha</th>
             <th>Código RFID</th>
-            <th>Estado</th>
-            <th class="text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($aprendices as $aprendiz): ?>
+          <?php foreach ($aprendicesRegistrados as $aprendiz): ?>
             <tr>
               <td><?= htmlspecialchars($aprendiz['documento']) ?></td>
               <td><?= htmlspecialchars($aprendiz['nombre']) ?></td>
-              <td><?= htmlspecialchars($aprendiz['correo']) ?></td>
-              <td><span class="badge badge-info"><?= htmlspecialchars($aprendiz['ficha']) ?></span></td>
-              <td><code><?= htmlspecialchars($aprendiz['rfid']) ?></code></td>
-              <td><span class="badge badge-estado <?= claseEstadoAprendiz($aprendiz['estado']) ?>"><?= htmlspecialchars($aprendiz['estado']) ?></span></td>
-              <td class="text-center">
-                <div class="btn-group btn-group-sm" role="group">
-                  <a href="<?= RUTA_BASE ?>views/admin/aprendices/show.php?id=<?= $aprendiz['id'] ?>"
-                     class="btn btn-info" data-toggle="tooltip" title="Ver"><i class="fas fa-eye"></i></a>
-                  <a href="<?= RUTA_BASE ?>views/admin/aprendices/edit.php?id=<?= $aprendiz['id'] ?>"
-                     class="btn btn-warning" data-toggle="tooltip" title="Editar"><i class="fas fa-edit"></i></a>
-                  <button type="button" class="btn btn-danger" data-toggle="modal"
-                          data-target="#modalEliminar" data-nombre="<?= htmlspecialchars($aprendiz['nombre']) ?>"
-                          title="Eliminar"><i class="fas fa-trash"></i></button>
-                </div>
-              </td>
+              <td><?= htmlspecialchars($aprendiz['telefono'] ?? 'Sin registro') ?></td>
+              <td><span class="badge badge-info">Ficha #<?= htmlspecialchars($aprendiz['id_ficha']) ?></span></td>
+              <td><code><?= htmlspecialchars($aprendiz['codigo_rfid']) ?></code></td>
             </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
     </div>
 
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Datos de demostración: la paginación, búsqueda y filtros funcionan visualmente.</p>
+    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> El listado y las fichas provienen de la base de datos. El CRUD se implementará después.</p>
   </div>
 </div>
 
-<!-- Modal: filtros avanzados -->
-<div class="modal fade" id="modalFiltrosAvanzados" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-sliders-h text-sena"></i> Filtros avanzados</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-warning py-2 small">
-          <i class="fas fa-info-circle"></i> Prototipo visual: los filtros se conectarán a la base de datos más adelante.
-        </div>
-        <form action="#" method="get">
-          <div class="form-group">
-            <label>Ficha</label>
-            <select class="form-control">
-              <option value="">Todas</option>
-              <?php foreach ($fichas as $ficha): ?>
-                <option value="<?= htmlspecialchars($ficha['numero']) ?>"><?= htmlspecialchars($ficha['numero']) ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Estado</label>
-            <select class="form-control">
-              <option value="">Todos</option>
-              <option>Activo</option>
-              <option>Suspendido</option>
-              <option>Inactivo</option>
-              <option>Retirado</option>
-            </select>
-          </div>
-          <div class="form-group mb-0">
-            <label>Programa de formación</label>
-            <select class="form-control">
-              <option value="">Todos</option>
-              <?php foreach ($fichas as $ficha): ?>
-                <option value="<?= htmlspecialchars($ficha['programa']) ?>"><?= htmlspecialchars($ficha['programa']) ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary">Aplicar filtros</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: confirmar eliminación -->
-<div class="modal fade" id="modalEliminar" tabindex="-1" role="dialog" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar eliminación</h5>
-        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        ¿Está seguro de que desea eliminar al aprendiz <strong class="nombre-aprendiz"></strong>?
-        Esta acción no se puede deshacer. <em>(Acción deshabilitada en el prototipo)</em>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-danger"><i class="fas fa-trash"></i> Eliminar</button>
-      </div>
-    </div>
-  </div>
-</div>
 <?php
 $contenido = ob_get_clean();
 

@@ -4,13 +4,14 @@
  * VISTA: DASHBOARD DEL ADMINISTRADOR
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * SOLO INTERFAZ VISUAL con datos de demostración estáticos.
+ * Dashboard con datos reales de la base de datos.
  * ============================================================
  */
 
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(1);
 require_once dirname(__DIR__) . '/../includes/constantes.php';
+require_once dirname(__DIR__) . '/../config/conexion.php';
 
 // --- Variables del layout ---
 $paginaTitulo = 'Dashboard';
@@ -20,26 +21,73 @@ $miga = [
     ['label' => 'Dashboard'],
 ];
 
-// --- Datos calculados (demostración) ---
-$fechaHoy = '2026-08-20';
-$totalAprendices   = count($aprendices);
-$presentesHoy      = 0;
-$retardosHoy       = 0;
-$inasistenciasHoy  = 0;
-foreach ($asistencias as $asistencia) {
-    if ($asistencia['fecha'] !== $fechaHoy) { continue; }
-    if ($asistencia['estado'] === 'Presente')        { $presentesHoy++; }
-    if ($asistencia['estado'] === 'Retardo')         { $retardosHoy++; }
-    if ($asistencia['estado'] === 'Inasistencia')    { $inasistenciasHoy++; }
+$conexion = (new Conexion())->conectar();
+
+$totalAprendices = (int) $conexion->query('SELECT COUNT(*) FROM aprendiz')->fetchColumn();
+$totalFichas = (int) $conexion->query('SELECT COUNT(*) FROM ficha')->fetchColumn();
+$excusasPendientes = (int) $conexion->query("SELECT COUNT(*) FROM excusa WHERE estado = 'PENDIENTE'")->fetchColumn();
+
+$consultaHoy = $conexion->query(
+    "SELECT
+        SUM(CASE WHEN estado_entrada IN ('PUNTUAL', 'RETARDO') THEN 1 ELSE 0 END) AS presentes,
+        SUM(CASE WHEN estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos,
+        SUM(CASE WHEN estado_entrada = 'INASISTENCIA' THEN 1 ELSE 0 END) AS inasistencias,
+        SUM(CASE WHEN estado_salida = 'SALIDA_ANTICIPADA' THEN 1 ELSE 0 END) AS salidas_tempranas
+     FROM asistencia WHERE fecha_asistencia = CURDATE()"
+)->fetch();
+$presentesHoy = (int) ($consultaHoy['presentes'] ?? 0);
+$retardosHoy = (int) ($consultaHoy['retardos'] ?? 0);
+$inasistenciasHoy = (int) ($consultaHoy['inasistencias'] ?? 0);
+
+$graficaSemana = [
+    'labels' => ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+    'presentes' => array_fill(0, 6, 0),
+    'retardos' => array_fill(0, 6, 0),
+    'inasistencias' => array_fill(0, 6, 0),
+];
+$consultaSemana = $conexion->query(
+    "SELECT
+        WEEKDAY(fecha_asistencia) AS dia,
+        SUM(CASE WHEN estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS presentes,
+        SUM(CASE WHEN estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos,
+        SUM(CASE WHEN estado_entrada = 'INASISTENCIA' THEN 1 ELSE 0 END) AS inasistencias
+     FROM asistencia
+     WHERE fecha_asistencia >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
+       AND fecha_asistencia < DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 6 DAY)
+     GROUP BY WEEKDAY(fecha_asistencia)"
+);
+foreach ($consultaSemana as $dia) {
+    $indice = (int) $dia['dia'];
+    $graficaSemana['presentes'][$indice] = (int) $dia['presentes'];
+    $graficaSemana['retardos'][$indice] = (int) $dia['retardos'];
+    $graficaSemana['inasistencias'][$indice] = (int) $dia['inasistencias'];
 }
-$excusasPendientes = 0;
-foreach ($excusas as $excusa) {
-    if ($excusa['estado'] === 'Pendiente') { $excusasPendientes++; }
-}
-$fichasActivas = 0;
-foreach ($fichas as $ficha) {
-    if ($ficha['estado'] === 'Activa') { $fichasActivas++; }
-}
+
+$consultaIngresos = $conexion->query(
+    "SELECT DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora,
+        CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
+        ficha.id_ficha, aprendiz.codigo_rfid
+     FROM asistencia
+     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
+     INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
+     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
+     WHERE asistencia.fecha_asistencia = CURDATE() AND asistencia.entrada IS NOT NULL
+     ORDER BY asistencia.entrada DESC LIMIT 5"
+);
+$ultimosIngresos = $consultaIngresos->fetchAll();
+
+$consultaRetardos = $conexion->query(
+    "SELECT DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora,
+        CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
+        ficha.id_ficha, asistencia.minutos_retardo
+     FROM asistencia
+     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
+     INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
+     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
+     WHERE asistencia.estado_entrada = 'RETARDO'
+     ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC LIMIT 5"
+);
+$retardosRecientes = $consultaRetardos->fetchAll();
 
 // --- Captura del contenido de la vista ---
 ob_start();
@@ -95,8 +143,8 @@ ob_start();
     <div class="info-box info-box-gris">
       <span class="info-box-icon"><i class="fas fa-layer-group"></i></span>
       <div class="info-box-content">
-        <span class="info-box-text">Fichas activas</span>
-        <span class="info-box-number"><?= $fichasActivas ?></span>
+        <span class="info-box-text">Fichas registradas</span>
+        <span class="info-box-number"><?= $totalFichas ?></span>
       </div>
     </div>
   </div>
@@ -111,6 +159,10 @@ ob_start();
       </div>
       <div class="card-body">
         <div style="height: 300px;">
+          <script>
+            window.datosGraficaAdminSemana = <?= json_encode($graficaSemana) ?>;
+            window.datosGraficaAdminHoy = <?= json_encode([$presentesHoy, $retardosHoy, $inasistenciasHoy, (int) ($consultaHoy['salidas_tempranas'] ?? 0)]) ?>;
+          </script>
           <canvas id="graficoAsistenciaSemanal"></canvas>
         </div>
       </div>
@@ -152,8 +204,8 @@ ob_start();
               <tr>
                 <td><span class="badge badge-success"><?= htmlspecialchars($ingreso['hora']) ?></span></td>
                 <td><?= htmlspecialchars($ingreso['aprendiz']) ?></td>
-                <td><?= htmlspecialchars($ingreso['ficha']) ?></td>
-                <td><code><?= htmlspecialchars($ingreso['rfid']) ?></code></td>
+                <td>Ficha #<?= htmlspecialchars($ingreso['id_ficha']) ?></td>
+                <td><code><?= htmlspecialchars($ingreso['codigo_rfid']) ?></code></td>
               </tr>
             <?php endforeach; ?>
           </tbody>
@@ -181,8 +233,8 @@ ob_start();
               <tr>
                 <td><?= htmlspecialchars($retardo['hora']) ?></td>
                 <td><?= htmlspecialchars($retardo['aprendiz']) ?></td>
-                <td><?= htmlspecialchars($retardo['ficha']) ?></td>
-                <td><span class="badge badge-warning"><?= htmlspecialchars($retardo['minutos']) ?> min</span></td>
+                <td>Ficha #<?= htmlspecialchars($retardo['id_ficha']) ?></td>
+                <td><span class="badge badge-warning"><?= htmlspecialchars($retardo['minutos_retardo']) ?> min</span></td>
               </tr>
             <?php endforeach; ?>
           </tbody>
@@ -229,7 +281,7 @@ ob_start();
 </div>
 
 <div class="alert alert-info py-2" role="alert">
-  <i class="fas fa-info-circle"></i> Datos de <strong>demostración</strong>. Esta vista se conectará a la base de datos cuando se implementen los modelos y controladores.
+  <i class="fas fa-info-circle"></i> Todas las métricas, gráficas y listados de este dashboard provienen de la base de datos.
 </div>
 <?php
 $contenido = ob_get_clean();
