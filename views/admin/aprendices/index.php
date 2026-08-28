@@ -22,6 +22,7 @@ $miga = [
 ];
 
 $conexion = (new Conexion())->conectar();
+if (empty($_SESSION['token_csrf'])) $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
 $consultaFichas = $conexion->query('SELECT id_ficha FROM ficha ORDER BY id_ficha');
 $fichasRegistradas = $consultaFichas->fetchAll();
 
@@ -53,6 +54,8 @@ ob_start();
   </div>
 
   <div class="card-body">
+    <?php if(isset($_GET['mensaje'])): ?><div class="alert alert-success"><?=htmlspecialchars($_GET['mensaje'])?></div><?php endif; ?>
+    <?php if(isset($_GET['error'])): ?><div class="alert alert-danger"><?=htmlspecialchars($_GET['error'])?></div><?php endif; ?>
     <!-- Buscador y filtros visuales -->
     <div class="row mb-3">
       <div class="col-md-4 col-sm-12 mb-2">
@@ -82,6 +85,7 @@ ob_start();
             <th>Teléfono</th>
             <th>Ficha</th>
             <th>Código RFID</th>
+            <th class="text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -92,6 +96,7 @@ ob_start();
               <td><?= htmlspecialchars($aprendiz['telefono'] ?? 'Sin registro') ?></td>
               <td><span class="badge badge-info">Ficha #<?= htmlspecialchars($aprendiz['id_ficha']) ?></span></td>
               <td><code><?= htmlspecialchars($aprendiz['codigo_rfid']) ?></code></td>
+              <td class="text-center"><a class="btn btn-sm btn-warning" href="<?=RUTA_BASE?>views/admin/aprendices/edit.php?id=<?=htmlspecialchars($aprendiz['id_aprendiz'])?>"><i class="fas fa-edit"></i></a><form action="<?=RUTA_BASE?>controllers/gestionar_usuario.php" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar este aprendiz?');"><input type="hidden" name="accion" value="eliminar"><input type="hidden" name="rol" value="3"><input type="hidden" name="id_usuario" value="<?=htmlspecialchars($aprendiz['id_aprendiz'])?>"><input type="hidden" name="token_csrf" value="<?=htmlspecialchars($_SESSION['token_csrf'])?>"><button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button></form></td>
             </tr>
           <?php endforeach; ?>
         </tbody>
