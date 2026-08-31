@@ -1,12 +1,5 @@
 <?php
-/**
- * ============================================================
- * VISTA: MIS EXCUSAS (APRENDIZ)
- * Sistema de Control de Ingreso de Aprendices - SENA
- * ------------------------------------------------------------
- * Lista las excusas reales del aprendiz autenticado.
- * ============================================================
- */
+// listado de excusas del aprrendiz correspondiente
 
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(3);
@@ -15,7 +8,7 @@ require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
 $conexion = (new Conexion())->conectar();
 
-// Consultar excusas del aprendiz autenticado
+// Consultar excusas del aprendiz 
 $consultaExcusas = $conexion->prepare(
     "SELECT
         e.id_excusa,

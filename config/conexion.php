@@ -30,7 +30,7 @@ class Conexion
 
         } catch (PDOException $error) {
 
-            die("Error de conexión: " . $error->getMessage());
+            die('No fue posible conectar con la base de datos.');
 
         }
     }

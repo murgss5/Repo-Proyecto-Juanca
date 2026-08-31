@@ -1,19 +1,12 @@
 <?php
-/**
- * ============================================================
- * VISTA: MI HISTORIAL (APRENDIZ)
- * Sistema de Control de Ingreso de Aprendices - SENA
- * ------------------------------------------------------------
- * Muestra el historial real del aprendiz autenticado.
- * ============================================================
- */
+// apartado donde muestra el historial real del aprendiz
 
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(3);
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
 
-// --- Variables del layout ---
+// variables del layout 
 $paginaTitulo = 'Mi historial';
 $menuActivo   = 'historial';
 $miga = [
@@ -74,7 +67,8 @@ function claseEstadoHistorial($estado) {
 
 ob_start();
 ?>
-<!-- Resumen del historial -->
+
+<!-- aqui se ve le resumen del historial -->
 <div class="row">
   <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
     <div class="info-box info-box-sena">

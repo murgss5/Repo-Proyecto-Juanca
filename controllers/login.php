@@ -42,9 +42,9 @@ if ($nombre_usuario === "" || $contrasena=== "")
 
     //verificar el usuario y la contraseña
 
-    if (!$usuario || !password_verify($contrasena, $usuario["contrasena"]))
+    if (!$usuario || $contrasena !== $usuario["contrasena"])
         {
-            header("Location: ../views/auth/login.php?error=Usuario o contraseña incorrectos");
+            header("Location: ../views/auth/login.php?error=credenciales");
             exit;
         }
 

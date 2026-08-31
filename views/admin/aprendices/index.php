@@ -1,19 +1,13 @@
 <?php
-/**
- * ============================================================
- * VISTA: LISTADO DE APRENDICES (ADMIN)
- * Sistema de Control de Ingreso de Aprendices - SENA
- * ------------------------------------------------------------
- * Lista los aprendices registrados en la base de datos.
- * ============================================================
- */
+
+// esta es la vista de detalle del aprendiz en el panel de administración
 
 require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
 exigirRol(1);
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
 require_once dirname(__DIR__) . '/../../config/conexion.php';
 
-// --- Variables del layout ---
+// aqui tenemos las variables para el layout de la vista de aprendices
 $paginaTitulo = 'Aprendices';
 $menuActivo   = 'aprendices';
 $miga = [
@@ -56,7 +50,9 @@ ob_start();
   <div class="card-body">
     <?php if(isset($_GET['mensaje'])): ?><div class="alert alert-success"><?=htmlspecialchars($_GET['mensaje'])?></div><?php endif; ?>
     <?php if(isset($_GET['error'])): ?><div class="alert alert-danger"><?=htmlspecialchars($_GET['error'])?></div><?php endif; ?>
-    <!-- Buscador y filtros visuales -->
+
+<!-- apartado del buscador y filtros visuales  -->
+
     <div class="row mb-3">
       <div class="col-md-4 col-sm-12 mb-2">
         <div class="input-group">
@@ -110,5 +106,5 @@ ob_start();
 <?php
 $contenido = ob_get_clean();
 
-// --- Render del layout según el rol ---
+// este es el render del layout principal del panel de administración
 include __DIR__ . '/../../layouts/layout_admin.php';

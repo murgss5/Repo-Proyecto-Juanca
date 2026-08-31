@@ -1,12 +1,7 @@
 <?php
-/**
- * ============================================================
- * VISTA: MI PERFIL (APRENDIZ)
- * Sistema de Control de Ingreso de Aprendices - SENA
- * ------------------------------------------------------------
- * Muestra la información real del aprendiz autenticado.
- * ============================================================
- */
+
+// aqui se encuentra la vista del perfil del aprendiz en el panel de aprendiz 
+// donde el aprendiz ve sus datos personales y su informacion de ficha y programa de formacion
 
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(3);
@@ -33,7 +28,7 @@ $consultaPerfil->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_IN
 $consultaPerfil->execute();
 $perfilAprendiz = $consultaPerfil->fetch();
 
-// --- Variables del layout ---
+// las variables del layout
 $paginaTitulo = 'Mi perfil';
 $menuActivo   = 'perfil';
 $miga = [
@@ -47,7 +42,8 @@ ob_start();
   <?php if (!$perfilAprendiz): ?>
     <div class="col-12"><div class="alert alert-warning">No se encontró un perfil de aprendiz asociado a esta cuenta.</div></div>
   <?php else: ?>
-  <!-- Tarjeta de perfil -->
+
+<!-- tarjeta de perfil -->
   <div class="col-md-4 mb-3">
     <div class="card">
       <div class="card-body text-center">
@@ -61,7 +57,7 @@ ob_start();
     </div>
   </div>
 
-  <!-- Datos personales -->
+<!-- aqui creamos todo donde van los datos personales del aprendiz -->
   <div class="col-md-8 mb-3">
     <div class="card">
       <div class="card-header">
@@ -84,5 +80,5 @@ ob_start();
 <?php
 $contenido = ob_get_clean();
 
-// --- Render del layout según el rol ---
+// rendeer del layout principal del panel de aprendiz segun el rol otorgado
 include __DIR__ . '/../layouts/layout_aprendiz.php';

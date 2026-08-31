@@ -1,18 +1,12 @@
 <?php
-/**
- * ============================================================
- * VISTA: DETALLE DEL APRENDIZ (ADMIN)
- * Sistema de Control de Ingreso de Aprendices - SENA
- * ------------------------------------------------------------
- * SOLO INTERFAZ VISUAL. Los datos son de demostración.
- * ============================================================
- */
+
+// vsta de aprendiz en el panel de administración
 
 require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
 exigirRol(1);
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
 
-// Aprendiz de demostración
+// Aprendiz de demostracion esto luego se quitara para colocar un aprendiz desde 0 solo es para mostrar la vista de detalle del aprendiz
 $aprendizDemo = [
     'id'        => 1,
     'documento' => '1002345678',
@@ -27,7 +21,7 @@ $aprendizDemo = [
     'ingresado' => '2026-02-10',
 ];
 
-// --- Variables del layout ---
+// las variables de demostracion para la tabla de asistencias
 $paginaTitulo = 'Detalle del aprendiz';
 $menuActivo   = 'aprendices';
 $miga = [
@@ -39,7 +33,8 @@ $miga = [
 ob_start();
 ?>
 <div class="row">
-  <!-- Tarjeta de perfil -->
+
+<!--aqui puedes ver la tarjeta del perfil -->
   <div class="col-md-4 mb-3">
     <div class="card">
       <div class="card-body text-center">
@@ -64,7 +59,7 @@ ob_start();
     </div>
   </div>
 
-  <!-- Información adicional -->
+  <!-- esta es una informacion adicional -->
   <div class="col-md-8 mb-3">
     <div class="card">
       <div class="card-header">
@@ -89,6 +84,8 @@ ob_start();
             <tr><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Estado</th></tr>
           </thead>
           <tbody>
+            
+            <!-- tenemos un error en esta parte que lo corregiremos pasos mas adelantes  -->
             <?php foreach ($asistencias as $asistencia): ?>
               <?php if ($asistencia['aprendiz'] !== 'Juan David Pérez') { continue; } ?>
               <tr>
@@ -116,5 +113,5 @@ ob_start();
 <?php
 $contenido = ob_get_clean();
 
-// --- Render del layout según el rol ---
+// este es el render del layout principal del panel de administración
 include __DIR__ . '/../../layouts/layout_admin.php';

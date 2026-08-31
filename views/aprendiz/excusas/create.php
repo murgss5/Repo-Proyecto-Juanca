@@ -1,12 +1,6 @@
 <?php
-/**
- * ============================================================
- * VISTA: SUBIR EXCUSA MÉDICA (APRENDIZ)
- * Sistema de Control de Ingreso de Aprendices - SENA
- * ------------------------------------------------------------
- * Formulario funcional para registrar una excusa médica.
- * ============================================================
- */
+
+// Formulario funcional para registrar una excusa médica.
 
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(3);
@@ -41,19 +35,35 @@ $miga = [
     ['label' => 'Subir excusa'],
 ];
 
+
+// Inicia el búfer de salida para evitar errores si después se necesita usar header().
 ob_start();
 ?>
+
 <?php if (isset($_GET['mensaje'])): ?>
+    // <!-- Muestra una alerta verde cuando se recibe un mensaje de éxito por la URL. -->
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle"></i> <?= htmlspecialchars($_GET['mensaje']) ?>
+        <i class="fas fa-check-circle"></i>
+
+        <!-- htmlspecialchars evita que se ejecute codigo HTML o JavaScript enviado por la URL. -->
+        <?= htmlspecialchars($_GET['mensaje']) ?>
+
+        <!-- Boton para cerrar la alerta. -->
         <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
             <span aria-hidden="true">&times;</span>
         </button>
     </div>
 <?php endif; ?>
+
 <?php if (isset($_GET['error'])): ?>
+    <!-- Muestra una alerta roja cuando se recibe un mensaje de error por la URL. -->
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="fas fa-exclamation-triangle"></i> <?= htmlspecialchars($_GET['error']) ?>
+        <i class="fas fa-exclamation-triangle"></i>
+
+        <!-- Se muestra el mensaje de error de forma segura. -->
+        <?= htmlspecialchars($_GET['error']) ?>
+
+        <!-- Botón para cerrar la alerta. -->
         <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
             <span aria-hidden="true">&times;</span>
         </button>

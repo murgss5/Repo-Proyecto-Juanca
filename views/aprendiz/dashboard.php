@@ -1,19 +1,12 @@
 <?php
-/**
- * ============================================================
- * VISTA: MI DASHBOARD (APRENDIZ)
- * Sistema de Control de Ingreso de Aprendices - SENA
- * ------------------------------------------------------------
- * Resume las asistencias y excusas reales del aprendiz autenticado.
- * ============================================================
- */
+// Resume las asistencias y excusas reales del aprendiz autenticado
 
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(3);
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
 
-// --- Variables del layout ---
+// variables del layout 
 $paginaTitulo = 'Mi dashboard';
 $menuActivo   = 'dashboard';
 $miga = [
@@ -72,7 +65,7 @@ $excusasPendientes = (int) $consultaExcusasPendientes->fetchColumn();
 
 ob_start();
 ?>
-<!-- Resumen de asistencia personal -->
+<!-- aqui esta el resuemen personal de cada aprendiz -->
 <div class="row">
   <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
     <div class="info-box info-box-sena">
@@ -113,7 +106,8 @@ ob_start();
 </div>
 
 <div class="row">
-  <!-- Gráfica personal -->
+
+<!-- esta es la grafica de cada aprendiz -->
   <div class="col-md-5 mb-3">
     <div class="card">
       <div class="card-header">
@@ -128,7 +122,7 @@ ob_start();
     </div>
   </div>
 
-  <!-- Estado de mis excusas -->
+<!-- estado de excusas de cada aprendiz -->
   <div class="col-md-7 mb-3">
     <div class="card">
       <div class="card-header">
@@ -169,7 +163,7 @@ ob_start();
   </div>
 </div>
 
-<!-- Acciones rápidas del aprendiz -->
+<!-- aqui estan las acciones que puede realizar el aprendiz -->
 <div class="card">
   <div class="card-header">
     <h3 class="card-title"><i class="fas fa-cog text-sena"></i> Acciones</h3>
