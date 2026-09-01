@@ -1,7 +1,7 @@
 <?php
 
 session_start();
-require_once "../config/conexion.php";
+require_once __DIR__ . '/../config/conexion.php';
 
 //Verifica que el formulario fue enviado
 
@@ -42,7 +42,7 @@ if ($nombre_usuario === "" || $contrasena=== "")
 
     //verificar el usuario y la contraseña
 
-    if (!$usuario || $contrasena !== $usuario["contrasena"])
+    if (!$usuario || !password_verify($contrasena, $usuario["contrasena"]))
         {
             header("Location: ../views/auth/login.php?error=credenciales");
             exit;

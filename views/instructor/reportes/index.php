@@ -108,7 +108,7 @@ $miga = [
 
 ob_start();
 ?>
-<div class="card">
+<div class="card no-print">
   <div class="card-header"><h3 class="card-title"><i class="fas fa-chart-bar text-sena"></i> Reporte de asistencias</h3></div>
   <div class="card-body">
     <form method="get" class="row">
@@ -127,6 +127,11 @@ ob_start();
   </div>
 </div>
 
+<div class="mb-3 no-print text-right">
+  <a href="<?= RUTA_BASE ?>views/instructor/reportes/exportar_csv.php?<?= http_build_query($_GET) ?>" class="btn btn-outline-success"><i class="fas fa-file-excel"></i> Exportar CSV</a>
+  <button type="button" class="btn btn-outline-danger" onclick="window.print()"><i class="fas fa-file-pdf"></i> Imprimir / Guardar como PDF</button>
+</div>
+
 <div class="row">
   <div class="col-lg-4 col-md-6 mb-3"><div class="info-box info-box-amarillo"><span class="info-box-icon"><i class="fas fa-clock"></i></span><div class="info-box-content"><span class="info-box-text">Total de retardos</span><span class="info-box-number"><?= $totales['retardos'] ?></span></div></div></div>
   <div class="col-lg-4 col-md-6 mb-3"><div class="info-box info-box-rojo"><span class="info-box-icon"><i class="fas fa-user-slash"></i></span><div class="info-box-content"><span class="info-box-text">Total de inasistencias</span><span class="info-box-number"><?= $totales['inasistencias'] ?></span></div></div></div>
@@ -141,8 +146,15 @@ ob_start();
         <tr><td><?= htmlspecialchars($registro['fecha_asistencia']) ?></td><td><?= htmlspecialchars($registro['aprendiz']) ?></td><td><span class="badge badge-info">Ficha #<?= htmlspecialchars($registro['id_ficha']) ?></span></td><td><?= htmlspecialchars($registro['entrada'] ?? '--') ?></td><td><?= htmlspecialchars($registro['salida'] ?? '--') ?></td><td><span class="badge badge-estado <?= claseEstadoReporte($registro['estado']) ?>"><?= htmlspecialchars($registro['estado']) ?></span></td><td><?= $registro['minutos_retardo'] > 0 ? htmlspecialchars($registro['minutos_retardo']) . ' min' : '0' ?></td></tr>
       <?php endforeach; ?>
     </tbody></table>
-  </div><p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> El reporte muestra únicamente las asistencias de sus fichas. La exportación se implementará después.</p></div>
+  </div><p class="text-muted small mb-0 no-print"><i class="fas fa-info-circle"></i> El reporte muestra únicamente las asistencias de sus fichas. Puede exportarlo como CSV o guardarlo como PDF desde la impresión.</p></div>
 </div>
+<style media="print">
+  .no-print, .main-header, .main-sidebar, .content-header, .main-footer { display: none !important; }
+  .content-wrapper { margin-left: 0 !important; }
+  .card { border: none !important; box-shadow: none !important; }
+  .table { font-size: 11px !important; }
+  @page { margin: 1cm; }
+</style>
 <?php
 $contenido = ob_get_clean();
 include __DIR__ . '/../../layouts/layout_instructor.php';

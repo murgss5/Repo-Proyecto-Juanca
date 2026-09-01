@@ -23,6 +23,7 @@ $fichasRegistradas = $consultaFichas->fetchAll();
 $consultaAprendices = $conexion->query(
     'SELECT
         aprendiz.id_aprendiz,
+        aprendiz.fk_usuario AS id_usuario,
         usuario.identificacion AS documento,
         CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS nombre,
         usuario.telefono,
@@ -92,14 +93,14 @@ ob_start();
               <td><?= htmlspecialchars($aprendiz['telefono'] ?? 'Sin registro') ?></td>
               <td><span class="badge badge-info">Ficha #<?= htmlspecialchars($aprendiz['id_ficha']) ?></span></td>
               <td><code><?= htmlspecialchars($aprendiz['codigo_rfid']) ?></code></td>
-              <td class="text-center"><a class="btn btn-sm btn-warning" href="<?=RUTA_BASE?>views/admin/aprendices/edit.php?id=<?=htmlspecialchars($aprendiz['id_aprendiz'])?>"><i class="fas fa-edit"></i></a><form action="<?=RUTA_BASE?>controllers/gestionar_usuario.php" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar este aprendiz?');"><input type="hidden" name="accion" value="eliminar"><input type="hidden" name="rol" value="3"><input type="hidden" name="id_usuario" value="<?=htmlspecialchars($aprendiz['id_aprendiz'])?>"><input type="hidden" name="token_csrf" value="<?=htmlspecialchars($_SESSION['token_csrf'])?>"><button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button></form></td>
+              <td class="text-center"><a class="btn btn-sm btn-warning" href="<?=RUTA_BASE?>views/admin/aprendices/edit.php?id=<?=htmlspecialchars($aprendiz['id_usuario'])?>"><i class="fas fa-edit"></i></a><form action="<?=RUTA_BASE?>controllers/gestionar_usuario.php" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar este aprendiz?');"><input type="hidden" name="accion" value="eliminar"><input type="hidden" name="rol" value="3"><input type="hidden" name="id_usuario" value="<?=htmlspecialchars($aprendiz['id_usuario'])?>"><input type="hidden" name="token_csrf" value="<?=htmlspecialchars($_SESSION['token_csrf'])?>"><button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button></form></td>
             </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
     </div>
 
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> El listado y las fichas provienen de la base de datos. El CRUD se implementará después.</p>
+    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> El listado y las acciones de creación, edición y eliminación consultan la base de datos.</p>
   </div>
 </div>
 
