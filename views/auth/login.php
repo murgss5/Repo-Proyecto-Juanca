@@ -66,7 +66,9 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
             <input type="checkbox" class="custom-control-input" id="recordarme">
             <label class="custom-control-label" for="recordarme">Recordarme</label>
           </div>
-          <a href="<?= RUTA_BASE ?>views/auth/recuperar_contrasena.php" class="text-sena small">¿Olvidó su contraseña?</a>
+          <!-- Se conserva la vista recuperar_contrasena.php como referencia de la plantilla.
+               El enlace queda deshabilitado hasta implementar el flujo real de recuperación. -->
+          <!-- <a href="<?= RUTA_BASE ?>views/auth/recuperar_contrasena.php" class="text-sena small">¿Olvidó su contraseña?</a> -->
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">
