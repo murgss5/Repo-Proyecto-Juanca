@@ -157,9 +157,7 @@ ob_start();
       </table>
     </div>
 
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> El historial y su resumen provienen de la base de datos.</p>
-  </div>
-</div>
+ 
 <?php
 $contenido = ob_get_clean();
 

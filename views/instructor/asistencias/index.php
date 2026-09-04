@@ -1,19 +1,12 @@
 <?php
-/**
- * ============================================================
- * VISTA: ASISTENCIAS (INSTRUCTOR)
- * Sistema de Control de Ingreso de Aprendices - SENA
- * ------------------------------------------------------------
- * Lista las asistencias reales de los aprendices del instructor.
- * ============================================================
- */
+// esta es la vista de asistencias que tiene el docente en este caso el (instructor)
 
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(2);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
-// --- Variables del layout ---
+// estas son las variables del layout 
 $paginaTitulo = 'Asistencias de mis fichas';
 $menuActivo   = 'asistencias';
 $miga = [
@@ -216,8 +209,6 @@ ob_start();
         </tbody>
       </table>
     </div>
-
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Los filtros por fecha, ficha y estado consultan la base de datos. La exportación PDF se implementará después.</p>
   </div>
 </div>
 <?php

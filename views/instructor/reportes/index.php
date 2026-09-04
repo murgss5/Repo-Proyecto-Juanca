@@ -146,7 +146,8 @@ ob_start();
         <tr><td><?= htmlspecialchars($registro['fecha_asistencia']) ?></td><td><?= htmlspecialchars($registro['aprendiz']) ?></td><td><span class="badge badge-info">Ficha #<?= htmlspecialchars($registro['id_ficha']) ?></span></td><td><?= htmlspecialchars($registro['entrada'] ?? '--') ?></td><td><?= htmlspecialchars($registro['salida'] ?? '--') ?></td><td><span class="badge badge-estado <?= claseEstadoReporte($registro['estado']) ?>"><?= htmlspecialchars($registro['estado']) ?></span></td><td><?= $registro['minutos_retardo'] > 0 ? htmlspecialchars($registro['minutos_retardo']) . ' min' : '0' ?></td></tr>
       <?php endforeach; ?>
     </tbody></table>
-  </div><p class="text-muted small mb-0 no-print"><i class="fas fa-info-circle"></i> El reporte muestra únicamente las asistencias de sus fichas. Puede exportarlo como CSV o guardarlo como PDF desde la impresión.</p></div>
+  </div>
+</div>
 </div>
 <style media="print">
   .no-print, .main-header, .main-sidebar, .content-header, .main-footer { display: none !important; }

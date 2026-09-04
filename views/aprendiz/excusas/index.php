@@ -148,8 +148,6 @@ ob_start();
                 </tbody>
             </table>
         </div>
-
-        <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Las excusas provienen de la base de datos.</p>
     </div>
 </div>
 <?php

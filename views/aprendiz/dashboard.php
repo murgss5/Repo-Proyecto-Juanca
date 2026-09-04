@@ -194,9 +194,7 @@ ob_start();
   </div>
 </div>
 
-<div class="alert alert-info py-2" role="alert">
-  <i class="fas fa-info-circle"></i> El resumen mensual y las excusas provienen de la base de datos.
-</div>
+
 <?php
 $contenido = ob_get_clean();
 

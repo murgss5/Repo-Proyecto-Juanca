@@ -119,12 +119,10 @@ ob_start();
         </tbody>
       </table>
     </div>
-
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Los aprendices y las fichas provienen de la base de datos.</p>
   </div>
 </div>
 
-<!-- Modal: ver aprendiz -->
+// este es el modal para ver los detalles del aprendiz 
 <div class="modal fade" id="modalVer" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">

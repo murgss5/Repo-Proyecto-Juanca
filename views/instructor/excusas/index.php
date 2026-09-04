@@ -1,19 +1,12 @@
 <?php
-/**
- * ============================================================
- * VISTA: EXCUSAS MÉDICAS (INSTRUCTOR)
- * Sistema de Control de Ingreso de Aprendices - SENA
- * ------------------------------------------------------------
- * Lista las excusas reales de los aprendices de las fichas del instructor.
- * ============================================================
- */
+// Lista las excusas reales de los aprendices de las fichas del instructor 
 
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(2);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
-// --- Variables del layout ---
+// todas las variables del layout
 $paginaTitulo = 'Excusas médicas de mis fichas';
 $menuActivo   = 'excusas';
 $miga = [
@@ -152,8 +145,6 @@ ob_start();
         </tbody>
       </table>
     </div>
-
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Las excusas y sus archivos provienen de la base de datos.</p>
   </div>
 </div>
 
