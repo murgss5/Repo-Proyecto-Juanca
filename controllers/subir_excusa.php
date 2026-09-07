@@ -4,11 +4,14 @@
  * Procesa el formulario de subida de excusa y guarda el archivo de forma segura.
  */
 
+// Inicia la sesión
 session_start();
+// Carga la conexión a la base de datos
 require_once __DIR__ . '/../config/conexion.php';
+// Carga las funciones de autenticación
 require_once __DIR__ . '/../includes/autenticacion.php';
 
-// Validar sesión y rol
+// Validar sesión y rol (solo aprendices pueden subir excusas)
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -17,13 +20,13 @@ if (($_SESSION['fk_rol'] ?? null) != 3) {
     exit;
 }
 
-// Solo procesar POST
+// Solo procesar peticiones POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ../views/aprendiz/excusas/create.php?error=Método no permitido');
     exit;
 }
 
-// Validar datos requeridos
+// Validar datos requeridos del formulario
 $idAsistencia = filter_input(INPUT_POST, 'id_asistencia', FILTER_VALIDATE_INT);
 $observacion = trim($_POST['observaciones'] ?? '');
 
@@ -37,6 +40,7 @@ if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK)
     exit;
 }
 
+// Conecta a la base de datos
 $conexion = (new Conexion())->conectar();
 
 try {
@@ -63,16 +67,17 @@ try {
         exit;
     }
 
-    // Validar archivo con finfo
+    // Validar archivo subido
     $archivo = $_FILES['archivo'];
     $tamanoMaximo = 5 * 1024 * 1024; // 5 MB
 
+    // Verifica tamaño máximo
     if ($archivo['size'] > $tamanoMaximo) {
         header('Location: ../views/aprendiz/excusas/create.php?error=El archivo supera el tamaño máximo de 5 MB');
         exit;
     }
 
-    // Validar tipo MIME real con finfo
+    // Validar tipo MIME real con finfo (no confiar en la extensión)
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mimeReal = finfo_file($finfo, $archivo['tmp_name']);
     finfo_close($finfo);
@@ -83,6 +88,7 @@ try {
         'image/png' => 'png',
     ];
 
+    // Verifica que el tipo de archivo sea permitido
     if (!isset($mimePermitidos[$mimeReal])) {
         header('Location: ../views/aprendiz/excusas/create.php?error=Tipo de archivo no permitido. Solo PDF, JPG y PNG');
         exit;
@@ -90,11 +96,11 @@ try {
 
     $extension = $mimePermitidos[$mimeReal];
 
-    // Generar nombre seguro y único
+    // Generar nombre seguro y único para evitar colisiones
     $nombreSeguro = bin2hex(random_bytes(16)) . '.' . $extension;
     $rutaDestino = __DIR__ . '/../uploads/excusas/' . $nombreSeguro;
 
-    // Mover archivo
+    // Mover archivo subido a la carpeta destino
     if (!move_uploaded_file($archivo['tmp_name'], $rutaDestino)) {
         header('Location: ../views/aprendiz/excusas/create.php?error=No se pudo guardar el archivo. Intente nuevamente');
         exit;
@@ -109,7 +115,7 @@ try {
             ':observacion' => $observacion,
         ]);
     } catch (PDOException $e) {
-        // Si falla la BD, borrar el archivo subido
+        // Si falla la BD, borrar el archivo subido para no dejar basura
         if (file_exists($rutaDestino)) {
             unlink($rutaDestino);
         }

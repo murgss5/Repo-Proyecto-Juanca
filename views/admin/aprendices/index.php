@@ -1,13 +1,17 @@
 <?php
+/**
+ * Vista: Listado de aprendices (Administrador).
+ * Muestra el listado real de aprendices con opciones de editar y eliminar.
+ */
 
-// esta es la vista de detalle del aprendiz en el panel de administración
-
+// Carga la autenticación y verifica que sea administrador
 require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
 exigirRol(1);
+// Carga constantes y conexión a la base de datos
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
 require_once dirname(__DIR__) . '/../../config/conexion.php';
 
-// aqui tenemos las variables para el layout de la vista de aprendices
+// Variables para el layout
 $paginaTitulo = 'Aprendices';
 $menuActivo   = 'aprendices';
 $miga = [
@@ -16,10 +20,15 @@ $miga = [
 ];
 
 $conexion = (new Conexion())->conectar();
+
+// Genera token CSRF si no existe
 if (empty($_SESSION['token_csrf'])) $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
+
+// Obtiene las fichas para el filtro
 $consultaFichas = $conexion->query('SELECT id_ficha FROM ficha ORDER BY id_ficha');
 $fichasRegistradas = $consultaFichas->fetchAll();
 
+// Consulta los aprendices con sus datos relacionados
 $consultaAprendices = $conexion->query(
     'SELECT
         aprendiz.id_aprendiz,

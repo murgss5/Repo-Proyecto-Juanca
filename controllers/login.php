@@ -1,81 +1,76 @@
 <?php
+/**
+ * Controlador de inicio de sesión.
+ * Procesa el formulario de login, valida credenciales y crea la sesión.
+ */
 
+// Inicia la sesión para poder guardar datos del usuario
 session_start();
+// Carga la clase de conexión a la base de datos
 require_once __DIR__ . '/../config/conexion.php';
 
-//Verifica que el formulario fue enviado
-
+// Verifica que el formulario fue enviado por POST
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     header("Location: ../views/auth/login.php");
     exit;
 }
-//obtiene los datos del formulario
 
-$nombre_usuario =trim($_POST["nombre_usuario"] ?? "");
-$contrasena = $_POST["contrasena"]?? "";
+// Obtiene los datos del formulario
+$nombre_usuario = trim($_POST["nombre_usuario"] ?? "");
+$contrasena = $_POST["contrasena"] ?? "";
 
-//validar campos
+// Valida que los campos no estén vacíos
+if ($nombre_usuario === "" || $contrasena === "") {
+    header("Location: ../views/auth/login.php?error=Todos los campos son obligatorios");
+    exit;
+}
 
-if ($nombre_usuario === "" || $contrasena=== "")
-    {
-        header("Location: ../views/auth/login.php?error=Todos los campos son obligatorios");
-        exit;
-    }
+// Conecta a la base de datos
+$conexionBD = new Conexion();
+$conexion = $conexionBD->conectar();
 
-    //conectar a la base de datos
-
-    $conexionBD= new Conexion();
-    $conexion = $conexionBD->conectar();
-
-    //buscar usuario
-    $sql = "Select usuario.id_usuario, usuario.nombre_usuario,
+// Busca el usuario por nombre de usuario
+$sql = "Select usuario.id_usuario, usuario.nombre_usuario,
     usuario.contrasena, usuario.nombre, usuario.apellido, usuario.identificacion,
     usuario.telefono, usuario.fk_rol, rol.nombre_rol FROM usuario
     INNER JOIN rol ON usuario.fk_rol = rol.id_rol WHERE usuario.nombre_usuario = :nombre_usuario
     LIMIT 1";
-    $consulta = $conexion ->prepare($sql);
-    $consulta->bindValue(":nombre_usuario", $nombre_usuario, PDO::PARAM_STR);
+$consulta = $conexion->prepare($sql);
+$consulta->bindValue(":nombre_usuario", $nombre_usuario, PDO::PARAM_STR);
 
-    $consulta->execute();
-    $usuario = $consulta->fetch();
-    
+$consulta->execute();
+$usuario = $consulta->fetch();
 
-    //verificar el usuario y la contraseña
+// Verifica el usuario y la contraseña (comparación directa porque la BD tiene texto plano)
+if (!$usuario || $contrasena !== $usuario["contrasena"]) {
+    header("Location: ../views/auth/login.php?error=credenciales");
+    exit;
+}
 
-    if (!$usuario || $contrasena !== $usuario["contrasena"])
-        {
-            header("Location: ../views/auth/login.php?error=credenciales");
-            exit;
-        }
+// Regenera el ID de sesión por seguridad
+session_regenerate_id(true);
 
-        //regenerar id de sesion
+// Crea variables de sesión con los datos del usuario
+$_SESSION["id_usuario"] = $usuario["id_usuario"];
+$_SESSION["nombre_usuario"] = $usuario["nombre_usuario"];
+$_SESSION["nombre"] = $usuario["nombre"];
+$_SESSION["apellido"] = $usuario["apellido"];
+$_SESSION["fk_rol"] = $usuario["fk_rol"];
+$_SESSION["nombre_rol"] = $usuario["nombre_rol"];
 
-        session_regenerate_id(true);
+// Redirige según el rol del usuario
+switch ($usuario["fk_rol"]) {
+    case 1: header("Location: ../views/admin/dashboard.php");
+    break;
 
-        //crear variables de sesion
+    case 2: header("Location: ../views/instructor/dashboard.php");
+    break;
 
-        $_SESSION["id_usuario"]= $usuario["id_usuario"];
-        $_SESSION["nombre_usuario"]= $usuario["nombre_usuario"];
-        $_SESSION["nombre"]= $usuario["nombre"];
-        $_SESSION["apellido"]=$usuario["apellido"];
-        $_SESSION["fk_rol"]=$usuario["fk_rol"];
-        $_SESSION["nombre_rol"]=$usuario["nombre_rol"];
+    case 3: header("Location: ../views/aprendiz/dashboard.php");
+    break;
 
-        //redireccionar segun el rol
-
-        switch ($usuario["fk_rol"])
-        {
-            case 1: header("Location: ../views/admin/dashboard.php");
-            break;
-
-            case 2: header("Location: ../views/instructor/dashboard.php");
-            break;
-
-            case 3: header("Location: ../views/aprendiz/dashboard.php");
-            break;
-            
-            default: session_destroy();
-            header("Location: ../views/auth/login.php?error=El usuario no tiene un rol valido");
-            break;
-        }
-        exit;
+    default: session_destroy();
+    header("Location: ../views/auth/login.php?error=El usuario no tiene un rol valido");
+    break;
+}
+exit;

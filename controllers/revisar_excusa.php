@@ -1,31 +1,46 @@
 <?php
+/**
+ * Controlador: Revisar excusa médica (Instructor)
+ * Permite al instructor aprobar o rechazar excusas de sus aprendices.
+ */
 
 session_start();
 require_once __DIR__ . '/../config/conexion.php';
 
+/**
+ * Función auxiliar para redirigir al listado de excusas con mensaje.
+ * @param string $parametro Tipo de mensaje: 'mensaje' o 'error'
+ * @param string $mensaje Texto del mensaje
+ */
 function volverAExcusas(string $parametro, string $mensaje): void
 {
     header('Location: ../views/instructor/excusas/index.php?' . $parametro . '=' . urlencode($mensaje));
     exit;
 }
 
+// Verifica que sea POST y que el usuario sea instructor (rol 2)
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_SESSION['fk_rol'] ?? null) != 2) {
     volverAExcusas('error', 'No tiene permiso para revisar excusas.');
 }
 
+// Verifica el token CSRF para evitar envíos falsos
 if (!hash_equals($_SESSION['token_csrf'] ?? '', $_POST['token_csrf'] ?? '')) {
     volverAExcusas('error', 'La solicitud no es válida. Intente nuevamente.');
 }
 
+// Obtiene el ID de la excusa y la decisión (aprobar/rechazar)
 $idExcusa = filter_input(INPUT_POST, 'id_excusa', FILTER_VALIDATE_INT);
 $decision = $_POST['decision'] ?? '';
 
+// Valida que los datos sean correctos
 if ($idExcusa === false || $idExcusa === null || !in_array($decision, ['APROBADA', 'RECHAZADA'], true)) {
     volverAExcusas('error', 'Los datos de la revisión no son válidos.');
 }
 
+// Conecta a la base de datos
 $conexion = (new Conexion())->conectar();
 
+// Verifica que la excusa pertenezca a una ficha del instructor autenticado
 // El procedimiento valida el rol, pero esta consulta impide revisar excusas de otra ficha.
 $consultaPropiedad = $conexion->prepare(
     'SELECT 1
@@ -46,6 +61,7 @@ if (!$consultaPropiedad->fetchColumn()) {
     volverAExcusas('error', 'La excusa no pertenece a sus fichas.');
 }
 
+// Ejecuta el procedimiento almacenado para aprobar o rechazar
 try {
     $consultaRevision = $conexion->prepare('CALL revisar_excusa(:id_excusa, :id_instructor, :decision)');
     $consultaRevision->execute([

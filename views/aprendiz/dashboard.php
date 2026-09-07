@@ -1,12 +1,17 @@
 <?php
-// Resume las asistencias y excusas reales del aprendiz autenticado
+/**
+ * Vista: Dashboard del aprendiz.
+ * Resume las asistencias y excusas reales del aprendiz autenticado.
+ */
 
+// Carga la autenticación y verifica que sea aprendiz
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(3);
+// Carga constantes y conexión a la base de datos
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
 
-// variables del layout 
+// Variables del layout
 $paginaTitulo = 'Mi dashboard';
 $menuActivo   = 'dashboard';
 $miga = [
@@ -15,6 +20,8 @@ $miga = [
 ];
 
 $conexion = (new Conexion())->conectar();
+
+// Consulta resumen del mes actual
 $consultaResumen = $conexion->prepare(
     "SELECT
         SUM(CASE WHEN asistencia.estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS puntuales,
@@ -31,6 +38,7 @@ $consultaResumen->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_I
 $consultaResumen->execute();
 $resumenMes = $consultaResumen->fetch() ?: [];
 
+// Datos para la gráfica
 $datosGraficaAprendiz = [
     (int) ($resumenMes['puntuales'] ?? 0),
     (int) ($resumenMes['retardos'] ?? 0),
@@ -38,6 +46,7 @@ $datosGraficaAprendiz = [
     (int) ($resumenMes['salidas_tempranas'] ?? 0),
 ];
 
+// Consulta las últimas 5 excusas del aprendiz
 $consultaExcusas = $conexion->prepare(
     "SELECT asistencia.fecha_asistencia, excusa.fecha_subida, excusa.estado
      FROM excusa
@@ -51,6 +60,7 @@ $consultaExcusas->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_I
 $consultaExcusas->execute();
 $excusasAprendiz = $consultaExcusas->fetchAll();
 
+// Consulta el total de excusas pendientes
 $consultaExcusasPendientes = $conexion->prepare(
     "SELECT COUNT(*)
      FROM excusa

@@ -1,9 +1,13 @@
 <?php
+/**
+ * Vista: Subir excusa médica (Aprendiz).
+ * Formulario funcional para registrar una excusa médica.
+ */
 
-// Formulario funcional para registrar una excusa médica.
-
+// Carga la autenticación y verifica que sea aprendiz
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(3);
+// Carga constantes y conexión a la base de datos
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
@@ -34,7 +38,6 @@ $miga = [
     ['label' => 'Mis excusas', 'url' => RUTA_BASE . 'views/aprendiz/excusas/index.php'],
     ['label' => 'Subir excusa'],
 ];
-
 
 // Inicia el búfer de salida para evitar errores si después se necesita usar header().
 ob_start();

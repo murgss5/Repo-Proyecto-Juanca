@@ -35,11 +35,13 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
     </div>
     <div class="card-body">
       <?php if (isset($_GET['error'])): ?>
+        <!-- Muestra mensaje de error si viene por URL -->
         <div class="alert alert-danger" role="alert">
           <?= htmlspecialchars($_GET['error']) ?>
         </div>
       <?php endif; ?>
 
+      <!-- Formulario de login que envía a controllers/login.php -->
       <form action="<?= RUTA_BASE ?>controllers/login.php" method="post" autocomplete="off">
         <div class="form-group">
           <label for="nombre_usuario">Usuario</label>

@@ -16,6 +16,17 @@ $filtroAprendiz = isset($_GET['aprendiz']) && $_GET['aprendiz'] !== '' ? trim($_
 $filtroEntrada  = isset($_GET['estado_entrada']) && $_GET['estado_entrada'] !== '' ? $_GET['estado_entrada'] : null;
 $filtroSalida   = isset($_GET['estado_salida']) && $_GET['estado_salida'] !== '' ? $_GET['estado_salida'] : null;
 
+// Si se presionó el botón "Esta semana", calcular lunes y domingo de la semana actual
+if (isset($_GET['filtro_semana'])) {
+    $hoy = new DateTime();
+    $inicioSemana = clone $hoy;
+    $inicioSemana->modify('monday this week');
+    $finSemana = clone $hoy;
+    $finSemana->modify('sunday this week');
+    $filtroFechaIni = $inicioSemana->format('Y-m-d');
+    $filtroFechaFin = $finSemana->format('Y-m-d');
+}
+
 // Validar formato de fechas
 if ($filtroFechaIni && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filtroFechaIni)) {
     $filtroFechaIni = null;

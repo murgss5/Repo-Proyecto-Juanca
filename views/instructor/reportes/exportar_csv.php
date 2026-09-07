@@ -16,6 +16,18 @@ function fechaExportacionValida(string $fecha): bool
 $fechaDesde = trim($_GET['desde'] ?? '');
 $fechaHasta = trim($_GET['hasta'] ?? '');
 $fichaSeleccionada = filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: '';
+
+// Si se presionó el botón "Esta semana", calcular lunes y domingo de la semana actual
+if (isset($_GET['filtro_semana'])) {
+    $hoy = new DateTime();
+    $inicioSemana = clone $hoy;
+    $inicioSemana->modify('monday this week');
+    $finSemana = clone $hoy;
+    $finSemana->modify('sunday this week');
+    $fechaDesde = $inicioSemana->format('Y-m-d');
+    $fechaHasta = $finSemana->format('Y-m-d');
+}
+
 if ($fechaDesde !== '' && !fechaExportacionValida($fechaDesde)) $fechaDesde = '';
 if ($fechaHasta !== '' && !fechaExportacionValida($fechaHasta)) $fechaHasta = '';
 

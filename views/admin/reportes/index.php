@@ -8,8 +8,10 @@
  * ============================================================
  */
 
+// Carga la autenticación y verifica que sea administrador
 require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
 exigirRol(1);
+// Carga constantes y conexión a la base de datos
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
 require_once dirname(__DIR__) . '/../../config/conexion.php';
 
@@ -22,6 +24,17 @@ $filtroFicha    = isset($_GET['ficha']) && $_GET['ficha'] !== '' ? $_GET['ficha'
 $filtroAprendiz = isset($_GET['aprendiz']) && $_GET['aprendiz'] !== '' ? trim($_GET['aprendiz']) : null;
 $filtroEntrada  = isset($_GET['estado_entrada']) && $_GET['estado_entrada'] !== '' ? $_GET['estado_entrada'] : null;
 $filtroSalida   = isset($_GET['estado_salida']) && $_GET['estado_salida'] !== '' ? $_GET['estado_salida'] : null;
+
+// Si se presionó el botón "Esta semana", calcular lunes y domingo de la semana actual
+if (isset($_GET['filtro_semana'])) {
+    $hoy = new DateTime();
+    $inicioSemana = clone $hoy;
+    $inicioSemana->modify('monday this week');
+    $finSemana = clone $hoy;
+    $finSemana->modify('sunday this week');
+    $filtroFechaIni = $inicioSemana->format('Y-m-d');
+    $filtroFechaFin = $finSemana->format('Y-m-d');
+}
 
 // Validar formato de fechas
 if ($filtroFechaIni && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filtroFechaIni)) {
@@ -38,6 +51,15 @@ if (!$filtroFechaIni) {
 if (!$filtroFechaFin) {
     $filtroFechaFin = date('Y-m-t');
 }
+
+// Calcular fechas de la semana actual (lunes a domingo) para el filtro rápido
+$hoy = new DateTime();
+$inicioSemana = clone $hoy;
+$inicioSemana->modify('monday this week');
+$finSemana = clone $hoy;
+$finSemana->modify('sunday this week');
+$fechaInicioSemana = $inicioSemana->format('Y-m-d');
+$fechaFinSemana = $finSemana->format('Y-m-d');
 
 // Obtener fichas para el filtro
 $fichas = $conexion->query("SELECT id_ficha, nombre_programa FROM ficha ORDER BY id_ficha")->fetchAll();
@@ -234,6 +256,9 @@ ob_start();
                 <a href="<?= RUTA_BASE ?>views/admin/reportes/exportar_csv.php?<?= http_build_query($_GET) ?>" class="btn btn-outline-success"><i class="fas fa-file-excel"></i> Exportar CSV</a>
                 <button type="button" class="btn btn-outline-danger" onclick="window.print()"><i class="fas fa-file-pdf"></i> Imprimir / Guardar como PDF</button>
                 <a href="<?= RUTA_BASE ?>views/admin/reportes/index.php" class="btn btn-secondary"><i class="fas fa-times"></i> Limpiar</a>
+            </div>
+            <div class="col-12 mt-2">
+                <button type="submit" name="filtro_semana" value="1" class="btn btn-info"><i class="fas fa-calendar-week"></i> Esta semana</button>
             </div>
         </form>
     </div>

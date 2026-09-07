@@ -3,11 +3,18 @@
  * Reporte de asistencias para las fichas del instructor autenticado.
  */
 
+// Carga la autenticación y verifica que sea instructor
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(2);
+// Carga constantes y conexión a la base de datos
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
+/**
+ * Valida que una fecha tenga formato Y-m-d correcto.
+ * @param string $fecha Fecha a validar
+ * @return bool True si es válida, false si no
+ */
 function fechaReporteValida(string $fecha): bool
 {
     $fechaConvertida = DateTime::createFromFormat('Y-m-d', $fecha);
@@ -15,6 +22,11 @@ function fechaReporteValida(string $fecha): bool
     return $fechaConvertida !== false && $fechaConvertida->format('Y-m-d') === $fecha;
 }
 
+/**
+ * Devuelve la clase CSS para el badge según el estado de asistencia.
+ * @param string $estado Estado de la asistencia
+ * @return string Clase CSS correspondiente
+ */
 function claseEstadoReporte(string $estado): string
 {
     return match ($estado) {
@@ -26,10 +38,23 @@ function claseEstadoReporte(string $estado): string
     };
 }
 
+// Obtiene los filtros desde GET
 $fechaDesde = trim($_GET['desde'] ?? '');
 $fechaHasta = trim($_GET['hasta'] ?? '');
 $fichaSeleccionada = filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: '';
 
+// Si se presionó el botón "Esta semana", calcular lunes y domingo de la semana actual
+if (isset($_GET['filtro_semana'])) {
+    $hoy = new DateTime();
+    $inicioSemana = clone $hoy;
+    $inicioSemana->modify('monday this week');
+    $finSemana = clone $hoy;
+    $finSemana->modify('sunday this week');
+    $fechaDesde = $inicioSemana->format('Y-m-d');
+    $fechaHasta = $finSemana->format('Y-m-d');
+}
+
+// Valida formato de fechas
 if ($fechaDesde !== '' && !fechaReporteValida($fechaDesde)) {
     $fechaDesde = '';
 }
@@ -37,11 +62,15 @@ if ($fechaHasta !== '' && !fechaReporteValida($fechaHasta)) {
     $fechaHasta = '';
 }
 
+// Conecta a la base de datos
 $conexion = (new Conexion())->conectar();
+
+// Obtiene las fichas del instructor para el filtro
 $consultaFichas = $conexion->prepare('SELECT id_ficha FROM ficha WHERE fk_usuario = :id_instructor ORDER BY id_ficha');
 $consultaFichas->execute([':id_instructor' => $_SESSION['id_usuario']]);
 $fichasInstructor = $consultaFichas->fetchAll();
 
+// Construye la consulta SQL base
 $sqlReporte = "SELECT
     asistencia.fecha_asistencia,
     CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
@@ -123,6 +152,9 @@ ob_start();
         </select>
       </div>
       <div class="col-md-3 col-sm-6 mb-2 d-flex align-items-end"><button type="submit" class="btn btn-primary btn-block"><i class="fas fa-play"></i> Generar reporte</button></div>
+            <div class="col-12 mt-2">
+                <button type="submit" name="filtro_semana" value="1" class="btn btn-info btn-block"><i class="fas fa-calendar-week"></i> Esta semana</button>
+            </div>
     </form>
   </div>
 </div>
