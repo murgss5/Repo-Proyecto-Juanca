@@ -1,14 +1,14 @@
 <?php
 /**
- * Funciones compartidas de autenticación y autorización.
+ * funciones compartidas de autenticacion y autorizacion
  *
- * Las vistas protegidas indican los roles que pueden acceder a ellas.
- * Los identificadores coinciden con la tabla rol:
- * 1 = Administrador, 2 = Instructor, 3 = Aprendiz.
+ * las vistas protegidas indican los roles que pueden acceder a ellas
+ * los identificadores coinciden con la tabla rol:
+ * 1 = administrador, 2 = instructor, 3 = aprendiz
  */
 
 /**
- * Redirige al formulario de login calculando la ruta correcta según la profundidad del script.
+ * redirige al formulario de login calculando la ruta correcta segun la profundidad del script
  */
 function redirigirAlLogin(): void
 {
@@ -20,26 +20,26 @@ function redirigirAlLogin(): void
 }
 
 /**
- * Verifica que la sesión esté activa y que el usuario tenga uno de los roles permitidos.
- * Si no hay sesión o el rol no coincide, redirige al login.
+ * verifica que la sesion este activa y que el usuario tenga uno de los roles permitidos
+ * si no hay sesion o el rol no coincide, redirige al login
  * @param int ...$rolesPermitidos Roles que pueden acceder (1=Admin, 2=Instructor, 3=Aprendiz)
  */
 function exigirRol(int ...$rolesPermitidos): void
 {
-    // Inicia la sesión si no está activa
+    // inicia la sesion si no esta activa
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();
     }
 
-    // Obtiene el rol del usuario de la sesión
+    // obtiene el rol del usuario de la sesion
     $rolActual = $_SESSION['fk_rol'] ?? null;
 
-    // Verifica que el rol sea un número válido
+    // verifica que el rol sea un numero valido
     if (!is_int($rolActual) && !ctype_digit((string) $rolActual)) {
         redirigirAlLogin();
     }
 
-    // Verifica que el rol esté en la lista de permitidos
+    // verifica que el rol este en la lista de permitidos
     if (!in_array((int) $rolActual, $rolesPermitidos, true)) {
         redirigirAlLogin();
     }

@@ -1,14 +1,15 @@
 <?php
+
 /**
- * Controlador para gestionar usuarios (aprendices e instructores) desde el panel de administración.
- * Permite crear, editar y eliminar usuarios con validaciones y transacciones.
+ * controlador para gestionar usuarios (aprendices e instructores) desde el panel de administracion
+ * permite crear, editar y eliminar usuarios con validaciones y transacciones
  */
 
 session_start();
 require_once __DIR__ . '/../config/conexion.php';
 
 /**
- * Función auxiliar para redirigir con mensaje al listado correspondiente.
+ * funcion auxiliar para redirigir con mensaje al listado correspondiente
  * @param string $tipo Tipo de mensaje: 'mensaje' o 'error'
  * @param string $mensaje Texto del mensaje
  * @param int $rol Rol del usuario (2=instructor, 3=aprendiz)
@@ -29,19 +30,19 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_SESSION['fk_rol'] ?? null) != 1)
     exit;
 }
 
-// Verifica el token CSRF para evitar envíos falsos
+// Verifica el token CSRF para evitar envios falsos
 if (!hash_equals($_SESSION['token_csrf'] ?? '', $_POST['token_csrf'] ?? '')) {
-    exit('Solicitud no válida.');
+    exit('Solicitud no valida.');
 }
 
-// Obtiene la acción, rol e ID del usuario
+// Obtiene la accion, rol e ID del usuario
 $accion = $_POST['accion'] ?? '';
 $rol = (int)($_POST['rol'] ?? 0);
 $id = filter_input(INPUT_POST, 'id_usuario', FILTER_VALIDATE_INT);
 
-// Valida que el rol y la acción sean correctos
+// Valida que el rol y la accion sean correctos
 if (!in_array($rol, [2, 3], true) || !in_array($accion, ['crear', 'editar', 'eliminar'], true)) {
-    exit('Datos no válidos.');
+    exit('Datos no validos.');
 }
 
 // Conecta a la base de datos
@@ -50,7 +51,7 @@ $conexion = (new Conexion())->conectar();
 try {
     // ELIMINAR USUARIO
     if ($accion === 'eliminar') {
-        if (!$id) volver('error', 'Usuario no válido.', $rol);
+        if (!$id) volver('error', 'Usuario no valido.', $rol);
         // Verifica que el usuario exista y tenga el rol correcto
         $q = $conexion->prepare('SELECT id_usuario FROM usuario WHERE id_usuario=? AND fk_rol=?');
         $q->execute([$id, $rol]);
@@ -87,10 +88,10 @@ try {
         volver('error', 'Complete los campos obligatorios.', $rol, $id ?: null);
     }
 
-    // Verifica que el usuario o documento no estén duplicados (excluyendo el actual si edita)
+    // Verifica que el usuario o documento no esten duplicados (excluyendo el actual si edita)
     $q = $conexion->prepare('SELECT id_usuario FROM usuario WHERE (nombre_usuario=:u OR identificacion=:d) AND id_usuario<>:id');
     $q->execute([':u' => $usuario, ':d' => $documento, ':id' => $id ?: 0]);
-    if ($q->fetch()) volver('error', 'El usuario o documento ya está registrado.', $rol, $id ?: null);
+    if ($q->fetch()) volver('error', 'El usuario o documento ya esta registrado.', $rol, $id ?: null);
 
     // Validaciones adicionales para aprendices
     if ($rol === 3) {
@@ -101,24 +102,24 @@ try {
         $q = $conexion->prepare('SELECT id_ficha FROM ficha WHERE id_ficha=?');
         $q->execute([$ficha]);
         if (!$q->fetch()) volver('error', 'La ficha seleccionada no existe.', $rol, $id ?: null);
-        // Verifica que el RFID no esté duplicado
+        // Verifica que el RFID no este duplicado
         $q = $conexion->prepare('SELECT id_aprendiz FROM aprendiz WHERE codigo_rfid=? AND fk_usuario<>?');
         $q->execute([$rfid, $id ?: 0]);
-        if ($q->fetch()) volver('error', 'El código RFID ya está registrado.', $rol, $id ?: null);
+        if ($q->fetch()) volver('error', 'El codigo RFID ya esta registrado.', $rol, $id ?: null);
     }
 
-    // Inicia transacción para asegurar atomicidad
+    // Inicia transaccion para asegurar atomicidad
     $conexion->beginTransaction();
 
     if ($accion === 'crear') {
-        // Inserta en tabla usuario con contraseña hasheada
+        // Inserta en tabla usuario con contrasena hasheada
         $q = $conexion->prepare('INSERT INTO usuario(nombre_usuario,contrasena,nombre,apellido,identificacion,telefono,fk_rol) VALUES(?,?,?,?,?,?,?)');
         $q->execute([$usuario, password_hash($clave, PASSWORD_DEFAULT), $nombre, $apellido, $documento, $telefono ?: null, $rol]);
         $id = (int)$conexion->lastInsertId();
         // Si es aprendiz, inserta en tabla aprendiz
         if ($rol === 3) $conexion->prepare('INSERT INTO aprendiz(codigo_rfid,fk_ficha,fk_usuario) VALUES(?,?,?)')->execute([$rfid, $ficha, $id]);
     } else {
-        // EDITAR: actualiza usuario (incluye contraseña solo si se escribió una nueva)
+        // EDITAR: actualiza usuario (incluye contrasena solo si se escribio una nueva)
         if (!$id) throw new RuntimeException();
         $sql = 'UPDATE usuario SET nombre_usuario=?,nombre=?,apellido=?,identificacion=?,telefono=?' . ($clave !== '' ? ',contrasena=?' : '') . ' WHERE id_usuario=? AND fk_rol=?';
         $val = [$usuario, $nombre, $apellido, $documento, $telefono ?: null];
@@ -131,12 +132,11 @@ try {
         if ($rol === 3) $conexion->prepare('UPDATE aprendiz SET codigo_rfid=?,fk_ficha=? WHERE fk_usuario=?')->execute([$rfid, $ficha, $id]);
     }
 
-    // Confirma la transacción
+    // Confirma la transaccion
     $conexion->commit();
     volver('mensaje', $accion === 'crear' ? 'Usuario creado correctamente.' : 'Usuario actualizado correctamente.', $rol);
-
 } catch (Throwable $e) {
-    // Si hay error, revierte la transacción
+    // Si hay error, revierte la transaccion
     if ($conexion->inTransaction()) $conexion->rollBack();
     volver('error', 'No fue posible guardar los datos.', $rol, $id ?: null);
 }

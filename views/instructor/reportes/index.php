@@ -3,17 +3,17 @@
  * Reporte de asistencias para las fichas del instructor autenticado.
  */
 
-// Carga la autenticación y verifica que sea instructor
+// Carga la autenticacion y verifica que sea instructor
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(2);
-// Carga constantes y conexión a la base de datos
+// Carga constantes y conexion a la base de datos
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
 /**
  * Valida que una fecha tenga formato Y-m-d correcto.
  * @param string $fecha Fecha a validar
- * @return bool True si es válida, false si no
+ * @return bool True si es valida, false si no
  */
 function fechaReporteValida(string $fecha): bool
 {
@@ -23,7 +23,7 @@ function fechaReporteValida(string $fecha): bool
 }
 
 /**
- * Devuelve la clase CSS para el badge según el estado de asistencia.
+ * Devuelve la clase CSS para el badge segun el estado de asistencia.
  * @param string $estado Estado de la asistencia
  * @return string Clase CSS correspondiente
  */
@@ -43,7 +43,7 @@ $fechaDesde = trim($_GET['desde'] ?? '');
 $fechaHasta = trim($_GET['hasta'] ?? '');
 $fichaSeleccionada = filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: '';
 
-// Si se presionó el botón "Esta semana", calcular lunes y domingo de la semana actual
+// Si se presiono el boton "Esta semana", calcular lunes y domingo de la semana actual
 if (isset($_GET['filtro_semana'])) {
     $hoy = new DateTime();
     $inicioSemana = clone $hoy;

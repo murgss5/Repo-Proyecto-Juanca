@@ -1,14 +1,14 @@
 <?php
 /**
  * ============================================================
- * VISTA: INICIO DE SESIÓN (LOGIN)
+ * VISTA: INICIO DE SESION (LOGIN)
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * Usa el controlador de autenticación real del proyecto.
+ * Usa el controlador de autenticacion real del proyecto.
  * ============================================================
  */
 
-// Carga de rutas base y datos de demostración
+// Carga de rutas base y datos de demostracion
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 ?>
 <!DOCTYPE html>
@@ -16,7 +16,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SENA | Iniciar sesión</title>
+  <title>SENA | Iniciar sesion</title>
   <link rel="icon" href="<?= RUTA_BASE ?>assets/img/logo-sena.svg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=swap">
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/icons/fontawesome/css/all.min.css">
@@ -41,7 +41,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
         </div>
       <?php endif; ?>
 
-      <!-- Formulario de login que envía a controllers/login.php -->
+      <!-- Formulario de login que envia a controllers/login.php -->
       <form action="<?= RUTA_BASE ?>controllers/login.php" method="post" autocomplete="off">
         <div class="form-group">
           <label for="nombre_usuario">Usuario</label>
@@ -54,7 +54,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
         </div>
 
         <div class="form-group">
-          <label for="contrasena">Contraseña</label>
+          <label for="contrasena">Contrasena</label>
           <div class="input-group">
             <div class="input-group-prepend">
               <span class="input-group-text"><i class="fas fa-lock"></i></span>
@@ -69,8 +69,8 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
             <label class="custom-control-label" for="recordarme">Recordarme</label>
           </div>
           <!-- Se conserva la vista recuperar_contrasena.php como referencia de la plantilla.
-               El enlace queda deshabilitado hasta implementar el flujo real de recuperación. -->
-          <!-- <a href="<?= RUTA_BASE ?>views/auth/recuperar_contrasena.php" class="text-sena small">¿Olvidó su contraseña?</a> -->
+               El enlace queda deshabilitado hasta implementar el flujo real de recuperacion. -->
+          <!-- <a href="<?= RUTA_BASE ?>views/auth/recuperar_contrasena.php" class="text-sena small">Olvido su contrasena?</a> -->
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">

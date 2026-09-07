@@ -1,39 +1,39 @@
 <?php
 /**
- * Clase para gestionar la conexión a la base de datos usando PDO.
- * Centraliza la configuración de conexión en un solo lugar.
+ * clase para gestionar la conexion a la base de datos usando pdo
+ * centraliza la configuracion de conexion en un solo lugar
  */
 
 class Conexion
 {
-    // Configuración de la base de datos
+    // configuracion de la base de datos
     private $servidor = "localhost";
     private $base_datos = "control_asistencia";
     private $usuario = "root";
     private $contrasena = "";
 
     /**
-     * Crea y devuelve una conexión PDO configurada.
-     * @return PDO Objeto de conexión listo para usar.
+     * crea y devuelve una conexion pdo configurada
+     * @return PDO Objeto de conexion listo para usar
      */
     public function conectar()
     {
         try {
 
-            // Crea la conexión PDO con los parámetros configurados
+            // crea la conexion pdo con los parametros configurados
             $conexion = new PDO(
                 "mysql:host={$this->servidor};dbname={$this->base_datos};charset=utf8mb4",
                 $this->usuario,
                 $this->contrasena
             );
 
-            // Configura PDO para lanzar excepciones ante errores
+            // configura pdo para lanzar excepciones ante errores
             $conexion->setAttribute(
                 PDO::ATTR_ERRMODE,
                 PDO::ERRMODE_EXCEPTION
             );
 
-            // Configura para que los resultados vengan como arrays asociativos
+            // configura para que los resultados vengan como arrays asociativos
             $conexion->setAttribute(
                 PDO::ATTR_DEFAULT_FETCH_MODE,
                 PDO::FETCH_ASSOC
@@ -43,7 +43,7 @@ class Conexion
 
         } catch (PDOException $error) {
 
-            // Muestra mensaje genérico sin exponer detalles técnicos
+            // muestra mensaje generico sin exponer detalles tecnicos
             die('No fue posible conectar con la base de datos.');
 
         }

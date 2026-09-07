@@ -4,10 +4,10 @@
  * Resume las asistencias y excusas reales del aprendiz autenticado.
  */
 
-// Carga la autenticación y verifica que sea aprendiz
+// Carga la autenticacion y verifica que sea aprendiz
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(3);
-// Carga constantes y conexión a la base de datos
+// Carga constantes y conexion a la base de datos
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
 
@@ -38,7 +38,7 @@ $consultaResumen->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_I
 $consultaResumen->execute();
 $resumenMes = $consultaResumen->fetch() ?: [];
 
-// Datos para la gráfica
+// Datos para la grafica
 $datosGraficaAprendiz = [
     (int) ($resumenMes['puntuales'] ?? 0),
     (int) ($resumenMes['retardos'] ?? 0),
@@ -46,7 +46,7 @@ $datosGraficaAprendiz = [
     (int) ($resumenMes['salidas_tempranas'] ?? 0),
 ];
 
-// Consulta las últimas 5 excusas del aprendiz
+// Consulta las ultimas 5 excusas del aprendiz
 $consultaExcusas = $conexion->prepare(
     "SELECT asistencia.fecha_asistencia, excusa.fecha_subida, excusa.estado
      FROM excusa

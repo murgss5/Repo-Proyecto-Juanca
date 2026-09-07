@@ -4,14 +4,14 @@
  * VISTA: REPORTES (ADMIN)
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * Reporte real de asistencias con filtros, totales y exportación.
+ * Reporte real de asistencias con filtros, totales y exportacion.
  * ============================================================
  */
 
-// Carga la autenticación y verifica que sea administrador
+// Carga la autenticacion y verifica que sea administrador
 require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
 exigirRol(1);
-// Carga constantes y conexión a la base de datos
+// Carga constantes y conexion a la base de datos
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
 require_once dirname(__DIR__) . '/../../config/conexion.php';
 
@@ -25,7 +25,7 @@ $filtroAprendiz = isset($_GET['aprendiz']) && $_GET['aprendiz'] !== '' ? trim($_
 $filtroEntrada  = isset($_GET['estado_entrada']) && $_GET['estado_entrada'] !== '' ? $_GET['estado_entrada'] : null;
 $filtroSalida   = isset($_GET['estado_salida']) && $_GET['estado_salida'] !== '' ? $_GET['estado_salida'] : null;
 
-// Si se presionó el botón "Esta semana", calcular lunes y domingo de la semana actual
+// Si se presiono el boton "Esta semana", calcular lunes y domingo de la semana actual
 if (isset($_GET['filtro_semana'])) {
     $hoy = new DateTime();
     $inicioSemana = clone $hoy;
@@ -52,7 +52,7 @@ if (!$filtroFechaFin) {
     $filtroFechaFin = date('Y-m-t');
 }
 
-// Calcular fechas de la semana actual (lunes a domingo) para el filtro rápido
+// Calcular fechas de la semana actual (lunes a domingo) para el filtro rapido
 $hoy = new DateTime();
 $inicioSemana = clone $hoy;
 $inicioSemana->modify('monday this week');

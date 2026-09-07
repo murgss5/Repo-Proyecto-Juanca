@@ -4,10 +4,10 @@
  * Muestra el listado real de aprendices con opciones de editar y eliminar.
  */
 
-// Carga la autenticación y verifica que sea administrador
+// Carga la autenticacion y verifica que sea administrador
 require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
 exigirRol(1);
-// Carga constantes y conexión a la base de datos
+// Carga constantes y conexion a la base de datos
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
 require_once dirname(__DIR__) . '/../../config/conexion.php';
 
@@ -88,9 +88,9 @@ ob_start();
           <tr>
             <th>Documento</th>
             <th>Nombre completo</th>
-            <th>Teléfono</th>
+            <th>Telefono</th>
             <th>Ficha</th>
-            <th>Código RFID</th>
+            <th>Codigo RFID</th>
             <th class="text-center">Acciones</th>
           </tr>
         </thead>
@@ -102,19 +102,19 @@ ob_start();
               <td><?= htmlspecialchars($aprendiz['telefono'] ?? 'Sin registro') ?></td>
               <td><span class="badge badge-info">Ficha #<?= htmlspecialchars($aprendiz['id_ficha']) ?></span></td>
               <td><code><?= htmlspecialchars($aprendiz['codigo_rfid']) ?></code></td>
-              <td class="text-center"><a class="btn btn-sm btn-warning" href="<?=RUTA_BASE?>views/admin/aprendices/edit.php?id=<?=htmlspecialchars($aprendiz['id_usuario'])?>"><i class="fas fa-edit"></i></a><form action="<?=RUTA_BASE?>controllers/gestionar_usuario.php" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar este aprendiz?');"><input type="hidden" name="accion" value="eliminar"><input type="hidden" name="rol" value="3"><input type="hidden" name="id_usuario" value="<?=htmlspecialchars($aprendiz['id_usuario'])?>"><input type="hidden" name="token_csrf" value="<?=htmlspecialchars($_SESSION['token_csrf'])?>"><button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button></form></td>
+              <td class="text-center"><a class="btn btn-sm btn-warning" href="<?=RUTA_BASE?>views/admin/aprendices/edit.php?id=<?=htmlspecialchars($aprendiz['id_usuario'])?>"><i class="fas fa-edit"></i></a><form action="<?=RUTA_BASE?>controllers/gestionar_usuario.php" method="post" class="d-inline" onsubmit="return confirm('Eliminar este aprendiz?');"><input type="hidden" name="accion" value="eliminar"><input type="hidden" name="rol" value="3"><input type="hidden" name="id_usuario" value="<?=htmlspecialchars($aprendiz['id_usuario'])?>"><input type="hidden" name="token_csrf" value="<?=htmlspecialchars($_SESSION['token_csrf'])?>"><button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button></form></td>
             </tr>
           <?php endforeach; ?>
         </tbody>
       </table>
     </div>
 
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> El listado y las acciones de creación, edición y eliminación consultan la base de datos.</p>
+    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> El listado y las acciones de creacion, edicion y eliminacion consultan la base de datos.</p>
   </div>
 </div>
 
 <?php
 $contenido = ob_get_clean();
 
-// este es el render del layout principal del panel de administración
+// este es el render del layout principal del panel de administracion
 include __DIR__ . '/../../layouts/layout_admin.php';

@@ -1,35 +1,35 @@
 <?php
 /**
- * Controlador de inicio de sesión.
- * Procesa el formulario de login, valida credenciales y crea la sesión.
+ * controlador de inicio de sesion
+ * procesa el formulario de login, valida credenciales y crea la sesion
  */
 
-// Inicia la sesión para poder guardar datos del usuario
+// inicia la sesion para poder guardar datos del usuario
 session_start();
-// Carga la clase de conexión a la base de datos
+// carga la clase de conexion a la base de datos
 require_once __DIR__ . '/../config/conexion.php';
 
-// Verifica que el formulario fue enviado por POST
+// verifica que el formulario fue enviado por POST
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     header("Location: ../views/auth/login.php");
     exit;
 }
 
-// Obtiene los datos del formulario
+// obtiene los datos del formulario
 $nombre_usuario = trim($_POST["nombre_usuario"] ?? "");
 $contrasena = $_POST["contrasena"] ?? "";
 
-// Valida que los campos no estén vacíos
+// valida que los campos no esten vacios
 if ($nombre_usuario === "" || $contrasena === "") {
     header("Location: ../views/auth/login.php?error=Todos los campos son obligatorios");
     exit;
 }
 
-// Conecta a la base de datos
+// conecta a la base de datos
 $conexionBD = new Conexion();
 $conexion = $conexionBD->conectar();
 
-// Busca el usuario por nombre de usuario
+// busca el usuario por nombre de usuario
 $sql = "Select usuario.id_usuario, usuario.nombre_usuario,
     usuario.contrasena, usuario.nombre, usuario.apellido, usuario.identificacion,
     usuario.telefono, usuario.fk_rol, rol.nombre_rol FROM usuario
@@ -41,16 +41,16 @@ $consulta->bindValue(":nombre_usuario", $nombre_usuario, PDO::PARAM_STR);
 $consulta->execute();
 $usuario = $consulta->fetch();
 
-// Verifica el usuario y la contraseña (comparación directa porque la BD tiene texto plano)
+// verifica el usuario y la contrasena (comparacion directa porque la BD tiene texto plano)
 if (!$usuario || $contrasena !== $usuario["contrasena"]) {
     header("Location: ../views/auth/login.php?error=credenciales");
     exit;
 }
 
-// Regenera el ID de sesión por seguridad
+// regenera el ID de sesion por seguridad
 session_regenerate_id(true);
 
-// Crea variables de sesión con los datos del usuario
+// crea variables de sesion con los datos del usuario
 $_SESSION["id_usuario"] = $usuario["id_usuario"];
 $_SESSION["nombre_usuario"] = $usuario["nombre_usuario"];
 $_SESSION["nombre"] = $usuario["nombre"];
@@ -58,7 +58,7 @@ $_SESSION["apellido"] = $usuario["apellido"];
 $_SESSION["fk_rol"] = $usuario["fk_rol"];
 $_SESSION["nombre_rol"] = $usuario["nombre_rol"];
 
-// Redirige según el rol del usuario
+// redirige segun el rol del usuario
 switch ($usuario["fk_rol"]) {
     case 1: header("Location: ../views/admin/dashboard.php");
     break;

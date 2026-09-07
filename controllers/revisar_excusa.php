@@ -1,14 +1,14 @@
 <?php
 /**
- * Controlador: Revisar excusa médica (Instructor)
- * Permite al instructor aprobar o rechazar excusas de sus aprendices.
+ * controlador: Revisar excusa medica (Instructor)
+ * Permite al instructor aprobar o rechazar excusas de sus aprendices
  */
 
 session_start();
 require_once __DIR__ . '/../config/conexion.php';
 
 /**
- * Función auxiliar para redirigir al listado de excusas con mensaje.
+ * funcion auxiliar para redirigir al listado de excusas con mensaje
  * @param string $parametro Tipo de mensaje: 'mensaje' o 'error'
  * @param string $mensaje Texto del mensaje
  */
@@ -23,18 +23,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_SESSION['fk_rol'] ?? null) != 2)
     volverAExcusas('error', 'No tiene permiso para revisar excusas.');
 }
 
-// Verifica el token CSRF para evitar envíos falsos
+// Verifica el token CSRF para evitar envios falsos
 if (!hash_equals($_SESSION['token_csrf'] ?? '', $_POST['token_csrf'] ?? '')) {
-    volverAExcusas('error', 'La solicitud no es válida. Intente nuevamente.');
+    volverAExcusas('error', 'La solicitud no es valida. Intente nuevamente.');
 }
 
-// Obtiene el ID de la excusa y la decisión (aprobar/rechazar)
+// Obtiene el ID de la excusa y la decision (aprobar/rechazar)
 $idExcusa = filter_input(INPUT_POST, 'id_excusa', FILTER_VALIDATE_INT);
 $decision = $_POST['decision'] ?? '';
 
 // Valida que los datos sean correctos
 if ($idExcusa === false || $idExcusa === null || !in_array($decision, ['APROBADA', 'RECHAZADA'], true)) {
-    volverAExcusas('error', 'Los datos de la revisión no son válidos.');
+    volverAExcusas('error', 'Los datos de la revision no son validos.');
 }
 
 // Conecta a la base de datos
