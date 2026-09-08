@@ -96,16 +96,22 @@ try {
     // Validaciones adicionales para aprendices
     if ($rol === 3) {
         $ficha = filter_input(INPUT_POST, 'id_ficha', FILTER_VALIDATE_INT);
-        $rfid = trim($_POST['codigo_rfid'] ?? '');
-        if (!$ficha || $rfid === '') volver('error', 'Ficha y RFID son obligatorios.', $rol, $id ?: null);
+        // RFID se genera automaticamente en creacion, no se pide en formulario
+        $rfid = '';
+        if ($accion === 'editar') {
+            $rfid = trim($_POST['codigo_rfid'] ?? '');
+        }
+        if (!$ficha) volver('error', 'Ficha es obligatoria.', $rol, $id ?: null);
         // Verifica que la ficha exista
         $q = $conexion->prepare('SELECT id_ficha FROM ficha WHERE id_ficha=?');
         $q->execute([$ficha]);
         if (!$q->fetch()) volver('error', 'La ficha seleccionada no existe.', $rol, $id ?: null);
-        // Verifica que el RFID no este duplicado
-        $q = $conexion->prepare('SELECT id_aprendiz FROM aprendiz WHERE codigo_rfid=? AND fk_usuario<>?');
-        $q->execute([$rfid, $id ?: 0]);
-        if ($q->fetch()) volver('error', 'El codigo RFID ya esta registrado.', $rol, $id ?: null);
+        // Verifica que el RFID no este duplicado (solo en edicion, en creacion se genera unico)
+        if ($accion === 'editar' && $rfid !== '') {
+            $q = $conexion->prepare('SELECT id_aprendiz FROM aprendiz WHERE codigo_rfid=? AND fk_usuario<>?');
+            $q->execute([$rfid, $id ?: 0]);
+            if ($q->fetch()) volver('error', 'El codigo RFID ya esta registrado.', $rol, $id ?: null);
+        }
     }
 
     // Inicia transaccion para asegurar atomicidad
@@ -116,8 +122,23 @@ try {
         $q = $conexion->prepare('INSERT INTO usuario(nombre_usuario,contrasena,nombre,apellido,identificacion,telefono,fk_rol) VALUES(?,?,?,?,?,?,?)');
         $q->execute([$usuario, password_hash($clave, PASSWORD_DEFAULT), $nombre, $apellido, $documento, $telefono ?: null, $rol]);
         $id = (int)$conexion->lastInsertId();
-        // Si es aprendiz, inserta en tabla aprendiz
-        if ($rol === 3) $conexion->prepare('INSERT INTO aprendiz(codigo_rfid,fk_ficha,fk_usuario) VALUES(?,?,?)')->execute([$rfid, $ficha, $id]);
+        // Si es aprendiz, genera RFID automatico e inserta en tabla aprendiz
+        if ($rol === 3) {
+            // Obtiene el numero mas alto de codigos RFID con formato RFID### (ignora DEMO-RFID-*)
+            $q = $conexion->prepare("SELECT MAX(CAST(SUBSTRING(codigo_rfid, 5) AS UNSIGNED)) AS max_num FROM aprendiz WHERE codigo_rfid LIKE 'RFID%' AND codigo_rfid REGEXP '^RFID[0-9]{3}$'");
+            $q->execute();
+            $resultado = $q->fetch();
+            $siguienteNum = (int)($resultado['max_num'] ?? 0) + 1;
+            $rfid = 'RFID' . str_pad($siguienteNum, 3, '0', STR_PAD_LEFT);
+            // Verifica que el RFID generado no exista (por seguridad)
+            $q = $conexion->prepare('SELECT id_aprendiz FROM aprendiz WHERE codigo_rfid=?');
+            $q->execute([$rfid]);
+            if ($q->fetch()) {
+                throw new Exception('Error generando RFID unico');
+            }
+            // Inserta en tabla aprendiz con RFID generado
+            $conexion->prepare('INSERT INTO aprendiz(codigo_rfid,fk_ficha,fk_usuario) VALUES(?,?,?)')->execute([$rfid, $ficha, $id]);
+        }
     } else {
         // EDITAR: actualiza usuario (incluye contrasena solo si se escribio una nueva)
         if (!$id) throw new RuntimeException();

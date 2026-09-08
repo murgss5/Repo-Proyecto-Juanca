@@ -49,32 +49,6 @@ if ($rolDemo === 'admin') {
       </li>
     <?php endforeach; ?>
 
-    <!-- Notificaciones (visual) -->
-    <li class="nav-item dropdown">
-      <a class="nav-link" data-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false">
-        <i class="far fa-bell"></i>
-        <span class="badge badge-sena navbar-badge">3</span>
-      </a>
-      <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-        <span class="dropdown-item dropdown-header">3 Notificaciones</span>
-        <div class="dropdown-divider"></div>
-        <a href="<?= RUTA_BASE ?>views/admin/excusas/index.php" class="dropdown-item">
-          <i class="fas fa-file-medical mr-2 text-sena"></i> 2 excusas médicas pendientes
-          <span class="float-right text-muted text-sm">Hoy</span>
-        </a>
-        <div class="dropdown-divider"></div>
-        <a href="<?= RUTA_BASE ?>views/admin/asistencias/index.php" class="dropdown-item">
-          <i class="fas fa-clock mr-2 text-warning"></i> 3 retardos registrados hoy
-          <span class="float-right text-muted text-sm">Hoy</span>
-        </a>
-        <div class="dropdown-divider"></div>
-        <a href="<?= RUTA_BASE ?>views/admin/aprendices/index.php" class="dropdown-item">
-          <i class="fas fa-user-plus mr-2 text-info"></i> 5 aprendices nuevos esta semana
-          <span class="float-right text-muted text-sm">Semana</span>
-        </a>
-      </div>
-    </li>
-
     <!-- Menú del usuario -->
     <li class="nav-item dropdown">
       <a class="nav-link" data-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false">
