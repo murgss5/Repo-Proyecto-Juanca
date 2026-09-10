@@ -67,9 +67,16 @@ try {
         $jornada = trim($_POST['jornada'] ?? '');
         $instructor = filter_input(INPUT_POST, 'id_instructor', FILTER_VALIDATE_INT);
 
-        // Valida campos obligatorios
-        if ($programa === '' || mb_strlen($programa) > 100 || $jornada === '' || mb_strlen($jornada) > 50 || !$instructor) {
+        // jornadas permitidas
+        $jornadasPermitidas = ['Diurna', 'Tarde', 'Nocturna'];
+
+        // Valida campos obligatorios y jornada valida
+        if ($programa === '' || mb_strlen($programa) > 100 || !$instructor) {
             volverAcademico($modulo, 'error', 'Complete los datos obligatorios de la ficha.');
+        }
+        // valida que la jornada sea una de las permitidas
+        if ($jornada === '' || !in_array($jornada, $jornadasPermitidas, true)) {
+            volverAcademico($modulo, 'error', 'Jornada no valida. Seleccione Diurna, Tarde o Nocturna.');
         }
 
         // Verifica que el instructor exista y sea rol 2
