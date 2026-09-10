@@ -280,9 +280,6 @@ ob_start();
   </div>
 </div>
 
-<div class="alert alert-info py-2" role="alert">
-  <i class="fas fa-info-circle"></i> Todas las métricas, gráficas y listados de este dashboard provienen de la base de datos.
-</div>
 <?php
 $contenido = ob_get_clean();
 

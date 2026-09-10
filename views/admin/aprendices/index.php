@@ -7,6 +7,7 @@
 // Carga la autenticacion y verifica que sea administrador
 require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
 exigirRol(1);
+
 // Carga constantes y conexion a la base de datos
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
 require_once dirname(__DIR__) . '/../../config/conexion.php';
@@ -108,8 +109,6 @@ ob_start();
         </tbody>
       </table>
     </div>
-
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> El listado y las acciones de creacion, edicion y eliminacion consultan la base de datos.</p>
   </div>
 </div>
 

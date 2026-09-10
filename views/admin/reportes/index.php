@@ -468,7 +468,6 @@ ob_start();
                 </tbody>
             </table>
         </div>
-        <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Los datos provienen de la base de datos. Las inasistencias con excusa APROBADA no se cuentan como inasistencias en el total principal (columna "Inasist. justif.").</p>
     </div>
 </div>
 

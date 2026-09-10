@@ -307,8 +307,6 @@ ob_start();
                 </tbody>
             </table>
         </div>
-
-        <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Los datos provienen de la base de datos. La revisión de excusas (aprobar/rechazar) corresponde al instructor de la ficha.</p>
     </div>
 </div>
 <?php

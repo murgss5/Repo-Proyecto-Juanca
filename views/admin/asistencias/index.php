@@ -70,7 +70,6 @@ ob_start();
     <div class="table-responsive"><table class="table table-hover table-bordered tabla-datos"><thead><tr><th>Fecha</th><th>Aprendiz</th><th>Ficha</th><th>Hora entrada</th><th>Hora salida</th><th>Estado</th><th>Min. retardo</th><th>Código RFID</th></tr></thead><tbody>
     <?php foreach($asistencias as $asistencia):?><tr><td><?=htmlspecialchars($asistencia['fecha_asistencia'])?></td><td><?=htmlspecialchars($asistencia['aprendiz'])?></td><td><span class="badge badge-info">Ficha #<?=$asistencia['id_ficha']?></span></td><td><?=htmlspecialchars($asistencia['entrada']??'--')?></td><td><?=htmlspecialchars($asistencia['salida']??'--')?></td><td><span class="badge badge-estado <?=claseEstadoAsistenciaAdmin($asistencia['estado'])?>"><?=htmlspecialchars($asistencia['estado'])?></span></td><td><?php if($asistencia['minutos_retardo']>0):?><span class="badge badge-warning"><?=$asistencia['minutos_retardo']?> min</span><?php else:?><span class="text-muted">0</span><?php endif;?></td><td><code><?=htmlspecialchars($asistencia['codigo_rfid'])?></code></td></tr><?php endforeach;?>
     </tbody></table></div>
-    <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Los filtros por fecha, ficha y estado consultan directamente la base de datos.</p>
   </div>
 </div>
 <?php $contenido=ob_get_clean(); include __DIR__.'/../../layouts/layout_admin.php';
