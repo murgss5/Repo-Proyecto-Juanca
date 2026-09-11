@@ -338,7 +338,7 @@ ob_start();
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover table-bordered tabla-datos">
+            <table id="tablaReportes" class="table table-hover table-bordered tabla-datos">
                 <thead>
                     <tr>
                         <th>Aprendiz</th>
@@ -359,37 +359,31 @@ ob_start();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($resumenAprendices)): ?>
+                    <?php foreach ($resumenAprendices as $row): ?>
                         <tr>
-                            <td colspan="15" class="text-center py-4">
-                                <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
-                                <p class="text-muted mb-0">No hay datos con los filtros actuales.</p>
-                            </td>
+                            <td><?= htmlspecialchars($row['aprendiz']) ?></td>
+                            <td><?= htmlspecialchars($row['identificacion']) ?></td>
+                            <td><?= htmlspecialchars($row['nombre_programa']) ?></td>
+                            <td><?= htmlspecialchars($row['jornada']) ?></td>
+                            <td><span class="badge badge-info">#<?= htmlspecialchars($row['id_ficha']) ?></span></td>
+                            <td class="text-center"><?= (int)$row['puntuales'] ?></td>
+                            <td class="text-center"><span class="badge badge-warning"><?= (int)$row['retardos'] ?></span></td>
+                            <td class="text-center"><?= (int)$row['total_min_retardo'] ?> min</td>
+                            <td class="text-center"><span class="badge badge-danger"><?= (int)$row['inasistencias'] ?></span></td>
+                            <td class="text-center"><span class="badge badge-info"><?= (int)$row['inasistencias_justificadas'] ?></span></td>
+                            <td class="text-center"><span class="badge badge-info"><?= (int)$row['salidas_anticipadas'] ?></span></td>
+                            <td class="text-center"><?= (int)$row['total_min_salida_anticipada'] ?> min</td>
+                            <td class="text-center"><span class="badge badge-success"><?= (int)$row['excusas_aprobadas'] ?></span></td>
+                            <td class="text-center"><span class="badge badge-warning"><?= (int)$row['excusas_pendientes'] ?></span></td>
+                            <td class="text-center"><span class="badge badge-danger"><?= (int)$row['excusas_rechazadas'] ?></span></td>
                         </tr>
-                    <?php else: ?>
-                        <?php foreach ($resumenAprendices as $row): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($row['aprendiz']) ?></td>
-                                <td><?= htmlspecialchars($row['identificacion']) ?></td>
-                                <td><?= htmlspecialchars($row['nombre_programa']) ?></td>
-                                <td><?= htmlspecialchars($row['jornada']) ?></td>
-                                <td><span class="badge badge-info">#<?= htmlspecialchars($row['id_ficha']) ?></span></td>
-                                <td class="text-center"><?= (int)$row['puntuales'] ?></td>
-                                <td class="text-center"><span class="badge badge-warning"><?= (int)$row['retardos'] ?></span></td>
-                                <td class="text-center"><?= (int)$row['total_min_retardo'] ?> min</td>
-                                <td class="text-center"><span class="badge badge-danger"><?= (int)$row['inasistencias'] ?></span></td>
-                                <td class="text-center"><span class="badge badge-info"><?= (int)$row['inasistencias_justificadas'] ?></span></td>
-                                <td class="text-center"><span class="badge badge-info"><?= (int)$row['salidas_anticipadas'] ?></span></td>
-                                <td class="text-center"><?= (int)$row['total_min_salida_anticipada'] ?> min</td>
-                                <td class="text-center"><span class="badge badge-success"><?= (int)$row['excusas_aprobadas'] ?></span></td>
-                                <td class="text-center"><span class="badge badge-warning"><?= (int)$row['excusas_pendientes'] ?></span></td>
-                                <td class="text-center"><span class="badge badge-danger"><?= (int)$row['excusas_rechazadas'] ?></span></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
+        <?php if (empty($resumenAprendices)): ?>
+            <p class="text-center text-muted py-4"><i class="fas fa-chart-bar fa-2x text-muted mb-2"></i><br>No hay datos con los filtros actuales.</p>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -400,7 +394,7 @@ ob_start();
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover table-bordered tabla-datos">
+            <table id="tablaDetalleAsistencias" class="table table-hover table-bordered tabla-datos">
                 <thead>
                     <tr>
                         <th>Fecha</th>
@@ -417,57 +411,52 @@ ob_start();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($detalleAsistencias)): ?>
+                    <?php foreach ($detalleAsistencias as $row): ?>
                         <tr>
-                            <td colspan="11" class="text-center py-4">
-                                <i class="fas fa-calendar-alt fa-2x text-muted mb-2"></i>
-                                <p class="text-muted mb-0">No hay registros de asistencia con los filtros actuales.</p>
+                            <td><?= htmlspecialchars(date('d/m/Y', strtotime($row['fecha_asistencia']))) ?></td>
+                            <td><?= htmlspecialchars($row['aprendiz']) ?></td>
+                            <td><?= htmlspecialchars($row['identificacion']) ?></td>
+                            <td><span class="badge badge-info">#<?= htmlspecialchars($row['id_ficha']) ?></span></td>
+                            <td><?= $row['entrada'] ? htmlspecialchars(date('H:i', strtotime($row['entrada']))) : '<span class="text-muted">--</span>' ?></td>
+                            <td><?= $row['salida'] ? htmlspecialchars(date('H:i', strtotime($row['salida']))) : '<span class="text-muted">--</span>' ?></td>
+                            <td><span class="badge badge-estado <?= badgeEstado($row['estado_entrada']) ?>"><?= htmlspecialchars($row['estado_entrada']) ?></span></td>
+                            <td><span class="badge badge-estado <?= badgeEstadoSalida($row['estado_salida']) ?>"><?= htmlspecialchars($row['estado_salida']) ?></span></td>
+                            <td class="text-center">
+                                <?php if ((int)$row['minutos_retardo'] > 0): ?>
+                                    <span class="badge badge-warning"><?= (int)$row['minutos_retardo'] ?> min</span>
+                                <?php else: ?>
+                                    <span class="text-muted">0</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-center">
+                                <?php if ((int)$row['minutos_salida_anticipada'] > 0): ?>
+                                    <span class="badge badge-info"><?= (int)$row['minutos_salida_anticipada'] ?> min</span>
+                                <?php else: ?>
+                                    <span class="text-muted">0</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($row['estado_excusa']): ?>
+                                    <?php
+                                        $claseExcusa = 'badge-secondary';
+                                        if ($row['estado_excusa'] === 'PENDIENTE') $claseExcusa = 'badge-warning';
+                                        if ($row['estado_excusa'] === 'APROBADA') $claseExcusa = 'badge-success';
+                                        if ($row['estado_excusa'] === 'RECHAZADA') $claseExcusa = 'badge-danger';
+                                    ?>
+                                    <span class="badge badge-estado <?= $claseExcusa ?>"><?= htmlspecialchars(ucfirst(strtolower($row['estado_excusa']))) ?></span>
+                                <?php else: ?>
+                                    <span class="text-muted">&mdash;</span>
+                                <?php endif; ?>
                             </td>
                         </tr>
-                    <?php else: ?>
-                        <?php foreach ($detalleAsistencias as $row): ?>
-                            <tr>
-                                <td><?= htmlspecialchars(date('d/m/Y', strtotime($row['fecha_asistencia']))) ?></td>
-                                <td><?= htmlspecialchars($row['aprendiz']) ?></td>
-                                <td><?= htmlspecialchars($row['identificacion']) ?></td>
-                                <td><span class="badge badge-info">#<?= htmlspecialchars($row['id_ficha']) ?></span></td>
-                                <td><?= $row['entrada'] ? htmlspecialchars(date('H:i', strtotime($row['entrada']))) : '<span class="text-muted">--</span>' ?></td>
-                                <td><?= $row['salida'] ? htmlspecialchars(date('H:i', strtotime($row['salida']))) : '<span class="text-muted">--</span>' ?></td>
-                                <td><span class="badge badge-estado <?= badgeEstado($row['estado_entrada']) ?>"><?= htmlspecialchars($row['estado_entrada']) ?></span></td>
-                                <td><span class="badge badge-estado <?= badgeEstadoSalida($row['estado_salida']) ?>"><?= htmlspecialchars($row['estado_salida']) ?></span></td>
-                                <td class="text-center">
-                                    <?php if ((int)$row['minutos_retardo'] > 0): ?>
-                                        <span class="badge badge-warning"><?= (int)$row['minutos_retardo'] ?> min</span>
-                                    <?php else: ?>
-                                        <span class="text-muted">0</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-center">
-                                    <?php if ((int)$row['minutos_salida_anticipada'] > 0): ?>
-                                        <span class="badge badge-info"><?= (int)$row['minutos_salida_anticipada'] ?> min</span>
-                                    <?php else: ?>
-                                        <span class="text-muted">0</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php if ($row['estado_excusa']): ?>
-                                        <?php
-                                            $claseExcusa = 'badge-secondary';
-                                            if ($row['estado_excusa'] === 'PENDIENTE') $claseExcusa = 'badge-warning';
-                                            if ($row['estado_excusa'] === 'APROBADA') $claseExcusa = 'badge-success';
-                                            if ($row['estado_excusa'] === 'RECHAZADA') $claseExcusa = 'badge-danger';
-                                        ?>
-                                        <span class="badge badge-estado <?= $claseExcusa ?>"><?= htmlspecialchars(ucfirst(strtolower($row['estado_excusa']))) ?></span>
-                                    <?php else: ?>
-                                        <span class="text-muted">&mdash;</span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
+        <?php if (empty($detalleAsistencias)): ?>
+            <p class="text-center text-muted py-4"><i class="fas fa-calendar-alt fa-2x text-muted mb-2"></i><br>No hay registros de asistencia con los filtros actuales.</p>
+        <?php endif; ?>
+        <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Los datos provienen de la base de datos. Las inasistencias con excusa APROBADA no se cuentan como inasistencias en el total principal (columna "Inasist. justif.").</p>
     </div>
 </div>
 
