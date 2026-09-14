@@ -163,6 +163,37 @@ ob_start();
   </div>
 </div>
 
+<!-- Control de jornada -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-clock text-sena"></i> Control de jornada</h3>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span id="estadoJornada" class="badge badge-secondary px-3 py-2" style="font-size: 0.9rem;">
+                        Jornada no iniciada
+                    </span>
+                    <button type="button" id="btnAbrirJornada" class="btn btn-success" aria-label="Abrir jornada">
+                        <i class="fas fa-door-open mr-1"></i> Abrir jornada
+                    </button>
+                    <button type="button" id="btnCerrarJornada" class="btn btn-danger" disabled aria-label="Cerrar jornada" aria-disabled="true">
+                        <i class="fas fa-door-closed mr-1"></i> Cerrar jornada
+                    </button>
+                    <!-- TODO: eliminar al implementar la logica real de apertura/cierre -->
+                    <button type="button" id="btnPreviewCierre" class="btn btn-outline-secondary btn-sm ml-auto" aria-label="Vista previa de cierre" style="display: none;">
+                        <i class="fas fa-eye mr-1"></i> Vista previa de cierre
+                    </button>
+                </div>
+                <div class="mt-2 text-muted small">
+                    Estado actual: <span id="textoEstado">Sin iniciar</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Gráfica y registros del día -->
 <div class="row">
   <div class="col-md-7 mb-3">
@@ -245,6 +276,127 @@ ob_start();
   </div>
 </div>
 
+
+<!-- SweetAlert2 CDN (solo para panel instructor) -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Control de jornada - solo interfaz visual -->
+<script>
+    (function () {
+        'use strict';
+
+        var btnAbrir = document.getElementById('btnAbrirJornada');
+        var btnCerrar = document.getElementById('btnCerrarJornada');
+        var btnPreview = document.getElementById('btnPreviewCierre');
+        var estadoBadge = document.getElementById('estadoJornada');
+        var textoEstado = document.getElementById('textoEstado');
+
+        // funcion para mostrar sweetalert de abrir jornada
+        function mostrarModalAbrir() {
+            Swal.fire({
+                title: 'Abrir jornada',
+                text: 'Al confirmar, los aprendices podran registrar su asistencia.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Si, abrir',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true,
+                allowOutsideClick: true,
+                allowEscapeKey: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    // segundo sweetalert - interfaz preparada
+                    Swal.fire({
+                        title: 'Interfaz preparada',
+                        text: 'La apertura real de jornada sera habilitada en la siguiente actualizacion.',
+                        icon: 'info',
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#17a2b8',
+                        allowOutsideClick: true,
+                        allowEscapeKey: true
+                    });
+                    // no cambiar estados - mantener como estaba
+                }
+            });
+        }
+
+        // funcion para mostrar sweetalert de cerrar jornada
+        function mostrarModalCerrar() {
+            Swal.fire({
+                title: 'Cerrar jornada',
+                text: 'Al confirmar, los aprendices ya no podran registrar asistencia.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Si, cerrar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true,
+                allowOutsideClick: true,
+                allowEscapeKey: true
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    // segundo sweetalert - interfaz preparada
+                    Swal.fire({
+                        title: 'Interfaz preparada',
+                        text: 'El cierre real de jornada sera habilitado en una proxima actualizacion.',
+                        icon: 'info',
+                        confirmButtonText: 'Entendido',
+                        confirmButtonColor: '#17a2b8',
+                        allowOutsideClick: true,
+                        allowEscapeKey: true
+                    }).then(function () {
+                        // restablecer a estado inicial
+                        restablecerEstadoInicial();
+                    });
+                }
+            });
+        }
+
+        // restablecer a estado inicial
+        function restablecerEstadoInicial() {
+            btnAbrir.disabled = false;
+            btnAbrir.setAttribute('aria-disabled', 'false');
+            btnCerrar.disabled = true;
+            btnCerrar.setAttribute('aria-disabled', 'true');
+            estadoBadge.className = 'badge badge-secondary px-3 py-2';
+            estadoBadge.style.fontSize = '0.9rem';
+            estadoBadge.textContent = 'Jornada no iniciada';
+            textoEstado.textContent = 'Sin iniciar';
+        }
+
+        // evento abrir jornada
+        if (btnAbrir) {
+            btnAbrir.addEventListener('click', mostrarModalAbrir);
+        }
+
+        // evento cerrar jornada
+        if (btnCerrar) {
+            btnCerrar.addEventListener('click', mostrarModalCerrar);
+        }
+
+        // vista previa de cierre - solo para desarrollo
+        // TODO: eliminar al implementar la logica real de apertura/cierre
+        if (btnPreview) {
+            btnPreview.addEventListener('click', function () {
+                var habilitado = btnCerrar.disabled === false;
+                btnCerrar.disabled = !habilitado;
+                btnCerrar.setAttribute('aria-disabled', habilitado ? 'true' : 'false');
+                btnPreview.textContent = habilitado
+                    ? ' \u2022 Vista previa de cierre'
+                    : ' \u2022 Vista previa de cierre (ACTIVO)';
+                btnPreview.classList.toggle('btn-outline-secondary');
+                btnPreview.classList.toggle('btn-outline-warning');
+            });
+        }
+
+        // exponer btnPreview en window para prueba manual desde consola
+        // TODO: eliminar al implementar la logica real de apertura/cierre
+        window.__jornadaPreview = btnPreview;
+    })();
+</script>
 
 <?php
 $contenido = ob_get_clean();

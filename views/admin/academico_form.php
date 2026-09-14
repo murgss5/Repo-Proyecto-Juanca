@@ -74,7 +74,8 @@ ob_start();
 
                 <div class="form-group">
                     <label>Programa de formación *</label>
-                    <input class="form-control" name="nombre_programa" maxlength="100" required value="<?= htmlspecialchars($datos['nombre_programa']) ?>">
+                    <input class="form-control" name="nombre_programa" maxlength="100" required
+                        value="<?= htmlspecialchars($datos['nombre_programa']) ?>">
                 </div>
 
                 <div class="row">
@@ -84,7 +85,8 @@ ob_start();
                             <option value="" disabled selected>Seleccione una jornada</option>
                             <option value="Diurna" <?= ($datos['jornada'] === 'Diurna') ? 'selected' : '' ?>>Diurna</option>
                             <option value="Tarde" <?= ($datos['jornada'] === 'Tarde') ? 'selected' : '' ?>>Tarde</option>
-                            <option value="Nocturna" <?= ($datos['jornada'] === 'Nocturna') ? 'selected' : '' ?>>Nocturna</option>
+                            <option value="Nocturna" <?= ($datos['jornada'] === 'Nocturna') ? 'selected' : '' ?>>Nocturna
+                            </option>
                         </select>
                     </div>
                     <div class="col-md-6 form-group">
@@ -92,7 +94,8 @@ ob_start();
                         <select class="form-control" name="id_instructor" required>
                             <option value="">Seleccione...</option>
                             <?php foreach ($instructores as $i): ?>
-                                <option value="<?= $i['id_usuario'] ?>" <?= strval($datos['fk_usuario']) === strval($i['id_usuario']) ? 'selected' : '' ?>>
+                                <option value="<?= $i['id_usuario'] ?>"
+                                    <?= strval($datos['fk_usuario']) === strval($i['id_usuario']) ? 'selected' : '' ?>>
                                     <?= htmlspecialchars($i['nombre'] . ' ' . $i['apellido']) ?>
                                 </option>
                             <?php endforeach; ?>
@@ -126,11 +129,13 @@ ob_start();
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Hora de entrada *</label>
-                        <input class="form-control" type="time" name="entrada" required value="<?= htmlspecialchars(substr($datos['entrada'], 0, 5)) ?>">
+                        <input class="form-control" type="time" name="entrada" required
+                            value="<?= htmlspecialchars(substr($datos['entrada'], 0, 5)) ?>">
                     </div>
                     <div class="col-md-4 form-group">
                         <label>Hora de salida *</label>
-                        <input class="form-control" type="time" name="salida" required value="<?= htmlspecialchars(substr($datos['salida'], 0, 5)) ?>">
+                        <input class="form-control" type="time" name="salida" required
+                            value="<?= htmlspecialchars(substr($datos['salida'], 0, 5)) ?>">
                     </div>
                 </div>
             <?php endif; ?>
