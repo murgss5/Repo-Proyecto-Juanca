@@ -121,6 +121,20 @@ foreach ($consultaSemana->fetchAll() as $dia) {
     $resumenSemana['retardos'][$indice] = (int) $dia['retardos'];
 }
 
+// Consultar estado de jornada actual para el instructor
+$consultaJornada = $conexion->prepare(
+    "SELECT id_sesion, ficha_id, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado
+     FROM sesiones_jornada
+     WHERE instructor_id = :instructor_id
+       AND fecha = CURDATE()
+       AND estado IN ('abierta', 'cerrada_manual')
+     ORDER BY hora_apertura_real DESC
+     LIMIT 1"
+);
+$consultaJornada->bindValue(':instructor_id', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaJornada->execute();
+$jornadaActual = $consultaJornada->fetch();
+
 ob_start();
 ?>
 <!-- Tarjetas de estadísticas -->
@@ -181,10 +195,11 @@ ob_start();
                     <button type="button" id="btnCerrarJornada" class="btn btn-danger" disabled aria-label="Cerrar jornada" aria-disabled="true">
                         <i class="fas fa-door-closed mr-1"></i> Cerrar jornada
                     </button>
-                    <!-- TODO: eliminar al implementar la logica real de apertura/cierre -->
-                    <button type="button" id="btnPreviewCierre" class="btn btn-outline-secondary btn-sm ml-auto" aria-label="Vista previa de cierre" style="display: none;">
-                        <i class="fas fa-eye mr-1"></i> Vista previa de cierre
-                    </button>
+                </div>
+                <div id="detalleJornada" class="mt-2 text-muted small" style="display: none;">
+                    <div>Apertura: <span id="horaApertura"></span></div>
+                    <div>Límite puntualidad: <span id="horaLimite"></span></div>
+                    <div class="text-info">Tolerancia activa: 10 minutos</div>
                 </div>
                 <div class="mt-2 text-muted small">
                     Estado actual: <span id="textoEstado">Sin iniciar</span>
@@ -193,6 +208,13 @@ ob_start();
         </div>
     </div>
 </div>
+
+<script>
+    // pasar datos de jornada actual a JavaScript
+    window.jornadaActual = <?= json_encode($jornadaActual ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    window.rutaBase = '<?= RUTA_BASE ?>';
+    window.tokenCsrf = '<?= $_SESSION['token_csrf'] ?? '' ?>';
+</script>
 
 <!-- Gráfica y registros del día -->
 <div class="row">
@@ -280,19 +302,100 @@ ob_start();
 <!-- SweetAlert2 CDN (solo para panel instructor) -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- Control de jornada - solo interfaz visual -->
+<!-- Control de jornada - funcionalidad real -->
 <script>
     (function () {
         'use strict';
 
         var btnAbrir = document.getElementById('btnAbrirJornada');
         var btnCerrar = document.getElementById('btnCerrarJornada');
-        var btnPreview = document.getElementById('btnPreviewCierre');
         var estadoBadge = document.getElementById('estadoJornada');
         var textoEstado = document.getElementById('textoEstado');
+        var detalleJornada = document.getElementById('detalleJornada');
+        var horaAperturaEl = document.getElementById('horaApertura');
+        var horaLimiteEl = document.getElementById('horaLimite');
+        var rutaBase = window.rutaBase || '';
+        var tokenCsrf = window.tokenCsrf || '';
 
-        // funcion para mostrar sweetalert de abrir jornada
-        function mostrarModalAbrir() {
+        // inicializar UI segun estado del servidor
+        function inicializarUI() {
+            var jornada = window.jornadaActual;
+            if (!jornada) {
+                // sin jornada: estado inicial
+                estadoInicial();
+                return;
+            }
+
+            if (jornada.estado === 'abierta') {
+                estadoAbierta(jornada);
+            } else if (jornada.estado === 'cerrada_manual') {
+                estadoCerrada(jornada);
+            }
+        }
+
+        function estadoInicial() {
+            btnAbrir.disabled = false;
+            btnAbrir.setAttribute('aria-disabled', 'false');
+            btnCerrar.disabled = true;
+            btnCerrar.setAttribute('aria-disabled', 'true');
+            estadoBadge.className = 'badge badge-secondary px-3 py-2';
+            estadoBadge.style.fontSize = '0.9rem';
+            estadoBadge.textContent = 'Jornada no iniciada';
+            textoEstado.textContent = 'Sin iniciar';
+            detalleJornada.style.display = 'none';
+        }
+
+        function estadoAbierta(jornada) {
+            btnAbrir.disabled = true;
+            btnAbrir.setAttribute('aria-disabled', 'true');
+            btnCerrar.disabled = false;
+            btnCerrar.setAttribute('aria-disabled', 'false');
+            estadoBadge.className = 'badge badge-success px-3 py-2';
+            estadoBadge.style.fontSize = '0.9rem';
+            estadoBadge.textContent = 'Jornada abierta';
+            textoEstado.textContent = 'Abierta';
+            horaAperturaEl.textContent = jornada.hora_apertura_real ? jornada.hora_apertura_real.split(' ')[1].substring(0,5) : '--:--';
+            horaLimiteEl.textContent = jornada.hora_limite_puntualidad ? jornada.hora_limite_puntualidad.split(' ')[1].substring(0,5) : '--:--';
+            detalleJornada.style.display = 'block';
+        }
+
+        function estadoCerrada(jornada) {
+            btnAbrir.disabled = true;
+            btnAbrir.setAttribute('aria-disabled', 'true');
+            btnCerrar.disabled = true;
+            btnCerrar.setAttribute('aria-disabled', 'true');
+            estadoBadge.className = 'badge badge-danger px-3 py-2';
+            estadoBadge.style.fontSize = '0.9rem';
+            estadoBadge.textContent = 'Jornada cerrada';
+            textoEstado.textContent = 'Cerrada';
+            horaAperturaEl.textContent = jornada.hora_apertura_real ? jornada.hora_apertura_real.split(' ')[1].substring(0,5) : '--:--';
+            if (jornada.hora_cierre_real) {
+                horaLimiteEl.textContent = 'Cerrada a las ' + jornada.hora_cierre_real.split(' ')[1].substring(0,5);
+            } else {
+                horaLimiteEl.textContent = jornada.hora_limite_puntualidad ? jornada.hora_limite_puntualidad.split(' ')[1].substring(0,5) : '--:--';
+            }
+            detalleJornada.style.display = 'block';
+            // ocultar texto de tolerancia cuando cerrada
+            var toleranciaEl = detalleJornada.querySelector('.text-info');
+            if (toleranciaEl) toleranciaEl.style.display = 'none';
+        }
+
+        // funcion para hacer POST con CSRF
+        function postJson(url, data) {
+            return fetch(rutaBase + url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': tokenCsrf
+                },
+                body: JSON.stringify(data)
+            }).then(function (resp) {
+                return resp.json();
+            });
+        }
+
+        // mostrar sweetalert de abrir jornada y hacer POST real
+        function manejarAbrir() {
             Swal.fire({
                 title: 'Abrir jornada',
                 text: 'Al confirmar, los aprendices podran registrar su asistencia.',
@@ -306,24 +409,66 @@ ob_start();
                 allowOutsideClick: true,
                 allowEscapeKey: true
             }).then(function (result) {
-                if (result.isConfirmed) {
-                    // segundo sweetalert - interfaz preparada
-                    Swal.fire({
-                        title: 'Interfaz preparada',
-                        text: 'La apertura real de jornada sera habilitada en la siguiente actualizacion.',
-                        icon: 'info',
-                        confirmButtonText: 'Entendido',
-                        confirmButtonColor: '#17a2b8',
-                        allowOutsideClick: true,
-                        allowEscapeKey: true
+                if (!result.isConfirmed) return;
+
+                // mostrar carga
+                Swal.fire({
+                    title: 'Abriendo jornada...',
+                    text: 'Por favor espere',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: function () { Swal.showLoading(); }
+                });
+
+                postJson('controllers/abrir_jornada.php', { token_csrf: tokenCsrf })
+                    .then(function (res) {
+                        Swal.close();
+                        if (res.success) {
+                            // actualizar UI
+                            window.jornadaActual = {
+                                id_sesion: res.data.sesion_id,
+                                ficha_id: res.data.ficha_id,
+                                hora_apertura_real: new Date().toISOString().slice(0,19).replace('T', ' '),
+                                hora_limite_puntualidad: new Date(Date.now() + 10*60000).toISOString().slice(0,19).replace('T', ' '),
+                                estado: 'abierta'
+                            };
+                            estadoAbierta(window.jornadaActual);
+
+                            // mostrar exito
+                            Swal.fire({
+                                title: 'Jornada abierta',
+                                text: res.message,
+                                icon: 'success',
+                                confirmButtonText: 'Entendido',
+                                confirmButtonColor: '#17a2b8',
+                                allowOutsideClick: true,
+                                allowEscapeKey: true
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: res.message || 'No se pudo abrir la jornada',
+                                icon: 'error',
+                                confirmButtonText: 'Entendido',
+                                confirmButtonColor: '#dc3545'
+                            });
+                        }
+                    })
+                    .catch(function () {
+                        Swal.close();
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error de comunicacion con el servidor',
+                            icon: 'error',
+                            confirmButtonText: 'Entendido',
+                            confirmButtonColor: '#dc3545'
+                        });
                     });
-                    // no cambiar estados - mantener como estaba
-                }
             });
         }
 
-        // funcion para mostrar sweetalert de cerrar jornada
-        function mostrarModalCerrar() {
+        // mostrar sweetalert de cerrar jornada y hacer POST real
+        function manejarCerrar() {
             Swal.fire({
                 title: 'Cerrar jornada',
                 text: 'Al confirmar, los aprendices ya no podran registrar asistencia.',
@@ -337,64 +482,73 @@ ob_start();
                 allowOutsideClick: true,
                 allowEscapeKey: true
             }).then(function (result) {
-                if (result.isConfirmed) {
-                    // segundo sweetalert - interfaz preparada
-                    Swal.fire({
-                        title: 'Interfaz preparada',
-                        text: 'El cierre real de jornada sera habilitado en una proxima actualizacion.',
-                        icon: 'info',
-                        confirmButtonText: 'Entendido',
-                        confirmButtonColor: '#17a2b8',
-                        allowOutsideClick: true,
-                        allowEscapeKey: true
-                    }).then(function () {
-                        // restablecer a estado inicial
-                        restablecerEstadoInicial();
+                if (!result.isConfirmed) return;
+
+                Swal.fire({
+                    title: 'Cerrando jornada...',
+                    text: 'Por favor espere',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: function () { Swal.showLoading(); }
+                });
+
+                postJson('controllers/cerrar_jornada.php', { token_csrf: tokenCsrf })
+                    .then(function (res) {
+                        Swal.close();
+                        if (res.success) {
+                            window.jornadaActual = {
+                                id_sesion: res.data.sesion_id,
+                                ficha_id: res.data.ficha_id,
+                                hora_apertura_real: window.jornadaActual?.hora_apertura_real,
+                                hora_limite_puntualidad: window.jornadaActual?.hora_limite_puntualidad,
+                                hora_cierre_real: new Date().toISOString().slice(0,19).replace('T', ' '),
+                                estado: 'cerrada_manual'
+                            };
+                            estadoCerrada(window.jornadaActual);
+
+                            Swal.fire({
+                                title: 'Jornada cerrada',
+                                text: res.message,
+                                icon: 'success',
+                                confirmButtonText: 'Entendido',
+                                confirmButtonColor: '#17a2b8',
+                                allowOutsideClick: true,
+                                allowEscapeKey: true
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: res.message || 'No se pudo cerrar la jornada',
+                                icon: 'error',
+                                confirmButtonText: 'Entendido',
+                                confirmButtonColor: '#dc3545'
+                            });
+                        }
+                    })
+                    .catch(function () {
+                        Swal.close();
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error de comunicacion con el servidor',
+                            icon: 'error',
+                            confirmButtonText: 'Entendido',
+                            confirmButtonColor: '#dc3545'
+                        });
                     });
-                }
             });
         }
 
-        // restablecer a estado inicial
-        function restablecerEstadoInicial() {
-            btnAbrir.disabled = false;
-            btnAbrir.setAttribute('aria-disabled', 'false');
-            btnCerrar.disabled = true;
-            btnCerrar.setAttribute('aria-disabled', 'true');
-            estadoBadge.className = 'badge badge-secondary px-3 py-2';
-            estadoBadge.style.fontSize = '0.9rem';
-            estadoBadge.textContent = 'Jornada no iniciada';
-            textoEstado.textContent = 'Sin iniciar';
-        }
-
-        // evento abrir jornada
+        // eventos
         if (btnAbrir) {
-            btnAbrir.addEventListener('click', mostrarModalAbrir);
+            btnAbrir.addEventListener('click', manejarAbrir);
         }
 
-        // evento cerrar jornada
         if (btnCerrar) {
-            btnCerrar.addEventListener('click', mostrarModalCerrar);
+            btnCerrar.addEventListener('click', manejarCerrar);
         }
 
-        // vista previa de cierre - solo para desarrollo
-        // TODO: eliminar al implementar la logica real de apertura/cierre
-        if (btnPreview) {
-            btnPreview.addEventListener('click', function () {
-                var habilitado = btnCerrar.disabled === false;
-                btnCerrar.disabled = !habilitado;
-                btnCerrar.setAttribute('aria-disabled', habilitado ? 'true' : 'false');
-                btnPreview.textContent = habilitado
-                    ? ' \u2022 Vista previa de cierre'
-                    : ' \u2022 Vista previa de cierre (ACTIVO)';
-                btnPreview.classList.toggle('btn-outline-secondary');
-                btnPreview.classList.toggle('btn-outline-warning');
-            });
-        }
-
-        // exponer btnPreview en window para prueba manual desde consola
-        // TODO: eliminar al implementar la logica real de apertura/cierre
-        window.__jornadaPreview = btnPreview;
+        // inicializar al cargar
+        document.addEventListener('DOMContentLoaded', inicializarUI);
     })();
 </script>
 
