@@ -45,4 +45,4 @@ $rolDemo = 'admin';
 // ============================================================
 // DATOS DE DEMOSTRACION (estaticos, sin base de datos)
 // ============================================================
-require_once __DIR__ . '/demo_data.php';
+// Los datos demo se eliminaron; todas las vistas usan consultas reales a BD.

@@ -7,6 +7,11 @@
  * 1 = administrador, 2 = instructor, 3 = aprendiz
  */
 
+// cabeceras anti cache para evitar cache de paginas protegidas
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+header("Expires: 0");
+
 /**
  * redirige al formulario de login calculando la ruta correcta segun la profundidad del script
  */

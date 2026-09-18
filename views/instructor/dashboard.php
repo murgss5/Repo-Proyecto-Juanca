@@ -219,9 +219,6 @@ ob_start();
                         <i class="fas fa-user-plus mr-1"></i> Registrar entrada demo
                     </button>
                 </div>
-                <div class="mt-1 text-muted small">
-                    <i class="fas fa-flask mr-1"></i> Modo desarrollo activo (solo localhost)
-                </div>
                 <?php endif; ?>
             </div>
         </div>
