@@ -1,7 +1,7 @@
 <?php
 /**
- * controlador: Abrir jornada manual
- * Permite al instructor abrir una jornada para su ficha
+ * controlador: Abrir jornada manual por ficha
+ * Permite al instructor abrir una jornada para una ficha especifica
  */
 
 session_start();
@@ -40,11 +40,33 @@ if (!hash_equals($_SESSION['token_csrf'] ?? '', $tokenRecibido)) {
     exit;
 }
 
+// Recibir ficha_id y horario_id desde POST
+$fichaId = filter_input(INPUT_POST, 'ficha_id', FILTER_VALIDATE_INT);
+$horarioId = filter_input(INPUT_POST, 'horario_id', FILTER_VALIDATE_INT);
+
+if (!$fichaId || !$horarioId) {
+    http_response_code(400);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'ficha_id y horario_id son requeridos']);
+    exit;
+}
+
 // Configurar zona horaria
 date_default_timezone_set('America/Bogota');
 
 $instructorId = $_SESSION['id_usuario'];
 $fechaHoy = date('Y-m-d');
+$diaSemana = date('l'); // Lunes, Martes, etc en ingles
+$diasMap = [
+    'Monday' => 'Lunes',
+    'Tuesday' => 'Martes',
+    'Wednesday' => 'Miercoles',
+    'Thursday' => 'Jueves',
+    'Friday' => 'Viernes',
+    'Saturday' => 'Sabado',
+    'Sunday' => 'Domingo'
+];
+$diaSemanaEs = $diasMap[$diaSemana] ?? $diaSemana;
 
 $conexion = (new Conexion())->conectar();
 
@@ -52,49 +74,60 @@ try {
     // Iniciar transaccion
     $conexion->beginTransaction();
 
-    // Buscar fichas del instructor que tengan horario para hoy
-    $diaSemana = date('l'); // Lunes, Martes, etc en ingles
-    $diasMap = [
-        'Monday' => 'Lunes',
-        'Tuesday' => 'Martes',
-        'Wednesday' => 'Miercoles',
-        'Thursday' => 'Jueves',
-        'Friday' => 'Viernes',
-        'Saturday' => 'Sabado',
-        'Sunday' => 'Domingo'
-    ];
-    $diaSemanaEs = $diasMap[$diaSemana] ?? $diaSemana;
-
-    // Obtener ficha y horario del instructor para hoy
+    // Validar que la ficha pertenezca al instructor
     $q = $conexion->prepare(
-        "SELECT f.id_ficha, h.id_horario, h.entrada, h.salida
-         FROM ficha f
-         INNER JOIN horario h ON h.fk_ficha = f.id_ficha
-         WHERE f.fk_usuario = :instructor_id
-           AND h.dia_semana = :dia_semana
-         ORDER BY h.entrada ASC
-         LIMIT 1"
+        "SELECT id_ficha FROM ficha WHERE id_ficha = :ficha_id AND fk_usuario = :instructor_id"
     );
     $q->execute([
-        ':instructor_id' => $instructorId,
-        ':dia_semana' => $diaSemanaEs
+        ':ficha_id' => $fichaId,
+        ':instructor_id' => $instructorId
     ]);
-    $horarioFicha = $q->fetch();
-
-    if (!$horarioFicha) {
-        throw new Exception('No hay horario configurado para hoy para sus fichas');
+    if (!$q->fetch()) {
+        throw new Exception('La ficha no pertenece al instructor');
     }
 
-    $fichaId = (int)$horarioFicha['id_ficha'];
-    $horarioId = (int)$horarioFicha['id_horario'];
+    // Validar que el horario pertenezca a la ficha y sea para el dia actual
+    $q = $conexion->prepare(
+        "SELECT id_horario, entrada, salida FROM horario 
+         WHERE id_horario = :horario_id AND fk_ficha = :ficha_id AND dia_semana = :dia_semana"
+    );
+    $q->execute([
+        ':horario_id' => $horarioId,
+        ':ficha_id' => $fichaId,
+        ':dia_semana' => $diasMap[date('l')] ?? date('l')
+    ]);
+    $horario = $q->fetch();
+    if (!$horario) {
+        throw new Exception('El horario no pertenece a la ficha o no es para hoy');
+    }
 
-    // Verificar si ya existe una sesion abierta para esta ficha/fecha/instructor
+    // Validar ventana de apertura: desde 15 min antes hasta 60 min despues de la entrada
+    $entradaHorario = $horario['entrada']; // formato HH:MM:SS
+    $entradaDateTime = DateTime::createFromFormat('H:i:s', $entradaHorario);
+    $ahora = new DateTime();
+    $ventanaInicio = clone $entradaDateTime;
+    $ventanaInicio->modify('-15 minutes');
+    $ventanaFin = clone $entradaDateTime;
+    $ventanaFin->modify('+60 minutes');
+    $horaFinHorario = DateTime::createFromFormat('H:i:s', $horario['salida']);
+
+    if ($ahora < $ventanaInicio) {
+        throw new Exception('Aun no es hora de abrir la jornada. Ventana abre a las ' . $ventanaInicio->format('H:i'));
+    }
+    if ($ahora > $ventanaFin) {
+        throw new Exception('La ventana de apertura ha finalizado. Cerrada a las ' . $ventanaFin->format('H:i'));
+    }
+    if ($ahora >= $horaFinHorario) {
+        throw new Exception('La jornada ya ha finalizado');
+    }
+
+    // Verificar si ya existe una sesion abierta o cerrada para esta ficha/fecha
     $q = $conexion->prepare(
         "SELECT id_sesion FROM sesiones_jornada
          WHERE instructor_id = :instructor_id
            AND ficha_id = :ficha_id
            AND fecha = :fecha
-           AND estado = 'abierta'
+           AND estado IN ('abierta', 'cerrada_manual')
          FOR UPDATE"
     );
     $q->execute([
@@ -105,7 +138,7 @@ try {
     $sesionExistente = $q->fetch();
 
     if ($sesionExistente) {
-        throw new Exception('Ya existe una jornada abierta para esta ficha hoy');
+        throw new Exception('Ya existe una jornada (abierta o cerrada) para esta ficha hoy');
     }
 
     // Obtener hora actual del servidor
@@ -143,7 +176,8 @@ try {
             'sesion_id' => $sesionId,
             'hora_apertura' => $horaAperturaFmt,
             'hora_limite_puntualidad' => $horaLimiteFmt,
-            'ficha_id' => $fichaId
+            'ficha_id' => $fichaId,
+            'horario_id' => $horarioId
         ]
     ]);
 

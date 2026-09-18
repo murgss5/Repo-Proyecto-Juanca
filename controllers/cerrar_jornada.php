@@ -1,8 +1,8 @@
 <?php
 /**
- * controlador: Cerrar jornada manual
- * Permite al instructor o administrador cerrar una jornada abierta
- * y generar inasistencias para aprendices sin registro
+ * controlador: Cerrar jornada manual por ficha
+ * Permite al instructor o administrador cerrar una jornada abierta de una ficha especifica
+ * y generar inasistencias para aprendices sin registro de esa ficha
  */
 
 session_start();
@@ -42,6 +42,17 @@ if (!hash_equals($_SESSION['token_csrf'] ?? '', $tokenRecibido)) {
     exit;
 }
 
+// Recibir ficha_id (requerido) y opcionalmente sesion_id
+$fichaId = filter_input(INPUT_POST, 'ficha_id', FILTER_VALIDATE_INT);
+$sesionId = filter_input(INPUT_POST, 'sesion_id', FILTER_VALIDATE_INT);
+
+if (!$fichaId) {
+    http_response_code(400);
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'ficha_id es requerido']);
+    exit;
+}
+
 // Configurar zona horaria
 date_default_timezone_set('America/Bogota');
 
@@ -54,36 +65,42 @@ try {
     // Iniciar transaccion
     $conexion->beginTransaction();
 
-    // Buscar sesion abierta para hoy
-    // Si es admin, puede cerrar cualquier sesion abierta de hoy
-    // Si es instructor, solo la suya
+    // Buscar sesion abierta para la ficha especificada
     if ($rolUsuario === 1) {
+        // Admin: puede cerrar cualquier sesion abierta de esa ficha hoy
         $q = $conexion->prepare(
             "SELECT id_sesion, ficha_id, instructor_id, hora_apertura_real
              FROM sesiones_jornada
-             WHERE fecha = :fecha
+             WHERE ficha_id = :ficha_id
+               AND fecha = :fecha
                AND estado = 'abierta'
              FOR UPDATE"
         );
-        $q->execute([':fecha' => $fechaHoy]);
+        $q->execute([
+            ':ficha_id' => $fichaId,
+            ':fecha' => $fechaHoy
+        ]);
     } else {
+        // Instructor: solo su propia sesion de esa ficha
         $q = $conexion->prepare(
             "SELECT id_sesion, ficha_id, instructor_id, hora_apertura_real
              FROM sesiones_jornada
              WHERE instructor_id = :instructor_id
+               AND ficha_id = :ficha_id
                AND fecha = :fecha
                AND estado = 'abierta'
              FOR UPDATE"
         );
         $q->execute([
             ':instructor_id' => $usuarioId,
+            ':ficha_id' => $fichaId,
             ':fecha' => $fechaHoy
         ]);
     }
     $sesion = $q->fetch();
 
     if (!$sesion) {
-        throw new Exception('No hay una jornada abierta para cerrar');
+        throw new Exception('No hay una jornada abierta para cerrar en esta ficha');
     }
 
     $sesionId = (int)$sesion['id_sesion'];
@@ -109,8 +126,8 @@ try {
         throw new Exception('No se pudo cerrar la jornada');
     }
 
-    // GENERAR INASISTENCIAS AUTOMATICAMENTE
-    // Buscar todos los aprendices de la ficha
+    // GENERAR INASISTENCIAS AUTOMATICAMENTE SOLO PARA ESTA FICHA
+    // Buscar todos los aprendices de esta ficha
     $q = $conexion->prepare(
         "SELECT id_aprendiz FROM aprendiz WHERE fk_ficha = :ficha_id"
     );
