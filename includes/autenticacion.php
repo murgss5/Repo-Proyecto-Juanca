@@ -49,3 +49,35 @@ function exigirRol(int ...$rolesPermitidos): void
         redirigirAlLogin();
     }
 }
+
+/**
+ * guarda un mensaje flash en la sesion
+ * @param string $tipo tipo de mensaje: 'success', 'error', 'info', 'warning'
+ * @param string $mensaje texto del mensaje
+ */
+function setFlash(string $tipo, string $mensaje): void
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+    $_SESSION['flash'] = [
+        'tipo' => $tipo,
+        'mensaje' => $mensaje
+    ];
+}
+
+/**
+ * obtiene y elimina el mensaje flash de la sesion
+ * @return array|null array con 'tipo' y 'mensaje' o null si no hay
+ */
+function getFlash(): ?array
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+    $flash = $_SESSION['flash'] ?? null;
+    if ($flash) {
+        unset($_SESSION['flash']);
+    }
+    return $flash;
+}

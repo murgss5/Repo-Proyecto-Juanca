@@ -16,16 +16,16 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 $rolUsuario = $_SESSION['fk_rol'] ?? null;
 if (!in_array($rolUsuario, [1, 2], true)) {
     http_response_code(403);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Acceso denegado: se requiere rol Instructor o Administrador']);
+    setFlash('error', 'Acceso denegado: se requiere rol Instructor o Administrador');
+    header('Location: ' . $_SERVER['HTTP_REFERER'] ?? '../views/instructor/dashboard.php');
     exit;
 }
 
 // Solo procesar peticiones POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Metodo no permitido']);
+    setFlash('error', 'Metodo no permitido');
+    header('Location: ../views/instructor/dashboard.php');
     exit;
 }
 
@@ -37,8 +37,8 @@ if ($tokenRecibido === '') {
 }
 if (!hash_equals($_SESSION['token_csrf'] ?? '', $tokenRecibido)) {
     http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Token CSRF invalido']);
+    setFlash('error', 'Token CSRF invalido');
+    header('Location: ../views/instructor/dashboard.php');
     exit;
 }
 
@@ -47,9 +47,8 @@ $fichaId = filter_input(INPUT_POST, 'ficha_id', FILTER_VALIDATE_INT);
 $sesionId = filter_input(INPUT_POST, 'sesion_id', FILTER_VALIDATE_INT);
 
 if (!$fichaId) {
-    http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'ficha_id es requerido']);
+    setFlash('error', 'ficha_id es requerido');
+    header('Location: ../views/instructor/dashboard.php');
     exit;
 }
 
@@ -170,26 +169,15 @@ try {
         $mensaje .= " Se generaron {$inasistenciasGeneradas} inasistencia(s) automaticamente.";
     }
 
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => true,
-        'message' => $mensaje,
-        'data' => [
-            'sesion_id' => $sesionId,
-            'hora_cierre' => $horaCierreFmt,
-            'ficha_id' => $fichaId,
-            'inasistencias_generadas' => $inasistenciasGeneradas
-        ]
-    ]);
+    setFlash('success', $mensaje);
+    header('Location: ../views/instructor/dashboard.php');
+    exit;
 
 } catch (Exception $e) {
     if ($conexion->inTransaction()) {
         $conexion->rollBack();
     }
-    http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
-    ]);
+    setFlash('error', $e->getMessage());
+    header('Location: ../views/instructor/dashboard.php');
+    exit;
 }

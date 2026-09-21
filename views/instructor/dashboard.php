@@ -182,6 +182,21 @@ $esDesarrollo = ($host === 'localhost' || $host === '127.0.0.1' || strpos($host,
 
 ob_start();
 ?>
+<!-- Mensajes flash -->
+<?php $flash = getFlash(); ?>
+<?php if ($flash): ?>
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="alert alert-<?= $flash['tipo'] === 'success' ? 'success' : ($flash['tipo'] === 'error' ? 'danger' : $flash['tipo']) ?> alert-dismissible fade show" role="alert">
+            <?= htmlspecialchars($flash['mensaje']) ?>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Tarjetas de estadísticas -->
 <div class="row">
   <div class="col-lg-3 col-md-6 col-sm-12 mb-3">

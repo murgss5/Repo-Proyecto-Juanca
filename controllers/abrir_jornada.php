@@ -14,16 +14,16 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 if (($_SESSION['fk_rol'] ?? null) != 2) {
     http_response_code(403);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Acceso denegado: se requiere rol Instructor']);
+    setFlash('error', 'Acceso denegado: se requiere rol Instructor');
+    header('Location: ' . $_SERVER['HTTP_REFERER'] ?? '../views/instructor/dashboard.php');
     exit;
 }
 
 // Solo procesar peticiones POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Metodo no permitido']);
+    setFlash('error', 'Metodo no permitido');
+    header('Location: ../views/instructor/dashboard.php');
     exit;
 }
 
@@ -35,8 +35,8 @@ if ($tokenRecibido === '') {
 }
 if (!hash_equals($_SESSION['token_csrf'] ?? '', $tokenRecibido)) {
     http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Token CSRF invalido']);
+    setFlash('error', 'Token CSRF invalido');
+    header('Location: ../views/instructor/dashboard.php');
     exit;
 }
 
@@ -45,9 +45,8 @@ $fichaId = filter_input(INPUT_POST, 'ficha_id', FILTER_VALIDATE_INT);
 $horarioId = filter_input(INPUT_POST, 'horario_id', FILTER_VALIDATE_INT);
 
 if (!$fichaId || !$horarioId) {
-    http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'ficha_id y horario_id son requeridos']);
+    setFlash('error', 'ficha_id y horario_id son requeridos');
+    header('Location: ../views/instructor/dashboard.php');
     exit;
 }
 
@@ -164,31 +163,19 @@ try {
     // Confirmar transaccion
     $conexion->commit();
 
-    // Formatear horas para respuesta
+    // Formatear horas para mensaje
     $horaAperturaFmt = date('H:i', strtotime($horaAperturaReal));
     $horaLimiteFmt = date('H:i', strtotime($horaLimitePuntualidad));
 
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => true,
-        'message' => "Jornada abierta correctamente. Los aprendices podran registrar asistencia hasta las {$horaLimiteFmt} como puntuales.",
-        'data' => [
-            'sesion_id' => $sesionId,
-            'hora_apertura' => $horaAperturaFmt,
-            'hora_limite_puntualidad' => $horaLimiteFmt,
-            'ficha_id' => $fichaId,
-            'horario_id' => $horarioId
-        ]
-    ]);
+    setFlash('success', "Jornada abierta correctamente. Los aprendices podran registrar asistencia hasta las {$horaLimiteFmt} como puntuales.");
+    header('Location: ../views/instructor/dashboard.php');
+    exit;
 
 } catch (Exception $e) {
     if ($conexion->inTransaction()) {
         $conexion->rollBack();
     }
-    http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
-    ]);
+    setFlash('error', $e->getMessage());
+    header('Location: ../views/instructor/dashboard.php');
+    exit;
 }
