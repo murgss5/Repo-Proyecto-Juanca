@@ -8,6 +8,13 @@ exigirRol(1);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
+// accion cancelar: limpiar preview de sesion
+if (isset($_POST['accion_cancelar'])) {
+    unset($_SESSION['import_preview']);
+    header('Location: ' . RUTA_BASE . 'views/admin/horarios/importar.php');
+    exit;
+}
+
 // token csrf
 if (empty($_SESSION['token_csrf'])) {
     $_SESSION['token_csrf'] = bin2hex(random_bytes(32));

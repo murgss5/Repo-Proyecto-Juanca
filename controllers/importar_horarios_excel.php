@@ -325,7 +325,7 @@ foreach ($filasDatos as $idx => $fila) {
         'observacion' => $obs,
         'estado' => $estado,
         'detalle' => implode('; ', $detalles),
-        'seleccionable' => in_array($estado, ['VALIDA', 'ADVERTENCIA'])
+        'seleccionable' => in_array($estado, ['VALIDA', 'ADVERTENCIA', 'PENDIENTE_FICHA'])
     ];
 }
 
