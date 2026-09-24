@@ -156,10 +156,12 @@ class ExcelReader
             ]
         ];
 
+        $headerKeys = array_keys($headers); // ['A','B','C',...,'M']
+
         foreach ($ejemplos as $i => $row) {
             $rowNum = $i + 2;
-            foreach ($headers as $col => $header) {
-                $sheet->setCellValue($col . $rowNum, $row[array_search($header, $headers)]);
+            foreach ($headerKeys as $idx => $col) {
+                $sheet->setCellValue($col . $rowNum, $row[$idx]);
             }
         }
 
@@ -227,6 +229,11 @@ class ExcelReader
         // Descargar
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
         $fileName = 'plantilla_horarios_' . date('Ymd_His') . '.xlsx';
+        
+        // limpiar buffer antes de enviar headers
+        if (ob_get_level()) {
+            ob_clean();
+        }
         
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $fileName . '"');

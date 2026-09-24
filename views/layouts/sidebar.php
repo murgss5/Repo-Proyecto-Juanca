@@ -38,7 +38,11 @@ if ($rolDemo === 'admin') {
                 ['texto' => 'Listado', 'url' => RUTA_BASE . 'views/admin/fichas/index.php', 'clave' => 'fichas'],
                 ['texto' => 'Nueva ficha', 'url' => RUTA_BASE . 'views/admin/fichas/create.php', 'clave' => 'fichas-nueva'],
             ]],
-        ['tipo' => 'enlace', 'clave' => 'horarios', 'icono' => 'fa-calendar-alt', 'texto' => 'Horarios', 'url' => RUTA_BASE . 'views/admin/horarios/index.php'],
+        ['tipo' => 'enlace', 'clave' => 'horarios', 'icono' => 'fa-calendar-alt', 'texto' => 'Horarios', 'url' => RUTA_BASE . 'views/admin/horarios/index.php',
+            'hijos' => [
+                ['texto' => 'Listado', 'url' => RUTA_BASE . 'views/admin/horarios/index.php', 'clave' => 'horarios'],
+                ['texto' => 'Importar Excel', 'url' => RUTA_BASE . 'views/admin/horarios/importar.php', 'clave' => 'horarios-importar'],
+            ]],
         ['tipo' => 'enlace', 'clave' => 'asistencias', 'icono' => 'fa-clipboard-check', 'texto' => 'Asistencias', 'url' => RUTA_BASE . 'views/admin/asistencias/index.php'],
         ['tipo' => 'enlace', 'clave' => 'excusas', 'icono' => 'fa-file-medical', 'texto' => 'Excusas médicas', 'url' => RUTA_BASE . 'views/admin/excusas/index.php'],
         ['tipo' => 'enlace', 'clave' => 'reportes', 'icono' => 'fa-chart-bar', 'texto' => 'Reportes', 'url' => RUTA_BASE . 'views/admin/reportes/index.php'],
