@@ -66,6 +66,7 @@ try {
         $programa = trim($_POST['nombre_programa'] ?? '');
         $jornada = trim($_POST['jornada'] ?? '');
         $instructor = filter_input(INPUT_POST, 'id_instructor', FILTER_VALIDATE_INT);
+        $ambiente = trim($_POST['ambiente_principal'] ?? '');
 
         // jornadas permitidas
         $jornadasPermitidas = ['Diurna', 'Tarde', 'Nocturna'];
@@ -78,6 +79,13 @@ try {
         if ($jornada === '' || !in_array($jornada, $jornadasPermitidas, true)) {
             volverAcademico($modulo, 'error', 'Jornada no valida. Seleccione Diurna, Tarde o Nocturna.');
         }
+        // valida ambiente principal
+        if ($accion === 'crear' && $ambiente === '') {
+            volverAcademico($modulo, 'error', 'Ambiente principal es obligatorio.');
+        }
+        if ($ambiente !== '' && mb_strlen($ambiente) > 100) {
+            volverAcademico($modulo, 'error', 'Ambiente principal no puede exceder 100 caracteres.');
+        }
 
         // Verifica que el instructor exista y sea rol 2
         $q = $conexion->prepare('SELECT id_usuario FROM usuario WHERE id_usuario=? AND fk_rol=2');
@@ -85,11 +93,11 @@ try {
         if (!$q->fetch()) volverAcademico($modulo, 'error', 'El instructor seleccionado no existe.');
 
         if ($accion === 'crear') {
-            $conexion->prepare('INSERT INTO ficha(nombre_programa,jornada,fk_usuario) VALUES(?,?,?)')->execute([$programa, $jornada, $instructor]);
+            $conexion->prepare('INSERT INTO ficha(nombre_programa,jornada,ambiente_principal,fk_usuario) VALUES(?,?,?,?)')->execute([$programa, $jornada, $ambiente, $instructor]);
             volverAcademico($modulo, 'mensaje', 'Ficha creada correctamente.');
         }
         if (!$id) volverAcademico($modulo, 'error', 'Ficha no valida.');
-        $conexion->prepare('UPDATE ficha SET nombre_programa=?,jornada=?,fk_usuario=? WHERE id_ficha=?')->execute([$programa, $jornada, $instructor, $id]);
+        $conexion->prepare('UPDATE ficha SET nombre_programa=?,jornada=?,ambiente_principal=?,fk_usuario=? WHERE id_ficha=?')->execute([$programa, $jornada, $ambiente, $instructor, $id]);
         volverAcademico($modulo, 'mensaje', 'Ficha actualizada correctamente.');
     }
 

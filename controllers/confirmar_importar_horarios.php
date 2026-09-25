@@ -51,16 +51,24 @@ try {
     $cacheInstructores = [];
     $cacheFichas = [];
     $cacheHorariosExistentes = [];
+    $cacheHorariosPorAmbienteDia = [];
 
-    // obtener horarios existentes
+    // obtener horarios existentes con ambiente_principal
     $q = $conexion->query("
-        SELECT h.fk_ficha, h.dia_semana, h.entrada, h.salida
+        SELECT h.fk_ficha, h.dia_semana, h.entrada, h.salida, f.ambiente_principal
         FROM horario h
+        INNER JOIN ficha f ON f.id_ficha = h.fk_ficha
     ");
     $horariosBD = $q->fetchAll();
     foreach ($horariosBD as $h) {
         $clave = $h['fk_ficha'] . '|' . $h['dia_semana'] . '|' . substr($h['entrada'], 0, 5) . '|' . substr($h['salida'], 0, 5);
         $cacheHorariosExistentes[$clave] = true;
+        // para cruces de ambiente
+        $amb = trim((string)($h['ambiente_principal'] ?? ''));
+        if ($amb !== '') {
+            $ambDia = HorarioValidator::normalizarAmbiente($amb) . '|' . $h['dia_semana'];
+            $cacheHorariosPorAmbienteDia[$ambDia][] = $h;
+        }
     }
 
     $resultados = [];
@@ -138,7 +146,7 @@ try {
 
         // validar ficha
         if (!isset($cacheFichas[$fichaId])) {
-            $q = $conexion->prepare("SELECT id_ficha, nombre_programa, fk_usuario FROM ficha WHERE id_ficha = ? LIMIT 1");
+            $q = $conexion->prepare("SELECT id_ficha, nombre_programa, fk_usuario, ambiente_principal FROM ficha WHERE id_ficha = ? LIMIT 1");
             $q->execute([$fichaId]);
             $cacheFichas[$fichaId] = $q->fetch();
         }
@@ -172,6 +180,29 @@ try {
             ];
             $rechazados++;
             continue;
+        }
+
+        // validar ambiente: Excel vs ficha.ambiente_principal
+        $ambienteExcel = trim((string)($f['ambiente'] ?? ''));
+        $ambienteFicha = trim((string)($ficha['ambiente_principal'] ?? ''));
+        if ($ambienteExcel !== '') {
+            if ($ambienteFicha !== '') {
+                if (HorarioValidator::normalizarAmbiente($ambienteExcel) !== HorarioValidator::normalizarAmbiente($ambienteFicha)) {
+                    $resultados[] = [
+                        'fila' => $f['fila'],
+                        'instructor' => $f['instructor_nombre'],
+                        'ficha' => '#' . $ficha['id_ficha'],
+                        'dia' => $f['dia'],
+                        'inicio' => $f['hora_inicio'],
+                        'fin' => $f['hora_fin'],
+                        'resultado' => 'RECHAZADA',
+                        'detalle' => "Ambiente no coincide: Excel='$ambienteExcel', ficha principal='$ambienteFicha'"
+                    ];
+                    $rechazados++;
+                    continue;
+                }
+            }
+            // si ficha no tiene ambiente_principal, solo advertencia (no bloquea)
         }
 
         // normalizar dia y horas
@@ -209,7 +240,70 @@ try {
             ];
             $omitidos++;
             // marcar en cache para que siguientes filas no intenten insertar lo mismo
+            $resultados[] = [
+                'fila' => $f['fila'],
+                'instructor' => $f['instructor_nombre'],
+                'ficha' => '#' . $ficha['id_ficha'] . ' - ' . $ficha['nombre_programa'],
+                'dia' => $dia,
+                'inicio' => $horaIni,
+                'fin' => $horaFin,
+                'ambiente' => $ambienteFicha,
+                'resultado' => 'OMITIDA_DUPLICADO',
+                'detalle' => 'Horario identico ya existe en BD'
+            ];
             continue;
+        }
+
+        // cruces de ambiente contra BD (fichas distintas con mismo ambiente, mismo dia, horas solapadas)
+        if ($ambienteFicha !== '') {
+            $ambDia = HorarioValidator::normalizarAmbiente($ambienteFicha) . '|' . $dia;
+            if (isset($cacheHorariosPorAmbienteDia[$ambDia])) {
+                foreach ($cacheHorariosPorAmbienteDia[$ambDia] as $hExist) {
+                    if ((int)$hExist['fk_ficha'] === $ficha['id_ficha']) continue;
+                    $hIni = substr($hExist['entrada'], 0, 5);
+                    $hFin = substr($hExist['salida'], 0, 5);
+                    if (HorarioValidator::haySolapamientoSeguro($horaIni, $horaFin, $hIni, $hFin)) {
+                        $resultados[] = [
+                            'fila' => $f['fila'],
+                            'instructor' => $f['instructor_nombre'],
+                            'ficha' => '#' . $ficha['id_ficha'] . ' - ' . $ficha['nombre_programa'],
+                            'dia' => $dia,
+                            'inicio' => $horaIni,
+                            'fin' => $horaFin,
+                            'resultado' => 'RECHAZADA',
+                            'detalle' => "Cruce de ambiente: ficha #{$hExist['fk_ficha']} usa mismo ambiente '$ambienteFicha' el $dia ($hIni-$hFin)"
+                        ];
+                        $rechazados++;
+                        continue 2; // salta al siguiente foreach principal
+                    }
+                }
+            }
+        }
+
+        // cruces de ambiente dentro de la misma transaccion (filas previas de esta importacion)
+        if ($ambienteFicha !== '') {
+            $ambienteNorm = HorarioValidator::normalizarAmbiente($ambienteFicha);
+            foreach ($resultados as $r) {
+                if ($r['resultado'] === 'RECHAZADA') continue;
+                if ($r['ficha'] === '#' . $ficha['id_ficha']) continue;
+                if ($r['dia'] !== $dia) continue;
+                $rAmbNorm = HorarioValidator::normalizarAmbiente($r['ambiente'] ?? '');
+                if ($rAmbNorm !== $ambienteNorm) continue;
+                if (HorarioValidator::haySolapamientoSeguro($horaIni, $horaFin, $r['inicio'], $r['fin'])) {
+                    $resultados[] = [
+                        'fila' => $f['fila'],
+                        'instructor' => $f['instructor_nombre'],
+                        'ficha' => '#' . $ficha['id_ficha'] . ' - ' . $ficha['nombre_programa'],
+                        'dia' => $dia,
+                        'inicio' => $horaIni,
+                        'fin' => $horaFin,
+                        'resultado' => 'RECHAZADA',
+                        'detalle' => "Cruce de ambiente dentro de la importacion: ficha {$r['ficha']} usa mismo ambiente '$ambienteFicha' el $dia ({$r['inicio']}-{$r['fin']})"
+                    ];
+                    $rechazados++;
+                    continue 2;
+                }
+            }
         }
 
         // insertar horario
@@ -224,6 +318,7 @@ try {
                 'dia' => $dia,
                 'inicio' => $horaIni,
                 'fin' => $horaFin,
+                'ambiente' => $ambienteFicha,
                 'resultado' => 'CREADA',
                 'detalle' => 'Horario insertado correctamente'
             ];

@@ -158,4 +158,42 @@ class HorarioValidator
     {
         return strtolower(trim($header));
     }
+
+    /**
+     * normaliza ambiente para comparacion (trim, lowercase)
+     */
+    public static function normalizarAmbiente(string $ambiente): string
+    {
+        return strtolower(trim($ambiente));
+    }
+
+    /**
+     * normaliza hora a HH:MM:SS para comparacion lexicografica segura
+     * @return string|null HH:MM:SS o null si invalido
+     */
+    public static function normalizarHoraSegura($valor): ?string
+    {
+        $hm = self::normalizarHora($valor);
+        if (!$hm) {
+            return null;
+        }
+        return $hm . ':00';
+    }
+
+    /**
+     * detecta solapamiento usando comparacion lexicografica de HH:MM:SS
+     * evita strtotime
+     */
+    public static function haySolapamientoSeguro(string $iniA, string $finA, string $iniB, string $finB): bool
+    {
+        return $iniA < $finB && $iniB < $finA;
+    }
+
+    /**
+     * verifica si dos ambientes coinciden (case-insensitive, trim)
+     */
+    public static function ambientesCoinciden(string $a, string $b): bool
+    {
+        return self::normalizarAmbiente($a) === self::normalizarAmbiente($b);
+    }
 }

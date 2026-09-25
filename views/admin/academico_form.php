@@ -103,6 +103,13 @@ ob_start();
                     </div>
                 </div>
 
+                <div class="form-group">
+                    <label>Ambiente principal *</label>
+                    <input class="form-control" name="ambiente_principal" maxlength="100"
+                        value="<?= htmlspecialchars($datos['ambiente_principal'] ?? '') ?>">
+                    <small class="form-text text-muted">Ej: Taller 9, Aula 101, Laboratorio 3</small>
+                </div>
+
             <?php else: ?>
                 <input type="hidden" name="id_horario" value="<?= $datos['id_horario'] ?>">
 

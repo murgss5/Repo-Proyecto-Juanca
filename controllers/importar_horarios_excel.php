@@ -62,10 +62,11 @@ $conexion = (new Conexion())->conectar();
 $cacheInstructores = [];
 $cacheFichas = [];
 $cacheHorariosExistentes = [];
+$cacheHorariosPorAmbienteDia = []; // para cruces de ambiente
 
 // obtener todos los horarios actuales para validaciones
 $q = $conexion->query("
-    SELECT h.id_horario, h.fk_ficha, h.dia_semana, h.entrada, h.salida, f.fk_usuario as instructor_id
+    SELECT h.id_horario, h.fk_ficha, h.dia_semana, h.entrada, h.salida, f.fk_usuario as instructor_id, f.ambiente_principal
     FROM horario h
     INNER JOIN ficha f ON f.id_ficha = h.fk_ficha
 ");
@@ -78,11 +79,18 @@ foreach ($horariosBD as $h) {
 // mapear horarios por ficha y dia para cruces
 $horariosPorFichaDia = [];
 $horariosPorInstructorDia = [];
+$horariosPorAmbienteDia = []; // ambiente|dia -> horarios
 foreach ($horariosBD as $h) {
     $fichaDia = $h['fk_ficha'] . '|' . $h['dia_semana'];
     $instDia = $h['instructor_id'] . '|' . $h['dia_semana'];
     $horariosPorFichaDia[$fichaDia][] = $h;
     $horariosPorInstructorDia[$instDia][] = $h;
+    // para cruces de ambiente: solo si ficha tiene ambiente_principal
+    $amb = trim((string)($h['ambiente_principal'] ?? ''));
+    if ($amb !== '') {
+        $ambDia = HorarioValidator::normalizarAmbiente($amb) . '|' . $h['dia_semana'];
+        $horariosPorAmbienteDia[$ambDia][] = $h;
+    }
 }
 
 // procesar filas
@@ -187,7 +195,7 @@ foreach ($filasDatos as $idx => $fila) {
     if ($tieneIdFicha) {
         $idFicha = (int)$idFichaRaw;
         if (!isset($cacheFichas[$idFicha])) {
-            $q = $conexion->prepare("SELECT id_ficha, nombre_programa, fk_usuario FROM ficha WHERE id_ficha = ? LIMIT 1");
+            $q = $conexion->prepare("SELECT id_ficha, nombre_programa, fk_usuario, ambiente_principal FROM ficha WHERE id_ficha = ? LIMIT 1");
             $q->execute([$idFicha]);
             $cacheFichas[$idFicha] = $q->fetch();
         }
@@ -198,7 +206,7 @@ foreach ($filasDatos as $idx => $fila) {
         if ($q->fetch()) {
             $numFicha = trim((string)$numFichaRaw);
             if (!isset($cacheFichas['num_' . $numFicha])) {
-                $q = $conexion->prepare("SELECT id_ficha, nombre_programa, fk_usuario FROM ficha WHERE numero_ficha = ? LIMIT 1");
+                $q = $conexion->prepare("SELECT id_ficha, nombre_programa, fk_usuario, ambiente_principal FROM ficha WHERE numero_ficha = ? LIMIT 1");
                 $q->execute([$numFicha]);
                 $cacheFichas['num_' . $numFicha] = $q->fetch();
             }
@@ -221,11 +229,22 @@ foreach ($filasDatos as $idx => $fila) {
         $errores[] = "La ficha #{$ficha['id_ficha']} pertenece a otro instructor (fk_usuario={$ficha['fk_usuario']}, esperado={$instructor['id_usuario']})";
     }
 
-    // ambiente - advertencia mientras no exista campo
-    $advertenciaAmbiente = false;
+    // validacion de ambiente
+    $fichaAmbiente = $ficha ? trim((string)($ficha['ambiente_principal'] ?? '')) : '';
+    $ambienteNorm = HorarioValidator::normalizarAmbiente($ambiente);
+    $fichaAmbienteNorm = HorarioValidator::normalizarAmbiente($fichaAmbiente);
+
     if ($ambiente !== '') {
-        $advertenciaAmbiente = true;
-        $advertencias[] = "Validacion de ambiente pendiente: ambiente_principal aun no esta configurado";
+        if ($fichaAmbiente !== '') {
+            // ficha tiene ambiente principal: debe coincidir (case-insensitive)
+            if ($ambienteNorm !== $fichaAmbienteNorm) {
+                $estado = 'ERROR';
+                $errores[] = "Ambiente no coincide: Excel='$ambiente', ficha principal='$fichaAmbiente'";
+            }
+        } else {
+            // ficha sin ambiente principal: advertencia no bloqueante
+            $advertencias[] = "La ficha no tiene ambiente principal configurado; valide el ambiente manualmente.";
+        }
     }
 
     // duplicado dentro del archivo
@@ -294,6 +313,40 @@ foreach ($filasDatos as $idx => $fila) {
                         break;
                     }
                 }
+            }
+        }
+    }
+
+    // cruces de ambiente (bd) - fichas distintas con mismo ambiente en mismo dia y horas solapadas
+    if ($fichaId && $dia && $horaIni && $horaFin && $ambiente !== '') {
+        $ambDia = HorarioValidator::normalizarAmbiente($ambiente) . '|' . $dia;
+        if (isset($horariosPorAmbienteDia[$ambDia])) {
+            foreach ($horariosPorAmbienteDia[$ambDia] as $hExist) {
+                if ((int)$hExist['fk_ficha'] === $fichaId) continue; // misma ficha, ya validado
+                $hIni = substr($hExist['entrada'], 0, 5);
+                $hFin = substr($hExist['salida'], 0, 5);
+                if (HorarioValidator::haySolapamientoSeguro($horaIni, $horaFin, $hIni, $hFin)) {
+                    $estado = 'ERROR';
+                    $errores[] = "Cruce de ambiente: ficha #{$hExist['fk_ficha']} usa mismo ambiente '$ambiente' el $dia ($hIni-$hFin)";
+                    break;
+                }
+            }
+        }
+    }
+
+    // cruces de ambiente dentro del archivo (fichas distintas, mismo ambiente, mismo dia, horas solapadas)
+    if ($fichaId && $dia && $horaIni && $horaFin && $ambiente !== '') {
+        $ambienteNorm = HorarioValidator::normalizarAmbiente($ambiente);
+        foreach ($preview as $p) {
+            if ($p['estado'] === 'ERROR') continue;
+            if ((int)$p['ficha_id'] === $fichaId) continue; // misma ficha
+            if ($p['dia'] !== $dia) continue;
+            $pAmbNorm = HorarioValidator::normalizarAmbiente($p['ambiente'] ?? '');
+            if ($pAmbNorm !== $ambienteNorm) continue; // ambiente diferente
+            if (HorarioValidator::haySolapamientoSeguro($horaIni, $horaFin, $p['hora_inicio'], $p['hora_fin'])) {
+                $estado = 'ERROR';
+                $errores[] = "Cruce de ambiente dentro del archivo: ficha #{$p['ficha_id']} usa mismo ambiente '$ambiente' el $dia ({$p['hora_inicio']}-{$p['hora_fin']})";
+                break;
             }
         }
     }
