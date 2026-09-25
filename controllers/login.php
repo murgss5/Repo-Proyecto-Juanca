@@ -41,10 +41,37 @@ $consulta->bindValue(":nombre_usuario", $nombre_usuario, PDO::PARAM_STR);
 $consulta->execute();
 $usuario = $consulta->fetch();
 
-// verifica el usuario y la contrasena (comparacion directa porque la BD tiene texto plano)
-if (!$usuario || $contrasena !== $usuario["contrasena"]) {
+// funcion simple para detectar si la contrasena guardada es un hash valido de PHP
+function esHashContrasena(string $contrasenaGuardada): bool
+{
+    $info = password_get_info($contrasenaGuardada);
+    return $info['algo'] !== null;
+}
+
+// verifica el usuario y la contrasena
+// validacion de hash o texto plano segun corresponda
+$contrasenaValida = false;
+if ($usuario) {
+    if (esHashContrasena($usuario["contrasena"])) {
+        // contrasena guardada es hash: usar password_verify
+        $contrasenaValida = password_verify($contrasena, $usuario["contrasena"]);
+    } else {
+        // contrasena guardada en texto plano: comparacion segura
+        $contrasenaValida = hash_equals($usuario["contrasena"], $contrasena);
+    }
+}
+
+if (!$usuario || !$contrasenaValida) {
     header("Location: ../views/auth/login.php?error=credenciales");
     exit;
+}
+
+// migracion automatica: si la contrasena era texto plano, actualizar a hash
+if (!esHashContrasena($usuario["contrasena"])) {
+    $nuevaContrasenaHash = password_hash($contrasena, PASSWORD_DEFAULT);
+    $stmt = $conexion->prepare("UPDATE usuario SET contrasena = ? WHERE id_usuario = ?");
+    $stmt->execute([$nuevaContrasenaHash, $usuario["id_usuario"]]);
+    // si falla el UPDATE, no impedimos el login ya validado
 }
 
 // regenera el ID de sesion por seguridad

@@ -9,21 +9,30 @@
  * ============================================================
  */
 
-// Garantiza que las constantes y datos de demostración existan
+// Garantiza que las constantes existan
 if (!defined('RUTA_BASE')) {
     require_once dirname(__DIR__) . '/includes/constantes.php';
 }
 
-// Valores por defecto (pueden ser definidos por cada vista)
+// Cargar autenticacion para acceder a usuarioActual()
+require_once __DIR__ . '/../../includes/autenticacion.php';
+
+// Obtener usuario actual desde la sesion real
+$usuarioActual = usuarioActual();
+
+// Si no hay usuario valido, redirigir al login
+if ($usuarioActual === null) {
+    redirigirAlLogin();
+}
+
+// Variables derivadas de la sesion real
+$rolActualId = $usuarioActual['fk_rol'];
+$nombreRolActual = $usuarioActual['nombre_rol'];
+$nombreUsuarioActual = $usuarioActual['nombre_completo'];
+$fotoUsuario = RUTA_BASE . 'assets/img/avatar.png';
+
 $paginaTitulo = $paginaTitulo ?? 'Panel';
 $menuActivo   = $menuActivo ?? '';
-$rolDemo      = $rolDemo ?? 'admin';
-$rolNombre    = $rolNombre ?? 'Usuario';
-
-// Datos visibles del usuario autenticado.
-$usuarioDemo = $usuarioDemo ?? trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? ''));
-$usuarioDemo = $usuarioDemo !== '' ? $usuarioDemo : 'Usuario';
-$fotoUsuario = $fotoUsuario ?? RUTA_BASE . 'assets/img/avatar.png';
 ?>
 <!DOCTYPE html>
 <html lang="es">

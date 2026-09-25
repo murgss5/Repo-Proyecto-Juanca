@@ -7,12 +7,14 @@
  * Estructura visual para el rol "instructor".
  * La vista establece: $paginaTitulo, $menuActivo, $miga y
  * captura su contenido en $contenido antes de incluir este
- * archivo. NO implementa autenticación real.
+ * archivo.
  * ============================================================
  */
 
-$rolDemo   = 'instructor';
-$rolNombre = 'Instructor';
+require_once __DIR__ . '/../../includes/autenticacion.php';
+exigirRol(2);
+
+$usuarioActual = usuarioActual();
 
 // Miga de pan (breadcrumb) por defecto
 $miga = $miga ?? [['label' => $paginaTitulo]];

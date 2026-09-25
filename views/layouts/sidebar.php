@@ -4,25 +4,25 @@
  * SIDEBAR / MENÚ LATERAL (AdminLTE)
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * El menú cambia visualmente según el rol de demostración
- * ($rolDemo): administrador, instructor o aprendiz.
+ * El menú cambia visualmente según el rol real del usuario
+ * ($rolActualId): 1=administrador, 2=instructor, 3=aprendiz.
  * ============================================================
  */
 
-// Icono según el rol
+// Icono según el rol real
 $iconoRol = 'fa-user-shield';
-if ($rolDemo === 'instructor') {
+if ($rolActualId === 2) {
     $iconoRol = 'fa-chalkboard-teacher';
-} elseif ($rolDemo === 'aprendiz') {
+} elseif ($rolActualId === 3) {
     $iconoRol = 'fa-graduation-cap';
 }
 
 // ------------------------------------------------------------
-// Definición del menú por rol
+// Definición del menú por rol real
 // ------------------------------------------------------------
 $itemsMenu = [];
 
-if ($rolDemo === 'admin') {
+if ($rolActualId === 1) {
     $itemsMenu = [
         ['tipo' => 'header', 'texto' => 'PRINCIPAL'],
         ['tipo' => 'enlace', 'clave' => 'dashboard', 'icono' => 'fa-tachometer-alt', 'texto' => 'Dashboard', 'url' => RUTA_BASE . 'views/admin/dashboard.php'],
@@ -51,7 +51,7 @@ if ($rolDemo === 'admin') {
         // ['tipo' => 'enlace', 'clave' => 'configuracion', 'icono' => 'fa-cog', 'texto' => 'Configuración', 'url' => '#'],
         ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/logout.php'],
     ];
-} elseif ($rolDemo === 'instructor') {
+} elseif ($rolActualId === 2) {
     $itemsMenu = [
         ['tipo' => 'header', 'texto' => 'PRINCIPAL'],
         ['tipo' => 'enlace', 'clave' => 'dashboard', 'icono' => 'fa-tachometer-alt', 'texto' => 'Dashboard', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
@@ -90,14 +90,14 @@ function menuActivo($clave) {
 
   <!-- Contenido del menú -->
   <div class="sidebar">
-    <!-- Usuario de demostración -->
+    <!-- Usuario autenticado -->
     <div class="user-panel mt-3 pb-3 mb-3 d-flex">
       <div class="image">
         <img src="<?= $fotoUsuario ?>" class="img-circle elevation-2" alt="Foto de usuario">
       </div>
       <div class="info">
-        <a href="#" class="d-block"><?= htmlspecialchars($usuarioDemo) ?></a>
-        <span class="text-sm text-muted"><i class="fas <?= $iconoRol ?>"></i> <?= htmlspecialchars($rolNombre) ?></span>
+        <a href="#" class="d-block"><?= htmlspecialchars($nombreUsuarioActual) ?></a>
+        <span class="text-sm text-muted"><i class="fas <?= $iconoRol ?>"></i> <?= htmlspecialchars($nombreRolActual) ?></span>
       </div>
     </div>
 

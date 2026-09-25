@@ -81,3 +81,55 @@ function getFlash(): ?array
     }
     return $flash;
 }
+
+/**
+ * obtiene el usuario actual desde la sesion
+ * @return array|null array con datos del usuario o null si no hay sesion valida
+ */
+function usuarioActual(): ?array
+{
+    // inicia la sesion si no esta activa
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+
+    // valida que exista id_usuario en sesion
+    if (!isset($_SESSION['id_usuario']) || $_SESSION['id_usuario'] === '') {
+        return null;
+    }
+
+    // valida fk_rol: entero o cadena numerica
+    $fkRol = $_SESSION['fk_rol'] ?? null;
+    if ($fkRol === null || (!is_int($fkRol) && !ctype_digit((string) $fkRol))) {
+        return null;
+    }
+
+    $fkRolInt = (int) $fkRol;
+
+    // acepta solamente roles 1, 2 y 3
+    if (!in_array($fkRolInt, [1, 2, 3], true)) {
+        return null;
+    }
+
+    // construye nombre_completo
+    $nombre = $_SESSION['nombre'] ?? '';
+    $apellido = $_SESSION['apellido'] ?? '';
+    $nombreCompleto = trim($nombre . ' ' . $apellido);
+    if ($nombreCompleto === '') {
+        $nombreCompleto = $_SESSION['nombre_usuario'] ?? '';
+    }
+    if ($nombreCompleto === '') {
+        $nombreCompleto = 'Usuario';
+    }
+
+    // retorna arreglo seguro con datos del usuario
+    return [
+        'id_usuario' => (int) $_SESSION['id_usuario'],
+        'nombre_usuario' => $_SESSION['nombre_usuario'] ?? '',
+        'nombre' => $_SESSION['nombre'] ?? '',
+        'apellido' => $_SESSION['apellido'] ?? '',
+        'nombre_completo' => $nombreCompleto,
+        'fk_rol' => (int) $_SESSION['fk_rol'],
+        'nombre_rol' => $_SESSION['nombre_rol'] ?? '',
+    ];
+}

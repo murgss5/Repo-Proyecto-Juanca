@@ -3,7 +3,7 @@
    Sistema de Control de Ingreso de Aprendices - SENA
    - Tablas con DataTables (paginación, búsqueda y filtros)
    - Tooltips
-   - Gráficas con Chart.js (datos de demostración)
+   - Gráficas con Chart.js
    ============================================================ */
 
 (function ($) {

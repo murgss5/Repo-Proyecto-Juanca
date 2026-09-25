@@ -4,8 +4,7 @@
  * VISTA: DASHBOARD DEL INSTRUCTOR
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * La tarjeta "Mis fichas" usa datos reales. El resto de la
- * interfaz conserva datos de demostración por ahora.
+ * La tarjeta "Mis fichas" usa datos reales.
  * ============================================================
  */
 
@@ -175,10 +174,6 @@ $jornadasPorFicha = [];
 foreach ($jornadas as $j) {
     $jornadasPorFicha[$j['ficha_id']] = $j;
 }
-
-// Detectar entorno de desarrollo (localhost)
-$host = $_SERVER['HTTP_HOST'] ?? '';
-$esDesarrollo = ($host === 'localhost' || $host === '127.0.0.1' || strpos($host, 'localhost') !== false);
 
 ob_start();
 ?>
@@ -354,7 +349,6 @@ ob_start();
     window.jornadasPorFicha = <?= json_encode($jornadasPorFicha ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     window.rutaBase = '<?= RUTA_BASE ?>';
     window.tokenCsrf = '<?= $_SESSION['token_csrf'] ?? '' ?>';
-    window.esDesarrollo = <?= $esDesarrollo ? 'true' : 'false' ?>;
 </script>
 
 <!-- Gráfica y registros del día -->
@@ -440,9 +434,6 @@ ob_start();
 </div>
 
 
-<!-- SweetAlert2 CDN (solo para panel instructor) -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <!-- Control de jornadas por ficha - inicialización visual -->
 <script>
     (function () {
@@ -521,291 +512,8 @@ ob_start();
 
         // inicializar al cargar
         document.addEventListener('DOMContentLoaded', inicializarUI);
-    })();
+})();
 </script>
-
-<?php if ($esDesarrollo): ?>
-<!-- Herramientas de desarrollo para prueba manual -->
-<script>
-    (function () {
-        'use strict';
-
-        var btnReiniciar = document.getElementById('btnReiniciarPrueba');
-        var btnRegistrarDemo = document.getElementById('btnRegistrarDemo');
-        var rutaBase = window.rutaBase || '';
-        var tokenCsrf = window.tokenCsrf || '';
-
-        // funcion para hacer POST/GET con CSRF
-        function fetchConCsrf(url, options) {
-            var opts = options || {};
-            opts.headers = opts.headers || {};
-            opts.headers['X-CSRF-Token'] = tokenCsrf;
-            opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
-            return fetch(rutaBase + url, opts).then(function (resp) {
-                return resp.json();
-            });
-        }
-
-        // mostrar/ocultar botón demo según estado de jornada
-        function actualizarBotonDemo() {
-            var jornada = window.jornadaActual;
-            if (jornada && jornada.estado === 'abierta') {
-                btnRegistrarDemo.style.display = 'inline-block';
-            } else {
-                btnRegistrarDemo.style.display = 'none';
-            }
-        }
-
-        // REINICIAR JORNADA DE PRUEBA
-        if (btnReiniciar) {
-            btnReiniciar.addEventListener('click', function () {
-                Swal.fire({
-                    title: 'Reiniciar jornada de prueba',
-                    text: 'Esto eliminará la sesión de jornada de hoy, permitiendo volver a abrirla. Las asistencias reales NO se borran.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Sí, reiniciar',
-                    cancelButtonText: 'Cancelar',
-                    confirmButtonColor: '#ffc107',
-                    cancelButtonColor: '#6c757d',
-                    reverseButtons: true,
-                    allowOutsideClick: true,
-                    allowEscapeKey: true
-                }).then(function (result) {
-                    if (!result.isConfirmed) return;
-
-                    Swal.fire({
-                        title: 'Reiniciando...',
-                        text: 'Por favor espere',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        didOpen: function () { Swal.showLoading(); }
-                    });
-
-                    fetchConCsrf('controllers/reiniciar_jornada_prueba.php', {
-                        method: 'POST',
-                        body: JSON.stringify({ token_csrf: tokenCsrf })
-                    })
-                        .then(function (res) {
-                            Swal.close();
-                            if (res.success) {
-                                // resetear estado UI
-                                window.jornadaActual = null;
-                                estadoInicial();
-                                actualizarBotonDemo();
-
-                                Swal.fire({
-                                    title: 'Jornada de prueba reiniciada',
-                                    text: res.message,
-                                    icon: 'success',
-                                    confirmButtonText: 'Entendido',
-                                    confirmButtonColor: '#17a2b8',
-                                    allowOutsideClick: true,
-                                    allowEscapeKey: true
-                                });
-                            } else {
-                                Swal.fire({
-                                    title: 'Error',
-                                    text: res.message || 'No se pudo reiniciar',
-                                    icon: 'error',
-                                    confirmButtonText: 'Entendido',
-                                    confirmButtonColor: '#dc3545'
-                                });
-                            }
-                        })
-                        .catch(function () {
-                            Swal.close();
-                            Swal.fire({
-                                title: 'Error',
-                                text: 'Error de comunicación con el servidor',
-                                icon: 'error',
-                                confirmButtonText: 'Entendido',
-                                confirmButtonColor: '#dc3545'
-                            });
-                        });
-                });
-            });
-        }
-
-        // REGISTRAR ENTRADA DEMO
-        if (btnRegistrarDemo) {
-            btnRegistrarDemo.addEventListener('click', function () {
-                // cargar aprendices del servidor
-                Swal.fire({
-                    title: 'Cargando aprendices...',
-                    text: 'Por favor espere',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    didOpen: function () { Swal.showLoading(); }
-                });
-
-                fetchConCsrf('controllers/obtener_aprendices_demo.php?token_csrf=' + encodeURIComponent(tokenCsrf), {
-                    method: 'GET'
-                })
-                    .then(function (res) {
-                        Swal.close();
-                        if (!res.success) {
-                            Swal.fire({
-                                title: 'Error',
-                                text: res.message || 'No se pudieron cargar los aprendices',
-                                icon: 'error',
-                                confirmButtonText: 'Entendido',
-                                confirmButtonColor: '#dc3545'
-                            });
-                            return;
-                        }
-
-                        var aprendices = res.data.aprendices;
-                        var sesionId = res.data.sesion_id;
-                        var horaLimite = res.data.hora_limite_puntualidad;
-
-                        if (!aprendices || aprendices.length === 0) {
-                            Swal.fire({
-                                title: 'Sin aprendices',
-                                text: 'No hay aprendices registrados en la ficha de esta jornada',
-                                icon: 'info',
-                                confirmButtonText: 'Entendido'
-                            });
-                            return;
-                        }
-
-                        // construir opciones para select
-                        var opcionesHtml = '<option value="">-- Seleccione un aprendiz --</option>';
-                        aprendices.forEach(function (ap) {
-                            opcionesHtml += '<option value="' + ap.id_aprendiz + '" data-rfid="' + ap.codigo_rfid + '">' +
-                                ap.nombre + ' ' + ap.apellido + ' (RFID: ' + ap.codigo_rfid + ')' +
-                                (ap.identificacion ? ' - Doc: ' + ap.identificacion : '') +
-                                '</option>';
-                        });
-
-                        Swal.fire({
-                            title: 'Registrar entrada demo',
-                            html:
-                                '<div class="form-group text-left">' +
-                                '<label>Seleccione aprendiz:</label>' +
-                                '<select id="selectAprendizDemo" class="form-control">' + opcionesHtml + '</select>' +
-                                '<small class="form-text text-muted mt-1 d-block">Jornada abierta. Límite puntualidad: ' + (horaLimite ? horaLimite.split(' ')[1].substring(0,5) : '--:--') + '</small>' +
-                                '</div>',
-                            showCancelButton: true,
-                            confirmButtonText: 'Registrar entrada',
-                            cancelButtonText: 'Cancelar',
-                            confirmButtonColor: '#17a2b8',
-                            cancelButtonColor: '#6c757d',
-                            reverseButtons: true,
-                            allowOutsideClick: true,
-                            allowEscapeKey: true,
-                            preConfirm: function () {
-                                var select = document.getElementById('selectAprendizDemo');
-                                var idAprendiz = select.value;
-                                var rfid = select.options[select.selectedIndex].getAttribute('data-rfid');
-                                if (!idAprendiz) {
-                                    Swal.showValidationMessage('Debe seleccionar un aprendiz');
-                                    return false;
-                                }
-                                return { id_aprendiz: idAprendiz, rfid: rfid };
-                            }
-                        }).then(function (result) {
-                            if (!result.isConfirmed || !result.value) return;
-
-                            var datos = result.value;
-
-                            Swal.fire({
-                                title: 'Registrando entrada...',
-                                text: 'Por favor espere',
-                                allowOutsideClick: false,
-                                allowEscapeKey: false,
-                                didOpen: function () { Swal.showLoading(); }
-                            });
-
-                            // llamar al endpoint RFID existente
-                            fetchConCsrf('controllers/registrar_asistencia_rfid.php', {
-                                method: 'POST',
-                                body: JSON.stringify({
-                                    codigo_rfid: datos.rfid,
-                                    tipo: 'entrada',
-                                    token_csrf: tokenCsrf
-                                })
-                            })
-                                .then(function (resRfid) {
-                                    Swal.close();
-                                    if (resRfid.success) {
-                                        var d = resRfid.data;
-                                        var estadoTexto = d.estado === 'PUNTUAL' ? 'PUNTUAL ✓' : 'RETARDO (' + d.minutos_retardo + ' min)';
-                                        Swal.fire({
-                                            title: 'Entrada registrada',
-                                            html:
-                                                '<div class="text-left">' +
-                                                '<strong>Aprendiz:</strong> ' + d.aprendiz + '<br>' +
-                                                '<strong>RFID:</strong> ' + d.rfid + '<br>' +
-                                                '<strong>Hora:</strong> ' + d.hora + '<br>' +
-                                                '<strong>Estado:</strong> <span class="badge badge-' + (d.estado === 'PUNTUAL' ? 'success' : 'warning') + '">' + estadoTexto + '</span>' +
-                                                '</div>',
-                                            icon: d.estado === 'PUNTUAL' ? 'success' : 'warning',
-                                            confirmButtonText: 'Entendido',
-                                            confirmButtonColor: '#17a2b8'
-                                        });
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Error',
-                                            text: resRfid.message || 'No se pudo registrar la entrada',
-                                            icon: 'error',
-                                            confirmButtonText: 'Entendido',
-                                            confirmButtonColor: '#dc3545'
-                                        });
-                                    }
-                                })
-                                .catch(function () {
-                                    Swal.close();
-                                    Swal.fire({
-                                        title: 'Error',
-                                        text: 'Error de comunicación con el servidor',
-                                        icon: 'error',
-                                        confirmButtonText: 'Entendido',
-                                        confirmButtonColor: '#dc3545'
-                                    });
-                                });
-                        });
-                    })
-                    .catch(function () {
-                        Swal.close();
-                        Swal.fire({
-                            title: 'Error',
-                            text: 'Error de comunicación con el servidor',
-                            icon: 'error',
-                            confirmButtonText: 'Entendido',
-                            confirmButtonColor: '#dc3545'
-                        });
-                    });
-            });
-        }
-
-        // actualizar visibilidad del botón demo al inicializar y cuando cambia jornada
-        var originalEstadoAbierta = window.estadoAbierta;
-        var originalEstadoCerrada = window.estadoCerrada;
-        var originalEstadoInicial = window.estadoInicial;
-
-        window.estadoAbierta = function (jornada) {
-            if (originalEstadoAbierta) originalEstadoAbierta(jornada);
-            actualizarBotonDemo();
-        };
-
-        window.estadoCerrada = function (jornada) {
-            if (originalEstadoCerrada) originalEstadoCerrada(jornada);
-            actualizarBotonDemo();
-        };
-
-        window.estadoInicial = function () {
-            if (originalEstadoInicial) originalEstadoInicial();
-            actualizarBotonDemo();
-        };
-
-        // inicializar visibilidad
-        document.addEventListener('DOMContentLoaded', function () {
-            actualizarBotonDemo();
-        });
-    })();
-</script>
-<?php endif; ?>
 
 <?php
 $contenido = ob_get_clean();

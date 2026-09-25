@@ -5,18 +5,18 @@
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
  * Incluye: botón de menú, enlaces directos, notificaciones y
- * menú del usuario. Es solo interfaz visual (sin lógica real).
+ * menú del usuario.
  * ============================================================
  */
 
-// Enlaces rápidos según el rol de demostración
+// Enlaces rápidos según el rol real del usuario
 $enlacesRapidos = [];
-if ($rolDemo === 'admin') {
+if ($rolActualId === 1) {
     $enlacesRapidos = [
         ['url' => RUTA_BASE . 'views/admin/aprendices/index.php', 'icono' => 'fa-users', 'texto' => 'Aprendices'],
         ['url' => RUTA_BASE . 'views/admin/asistencias/index.php', 'icono' => 'fa-clipboard-check', 'texto' => 'Asistencias'],
     ];
-} elseif ($rolDemo === 'instructor') {
+} elseif ($rolActualId === 2) {
     $enlacesRapidos = [
         ['url' => RUTA_BASE . 'views/instructor/aprendices/index.php', 'icono' => 'fa-users', 'texto' => 'Mis aprendices'],
         ['url' => RUTA_BASE . 'views/instructor/asistencias/index.php', 'icono' => 'fa-clipboard-check', 'texto' => 'Asistencias'],
@@ -53,12 +53,12 @@ if ($rolDemo === 'admin') {
     <li class="nav-item dropdown">
       <a class="nav-link" data-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false">
         <img src="<?= $fotoUsuario ?>" class="img-circle elevation-2" alt="Foto de usuario" width="32" height="32">
-        <span class="d-none d-md-inline ml-1"><?= htmlspecialchars($usuarioDemo) ?></span>
+        <span class="d-none d-md-inline ml-1"><?= htmlspecialchars($nombreUsuarioActual) ?></span>
       </a>
       <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
         <a href="#" class="dropdown-item">
-          <i class="fas fa-user-circle mr-2 text-sena"></i> <?= htmlspecialchars($usuarioDemo) ?>
-          <small class="float-right text-muted"><?= htmlspecialchars($rolNombre) ?></small>
+          <i class="fas fa-user-circle mr-2 text-sena"></i> <?= htmlspecialchars($nombreUsuarioActual) ?>
+          <small class="float-right text-muted"><?= htmlspecialchars($nombreRolActual) ?></small>
         </a>
         <div class="dropdown-divider"></div>
         <a href="<?= RUTA_BASE ?>controllers/logout.php" class="dropdown-item text-danger">
