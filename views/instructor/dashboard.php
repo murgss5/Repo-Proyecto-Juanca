@@ -21,106 +21,62 @@ $miga = [
     ['label' => 'Dashboard'],
 ];
 
-// El instructor autenticado es el dueño de sus fichas (ficha.fk_usuario).
+// Instructor autenticado
+$idInstructor = (int) $_SESSION['id_usuario'];
 $conexion = (new Conexion())->conectar();
-$consultaFichas = $conexion->prepare(
-    'SELECT COUNT(*) FROM ficha WHERE fk_usuario = :id_instructor'
-);
-$consultaFichas->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
-$consultaFichas->execute();
-$totalFichas = (int) $consultaFichas->fetchColumn();
 
-// Un aprendiz pertenece a una ficha; la ficha pertenece al instructor.
-$consultaAprendices = $conexion->prepare(
-    'SELECT COUNT(*)
-     FROM aprendiz
-     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-     WHERE ficha.fk_usuario = :id_instructor'
-);
-$consultaAprendices->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
-$consultaAprendices->execute();
-$totalAprendices = (int) $consultaAprendices->fetchColumn();
+// --- Variables del layout ---
+$paginaTitulo = 'Dashboard del instructor';
+$menuActivo   = 'dashboard';
+$miga = [
+    ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
+    ['label' => 'Dashboard'],
+];
 
-// Un aprendiz está presente si registró una entrada puntual o con retardo hoy.
-$consultaPresentes = $conexion->prepare(
-    "SELECT COUNT(*)
-     FROM asistencia
-     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
-     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-     WHERE ficha.fk_usuario = :id_instructor
-       AND asistencia.fecha_asistencia = CURDATE()
-       AND asistencia.estado_entrada IN ('PUNTUAL', 'RETARDO')"
-);
-$consultaPresentes->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
-$consultaPresentes->execute();
-$presentesHoy = (int) $consultaPresentes->fetchColumn();
+// Instructor autenticado
+$idInstructor = (int) $_SESSION['id_usuario'];
+$conexion = (new Conexion())->conectar();
 
-// Una excusa pertenece a una asistencia, que a su vez pertenece a un aprendiz.
-$consultaExcusasPendientes = $conexion->prepare(
-    "SELECT COUNT(*)
-     FROM excusa
-     INNER JOIN asistencia ON excusa.fk_asistencia = asistencia.id_asistencia
-     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
-     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-     WHERE ficha.fk_usuario = :id_instructor
-       AND excusa.estado = 'PENDIENTE'"
-);
-$consultaExcusasPendientes->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
-$consultaExcusasPendientes->execute();
-$excusasPendientes = (int) $consultaExcusasPendientes->fetchColumn();
+// Total fichas
+$consulta = $conexion->prepare('SELECT COUNT(*) FROM ficha WHERE fk_usuario = :id_instructor');
+$consulta->execute([':id_instructor' => $idInstructor]);
+$totalFichas = (int) $consulta->fetchColumn();
 
-// Últimas entradas de hoy, limitadas a los aprendices de las fichas del instructor.
-$consultaUltimosIngresos = $conexion->prepare(
-    "SELECT
-        DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora,
-        CONCAT(usuario.nombre, ' ', usuario.apellido) AS aprendiz,
-        ficha.id_ficha AS ficha
-     FROM asistencia
-     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
-     INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
-     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-     WHERE ficha.fk_usuario = :id_instructor
-       AND asistencia.fecha_asistencia = CURDATE()
-       AND asistencia.entrada IS NOT NULL
-     ORDER BY asistencia.entrada DESC
-     LIMIT 5"
-);
-$consultaUltimosIngresos->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
-$consultaUltimosIngresos->execute();
-$ultimosIngresosHoy = $consultaUltimosIngresos->fetchAll();
+// Total aprendices
+$consulta = $conexion->prepare('SELECT COUNT(*) FROM aprendiz INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor');
+$consulta->execute([':id_instructor' => $idInstructor]);
+$totalAprendices = (int) $consulta->fetchColumn();
 
-// Resumen de lunes a sábado de la semana actual para la gráfica.
+// Presentes hoy
+$consulta = $conexion->prepare("SELECT COUNT(*) FROM asistencia INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor AND asistencia.fecha_asistencia = CURDATE() AND asistencia.estado_entrada IN ('PUNTUAL', 'RETARDO')");
+$consulta->execute([':id_instructor' => $idInstructor]);
+$presentesHoy = (int) $consulta->fetchColumn();
+
+// Excusas pendientes
+$consulta = $conexion->prepare("SELECT COUNT(*) FROM excusa INNER JOIN asistencia ON excusa.fk_asistencia = asistencia.id_asistencia INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor AND excusa.estado = 'PENDIENTE'");
+$consulta->execute([':id_instructor' => $idInstructor]);
+$excusasPendientes = (int) $consulta->fetchColumn();
+
+// Últimos ingresos hoy
+$consulta = $conexion->prepare("SELECT DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora, CONCAT(usuario.nombre, ' ', usuario.apellido) AS aprendiz, ficha.id_ficha AS ficha FROM asistencia INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor AND asistencia.fecha_asistencia = CURDATE() AND asistencia.entrada IS NOT NULL ORDER BY asistencia.entrada DESC LIMIT 5");
+$consulta->execute([':id_instructor' => $idInstructor]);
+$ultimosIngresosHoy = $consulta->fetchAll();
+
+// Resumen semana para gráfica
 $resumenSemana = [
     'labels' => ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
     'puntuales' => array_fill(0, 6, 0),
     'retardos' => array_fill(0, 6, 0),
 ];
-$consultaSemana = $conexion->prepare(
-    "SELECT
-        WEEKDAY(asistencia.fecha_asistencia) AS indice_dia,
-        SUM(CASE WHEN asistencia.estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS puntuales,
-        SUM(CASE WHEN asistencia.estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos
-     FROM asistencia
-     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
-     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-     WHERE ficha.fk_usuario = :id_instructor
-       AND asistencia.fecha_asistencia >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
-       AND asistencia.fecha_asistencia < DATE_ADD(
-           DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
-           INTERVAL 6 DAY
-       )
-     GROUP BY WEEKDAY(asistencia.fecha_asistencia)"
-);
-$consultaSemana->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
-$consultaSemana->execute();
-
-foreach ($consultaSemana->fetchAll() as $dia) {
+$consulta = $conexion->prepare("SELECT WEEKDAY(asistencia.fecha_asistencia) AS indice_dia, SUM(CASE WHEN asistencia.estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS puntuales, SUM(CASE WHEN asistencia.estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos FROM asistencia INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor AND asistencia.fecha_asistencia >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) AND asistencia.fecha_asistencia < DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 6 DAY) GROUP BY WEEKDAY(asistencia.fecha_asistencia)");
+$consulta->execute([':id_instructor' => $idInstructor]);
+foreach ($consulta->fetchAll() as $dia) {
     $indice = (int) $dia['indice_dia'];
     $resumenSemana['puntuales'][$indice] = (int) $dia['puntuales'];
     $resumenSemana['retardos'][$indice] = (int) $dia['retardos'];
 }
 
-// Consultar fichas del instructor que tengan horario para hoy, con estado de jornada
+// Fichas con horario hoy
 date_default_timezone_set('America/Bogota');
 $diaSemana = date('l');
 $diasMap = [
@@ -134,42 +90,16 @@ $diasMap = [
 ];
 $diaSemanaEs = $diasMap[$diaSemana] ?? $diaSemana;
 $fechaHoy = date('Y-m-d');
-$consultaFichasHoy = $conexion->prepare(
-    "SELECT 
-        f.id_ficha,
-        f.nombre_programa,
-        f.jornada,
-        h.id_horario,
-        h.entrada,
-        h.salida,
-        COUNT(a.id_aprendiz) AS total_aprendices
-     FROM ficha f
-     INNER JOIN horario h ON h.fk_ficha = f.id_ficha
-     LEFT JOIN aprendiz a ON a.fk_ficha = f.id_ficha
-     WHERE f.fk_usuario = :instructor_id
-       AND h.dia_semana = :dia_semana
-     GROUP BY f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida
-     ORDER BY h.entrada ASC"
-);
-$consultaFichasHoy->bindValue(':instructor_id', $_SESSION['id_usuario'], PDO::PARAM_INT);
-$consultaFichasHoy->bindValue(':dia_semana', $diaSemanaEs, PDO::PARAM_STR);
-$consultaFichasHoy->execute();
-$fichasConHorarioHoy = $consultaFichasHoy->fetchAll();
+$consulta = $conexion->prepare("SELECT f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida, COUNT(a.id_aprendiz) AS total_aprendices FROM ficha f INNER JOIN horario h ON h.fk_ficha = f.id_ficha LEFT JOIN aprendiz a ON a.fk_ficha = f.id_ficha WHERE f.fk_usuario = :id_instructor AND h.dia_semana = :dia_semana GROUP BY f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida ORDER BY h.entrada ASC");
+$consulta->execute([':id_instructor' => $idInstructor, ':dia_semana' => $diaSemanaEs]);
+$fichasConHorarioHoy = $consulta->fetchAll();
 
-// Consultar estado de jornada para cada ficha
-$consultaJornadas = $conexion->prepare(
-    "SELECT id_sesion, ficha_id, horario_id, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado
-     FROM sesiones_jornada
-     WHERE instructor_id = :instructor_id
-       AND fecha = CURDATE()
-       AND estado IN ('abierta', 'cerrada_manual')
-     ORDER BY hora_apertura_real DESC"
-);
-$consultaJornadas->bindValue(':instructor_id', $_SESSION['id_usuario'], PDO::PARAM_INT);
-$consultaJornadas->execute();
-$jornadas = $consultaJornadas->fetchAll();
+// Jornadas de hoy
+$consulta = $conexion->prepare("SELECT id_sesion, ficha_id, horario_id, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado FROM sesiones_jornada WHERE instructor_id = :id_instructor AND fecha = CURDATE() AND estado IN ('abierta', 'cerrada_manual') ORDER BY hora_apertura_real DESC");
+$consulta->execute([':id_instructor' => $idInstructor]);
+$jornadas = $consulta->fetchAll();
 
-// Indexar jornadas por ficha_id
+// Indexar jornadas por ficha
 $jornadasPorFicha = [];
 foreach ($jornadas as $j) {
     $jornadasPorFicha[$j['ficha_id']] = $j;

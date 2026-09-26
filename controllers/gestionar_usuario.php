@@ -88,6 +88,29 @@ try {
         volver('error', 'Complete los campos obligatorios.', $rol, $id ?: null);
     }
 
+    // Validación de contraseña (solo si se proporciona, ya sea en crear o editar)
+    if ($clave !== '') {
+        if (strlen($clave) < 8) {
+            volver('error', 'La contraseña debe tener al menos 8 caracteres.', $rol, $id ?: null);
+        }
+        if (!preg_match('/[A-Z]/', $clave)) {
+            volver('error', 'La contraseña debe contener al menos una letra mayúscula.', $rol, $id ?: null);
+        }
+        if (!preg_match('/[a-z]/', $clave)) {
+            volver('error', 'La contraseña debe contener al menos una letra minúscula.', $rol, $id ?: null);
+        }
+        if (!preg_match('/[0-9]/', $clave)) {
+            volver('error', 'La contraseña debe contener al menos un número.', $rol, $id ?: null);
+        }
+    }
+
+    // Validación de teléfono (si se proporciona)
+    if ($telefono !== '') {
+        if (!preg_match('/^3[0-9]{9}$/', $telefono)) {
+            volver('error', 'El teléfono debe tener 10 dígitos, comenzar por 3 y contener solo números.', $rol, $id ?: null);
+        }
+    }
+
     // Verifica que el usuario o documento no esten duplicados (excluyendo el actual si edita)
     $q = $conexion->prepare('SELECT id_usuario FROM usuario WHERE (nombre_usuario=:u OR identificacion=:d) AND id_usuario<>:id');
     $q->execute([':u' => $usuario, ':d' => $documento, ':id' => $id ?: 0]);

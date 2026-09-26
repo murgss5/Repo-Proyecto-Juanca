@@ -222,7 +222,7 @@ ob_start();
         <?php endif; ?>
 
         <div class="table-responsive">
-            <table class="table table-hover table-bordered tabla-datos">
+            <table class="table table-hover table-bordered tabla-datos" data-empty-message="No se encontraron excusas con los filtros actuales.">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -240,14 +240,7 @@ ob_start();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($excusas)): ?>
-                        <tr>
-                            <td colspan="12" class="text-center py-4">
-                                <i class="fas fa-file-medical fa-2x text-muted mb-2"></i>
-                                <p class="text-muted mb-0">No se encontraron excusas con los filtros actuales.</p>
-                            </td>
-                        </tr>
-                    <?php else: ?>
+                    <?php if (!empty($excusas)): ?>
                         <?php foreach ($excusas as $excusa): ?>
                             <tr>
                                 <td><?= htmlspecialchars($excusa['id_excusa']) ?></td>

@@ -49,13 +49,15 @@
   // ---------- DataTables: tablas con clase .tabla-datos ----------
   $(function () {
     $(".tabla-datos").each(function () {
+      var mensajeVacio = $(this).data("empty-message") || "No hay datos para mostrar.";
       var tabla = $(this).DataTable({
         autoWidth: false,
         pageLength: 10,
         order: [],
         lengthMenu: [5, 10, 25, 50],
         language: {
-          url: baseUrl + "assets/plugins/datatables/es-ES.json"
+          url: baseUrl + "assets/plugins/datatables/es-ES.json",
+          emptyTable: mensajeVacio
         }
       });
 
