@@ -1,29 +1,11 @@
 <?php
-/**
- * ============================================================
- * VISTA: DASHBOARD DEL INSTRUCTOR
- * Sistema de Control de Ingreso de Aprendices - SENA
- * ------------------------------------------------------------
- * La tarjeta "Mis fichas" usa datos reales.
- * ============================================================
- */
+
 
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(2);
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
 
-// --- Variables del layout ---
-$paginaTitulo = 'Dashboard del instructor';
-$menuActivo   = 'dashboard';
-$miga = [
-    ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
-    ['label' => 'Dashboard'],
-];
-
-// Instructor autenticado
-$idInstructor = (int) $_SESSION['id_usuario'];
-$conexion = (new Conexion())->conectar();
 
 // --- Variables del layout ---
 $paginaTitulo = 'Dashboard del instructor';
@@ -36,6 +18,19 @@ $miga = [
 // Instructor autenticado
 $idInstructor = (int) $_SESSION['id_usuario'];
 $conexion = (new Conexion())->conectar();
+
+// --- Variables del layout ---
+$paginaTitulo = 'Dashboard del instructor';
+$menuActivo   = 'dashboard';
+$miga = [
+    ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
+    ['label' => 'Dashboard'],
+];
+
+// Instructor autenticado
+$idInstructor = (int) $_SESSION['id_usuario'];
+$conexion = (new Conexion())->conectar();
+
 
 // Total fichas
 $consulta = $conexion->prepare('SELECT COUNT(*) FROM ficha WHERE fk_usuario = :id_instructor');
@@ -51,6 +46,7 @@ $totalAprendices = (int) $consulta->fetchColumn();
 $consulta = $conexion->prepare("SELECT COUNT(*) FROM asistencia INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor AND asistencia.fecha_asistencia = CURDATE() AND asistencia.estado_entrada IN ('PUNTUAL', 'RETARDO')");
 $consulta->execute([':id_instructor' => $idInstructor]);
 $presentesHoy = (int) $consulta->fetchColumn();
+
 
 // Excusas pendientes
 $consulta = $conexion->prepare("SELECT COUNT(*) FROM excusa INNER JOIN asistencia ON excusa.fk_asistencia = asistencia.id_asistencia INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor AND excusa.estado = 'PENDIENTE'");

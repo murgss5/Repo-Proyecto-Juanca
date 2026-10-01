@@ -1,12 +1,12 @@
 <?php
-// esta es la vista de asistencias que tiene el docente en este caso el (instructor)
+// Vista de asistencias del instructor
 
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(2);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
-// estas son las variables del layout 
+// Variables del layout
 $paginaTitulo = 'Asistencias de mis fichas';
 $menuActivo   = 'asistencias';
 $miga = [
@@ -14,27 +14,29 @@ $miga = [
     ['label' => 'Asistencias'],
 ];
 
+// Instructor autenticado
+$idInstructor = (int) $_SESSION['id_usuario'];
 $conexion = (new Conexion())->conectar();
 
-$consultaFichas = $conexion->prepare(
-    'SELECT id_ficha FROM ficha WHERE fk_usuario = :id_instructor ORDER BY id_ficha'
-);
-$consultaFichas->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
-$consultaFichas->execute();
-$fichasInstructor = $consultaFichas->fetchAll();
+// Fichas del instructor (para filtro select)
+$consulta = $conexion->prepare('SELECT id_ficha FROM ficha WHERE fk_usuario = :id_instructor ORDER BY id_ficha');
+$consulta->execute([':id_instructor' => $idInstructor]);
+$fichasInstructor = $consulta->fetchAll();
 
-function esFechaValida(string $fecha): bool
-{
-    $fechaConvertida = DateTime::createFromFormat('Y-m-d', $fecha);
-
-    return $fechaConvertida !== false && $fechaConvertida->format('Y-m-d') === $fecha;
-}
-
+// Filtros GET con validación simple
 $fechaDesde = trim($_GET['desde'] ?? '');
 $fechaHasta = trim($_GET['hasta'] ?? '');
 $fichaSeleccionada = filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: '';
 $estadoSeleccionado = $_GET['estado'] ?? '';
 $estadosPermitidos = ['Presente', 'Retardo', 'Salida temprana', 'Inasistencia'];
+
+function esFechaValida(string $fecha): bool
+{
+    $objetoFecha = DateTime::createFromFormat('Y-m-d', $fecha);
+
+    return $objetoFecha
+        && $objetoFecha->format('Y-m-d') === $fecha;
+}
 
 if ($fechaDesde !== '' && !esFechaValida($fechaDesde)) {
     $fechaDesde = '';
@@ -48,31 +50,39 @@ if (!in_array($estadoSeleccionado, $estadosPermitidos, true)) {
     $estadoSeleccionado = '';
 }
 
-$sqlAsistencias = "SELECT
-    asistencia.fecha_asistencia,
-    CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
-    ficha.id_ficha,
-    DATE_FORMAT(asistencia.entrada, '%H:%i') AS entrada,
-    DATE_FORMAT(asistencia.salida, '%H:%i') AS salida,
-    asistencia.estado_entrada,
-    asistencia.estado_salida,
-    asistencia.minutos_retardo
- FROM asistencia
- INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
- INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
- INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
- WHERE ficha.fk_usuario = :id_instructor";
+// Consulta base (MISMAS tablas, columnas, JOINs, WHERE base)
+$sqlAsistencias = "
+    SELECT
+        asistencia.fecha_asistencia,
+        CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
+        ficha.id_ficha,
+        DATE_FORMAT(asistencia.entrada, '%H:%i') AS entrada,
+        DATE_FORMAT(asistencia.salida, '%H:%i') AS salida,
+        asistencia.estado_entrada,
+        asistencia.estado_salida,
+        asistencia.minutos_retardo
+     FROM asistencia
+     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
+     INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
+     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
+     WHERE ficha.fk_usuario = :id_instructor
+";
+
+$parametros = [':id_instructor' => $idInstructor];
 
 if ($fechaDesde !== '') {
     $sqlAsistencias .= ' AND asistencia.fecha_asistencia >= :fecha_desde';
+    $parametros[':fecha_desde'] = $fechaDesde;
 }
 
 if ($fechaHasta !== '') {
     $sqlAsistencias .= ' AND asistencia.fecha_asistencia <= :fecha_hasta';
+    $parametros[':fecha_hasta'] = $fechaHasta;
 }
 
 if ($fichaSeleccionada !== '') {
     $sqlAsistencias .= ' AND ficha.id_ficha = :id_ficha';
+    $parametros[':id_ficha'] = $fichaSeleccionada;
 }
 
 if ($estadoSeleccionado === 'Presente') {
@@ -89,26 +99,11 @@ if ($estadoSeleccionado === 'Presente') {
 
 $sqlAsistencias .= ' ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC';
 
-$consultaAsistencias = $conexion->prepare(
-    $sqlAsistencias
-);
-$consultaAsistencias->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consulta = $conexion->prepare($sqlAsistencias);
+$consulta->execute($parametros);
+$asistenciasInstructor = $consulta->fetchAll();
 
-if ($fechaDesde !== '') {
-    $consultaAsistencias->bindValue(':fecha_desde', $fechaDesde, PDO::PARAM_STR);
-}
-
-if ($fechaHasta !== '') {
-    $consultaAsistencias->bindValue(':fecha_hasta', $fechaHasta, PDO::PARAM_STR);
-}
-
-if ($fichaSeleccionada !== '') {
-    $consultaAsistencias->bindValue(':id_ficha', $fichaSeleccionada, PDO::PARAM_INT);
-}
-
-$consultaAsistencias->execute();
-$asistenciasInstructor = $consultaAsistencias->fetchAll();
-
+// Post-proceso: mapear estados a etiquetas legibles
 foreach ($asistenciasInstructor as &$asistencia) {
     if ($asistencia['estado_entrada'] === 'INASISTENCIA') {
         $asistencia['estado'] = 'Inasistencia';
