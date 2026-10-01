@@ -65,6 +65,15 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
               <span class="input-group-text"><i class="fas fa-lock"></i></span>
             </div>
             <input type="password" id="contrasena" name="contrasena" class="form-control" placeholder="••••••••" required>
+            <div class="input-group-append">
+              <button type="button" class="btn btn-outline-secondary" id="btnToggleContrasena"
+                aria-label="Mostrar contrasena"
+                aria-controls="contrasena"
+                aria-pressed="false"
+                tabindex="-1">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -92,5 +101,22 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
 
 <script src="<?= RUTA_BASE ?>assets/js/jquery.min.js"></script>
 <script src="<?= RUTA_BASE ?>assets/js/bootstrap.bundle.min.js"></script>
+<script>
+(function() {
+  const input = document.getElementById('contrasena');
+  const btn = document.getElementById('btnToggleContrasena');
+  if (!input || !btn) return;
+
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    const mostrar = input.type === 'password';
+    input.type = mostrar ? 'text' : 'password';
+    btn.querySelector('i').classList.toggle('fa-eye', !mostrar);
+    btn.querySelector('i').classList.toggle('fa-eye-slash', mostrar);
+    btn.setAttribute('aria-label', mostrar ? 'Ocultar contrasena' : 'Mostrar contrasena');
+    btn.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
+  });
+})();
+</script>
 </body>
 </html>

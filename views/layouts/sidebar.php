@@ -49,6 +49,7 @@ if ($rolActualId === 1) {
         ['tipo' => 'header', 'texto' => 'SISTEMA'],
         // Se conserva como referencia de la plantilla AdminLTE. No hay módulo de configuración en este proyecto.
         // ['tipo' => 'enlace', 'clave' => 'configuracion', 'icono' => 'fa-cog', 'texto' => 'Configuración', 'url' => '#'],
+        ['tipo' => 'enlace', 'clave' => 'prueba_rfid', 'icono' => 'fa-id-badge', 'texto' => 'Prueba lector RFID', 'url' => RUTA_BASE . 'views/admin/prueba_rfid.php'],
         ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/logout.php'],
     ];
 } elseif ($rolActualId === 2) {

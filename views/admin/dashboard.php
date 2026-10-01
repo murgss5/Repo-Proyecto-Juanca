@@ -6,7 +6,7 @@
  * ------------------------------------------------------------
  * Dashboard con datos reales de la base de datos.
  * ============================================================
- */
+ */             
 
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(1);
