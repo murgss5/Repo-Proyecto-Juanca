@@ -11,8 +11,24 @@
  * ============================================================
  */
 
+/**
+ * Variables provistas por la vista antes de incluir este layout.
+ *
+ * @var string|null $paginaTitulo Título de la página; header.php aplica fallback.
+ * @var string|null $menuActivo   Clave del menú activo; header.php aplica fallback.
+ * @var array|null  $miga         Breadcrumbs; el layout aplica fallback.
+ * @var string      $contenido     HTML capturado mediante ob_start() y ob_get_clean().
+ */
+
 require_once __DIR__ . '/../../includes/autenticacion.php';
 exigirRol(1);
+
+// Validación obligatoria: la vista debe haber capturado el contenido
+if (!isset($contenido) || !is_string($contenido)) {
+    throw new LogicException(
+        'La vista debe definir $contenido como HTML mediante ob_start() y ob_get_clean() antes de incluir el layout.'
+    );
+}
 
 $usuarioActual = usuarioActual();
 

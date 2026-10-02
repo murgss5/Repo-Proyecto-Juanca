@@ -9,6 +9,14 @@
  * ============================================================
  */
 
+/**
+ * Variables opcionales provistas por la vista antes de incluir el layout.
+ *
+ * @var string|null $paginaTitulo  Título de la página (fallback: 'Panel')
+ * @var string|null $menuActivo    Clave del menú activo para sidebar
+ * @var array|null  $miga          Array de breadcrumbs [['label', 'url?'], ...]
+ */
+
 // Garantiza que las constantes existan
 if (!defined('RUTA_BASE')) {
     require_once dirname(__DIR__) . '/includes/constantes.php';
@@ -29,7 +37,7 @@ if ($usuarioActual === null) {
 $rolActualId = $usuarioActual['fk_rol'];
 $nombreRolActual = $usuarioActual['nombre_rol'];
 $nombreUsuarioActual = $usuarioActual['nombre_completo'];
-$fotoUsuario = RUTA_BASE . 'assets/img/avatar.png';
+$fotoUsuario = RUTA_BASE . 'assets/img/logo-sena.svg';
 
 $paginaTitulo = $paginaTitulo ?? 'Panel';
 $menuActivo   = $menuActivo ?? '';

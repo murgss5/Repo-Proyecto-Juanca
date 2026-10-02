@@ -9,6 +9,15 @@
  * ============================================================
  */
 
+/**
+ * Variables provistas por views/layouts/header.php antes de incluir este archivo.
+ *
+ * @var int    $rolActualId
+ * @var string $nombreRolActual
+ * @var string $nombreUsuarioActual
+ * @var string $fotoUsuario
+ */
+
 // Enlaces rápidos según el rol real del usuario
 $enlacesRapidos = [];
 if ($rolActualId === 1) {
