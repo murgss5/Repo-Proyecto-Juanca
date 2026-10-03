@@ -27,6 +27,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/icons/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/adminlte.min.css">
+  <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/plugins/sweetalert2/sweetalert2.min.css">
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/custom.css">
 </head>
 <body class="hold-transition">
@@ -40,14 +41,16 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
     </div>
     <div class="card-body">
       <?php if (isset($_GET['error'])): ?>
-        <!-- Muestra mensaje de error si viene por URL -->
-        <div class="alert alert-danger" role="alert">
-          <?= htmlspecialchars($_GET['error']) ?>
-        </div>
+        <!-- Muestra mensaje de error seguro como alternativa si JS esta desactivado -->
+        <noscript>
+          <div class="alert alert-danger" role="alert">
+            <?= htmlspecialchars($_GET['error']) ?>
+          </div>
+        </noscript>
       <?php endif; ?>
 
       <!-- Formulario de login que envia a controllers/login.php -->
-      <form action="<?= RUTA_BASE ?>controllers/login.php" method="post" autocomplete="off">
+      <form id="formLogin" action="<?= RUTA_BASE ?>controllers/login.php" method="post" autocomplete="off" novalidate>
         <div class="form-group">
           <label for="nombre_usuario">Usuario</label>
           <div class="input-group">
@@ -101,8 +104,70 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
 
 <script src="<?= RUTA_BASE ?>assets/js/jquery.min.js"></script>
 <script src="<?= RUTA_BASE ?>assets/js/bootstrap.bundle.min.js"></script>
+<script src="<?= RUTA_BASE ?>assets/plugins/sweetalert2/sweetalert2.min.js"></script>
 <script>
 (function() {
+  // 1. Manejo seguro de errores desde el backend
+  <?php if (isset($_GET['error'])): ?>
+    const errorRecibido = <?= json_encode($_GET['error']) ?>;
+    const errorMsgLower = errorRecibido.toLowerCase();
+    
+    let iconType = 'error';
+    let titleText = 'No fue posible iniciar sesión';
+    let messageText = 'Ocurrió un error al intentar iniciar sesión. Inténtelo de nuevo.';
+
+    if (errorRecibido === 'credenciales') {
+      titleText = 'Credenciales inválidas';
+      messageText = 'El usuario o la contraseña no son correctos.';
+    } else if (errorMsgLower.includes('obligatorio') || errorMsgLower.includes('incompleto') || errorMsgLower.includes('vacío')) {
+      iconType = 'warning';
+      titleText = 'Campos incompletos';
+      messageText = 'Ingrese su usuario y contraseña para continuar.';
+    }
+
+    Swal.fire({
+      icon: iconType,
+      title: titleText,
+      text: messageText,
+      confirmButtonText: 'Entendido',
+      confirmButtonColor: '#39A900'
+    }).then(() => {
+      // Limpieza segura de la URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('error');
+      window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+    });
+  <?php endif; ?>
+
+  // 2. Validación visual frontal antes de enviar
+  const formLogin = document.getElementById('formLogin');
+  if (formLogin) {
+    formLogin.addEventListener('submit', function(e) {
+      const userField = document.getElementById('nombre_usuario');
+      const passField = document.getElementById('contrasena');
+      const userVal = userField.value.trim();
+      const passVal = passField.value;
+
+      if (!userVal || !passVal) {
+        e.preventDefault();
+        Swal.fire({
+          icon: 'warning',
+          title: 'Campos incompletos',
+          text: 'Ingrese su usuario y contraseña para continuar.',
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#39A900'
+        }).then(() => {
+          if (!userVal) {
+            userField.focus();
+          } else {
+            passField.focus();
+          }
+        });
+      }
+    });
+  }
+
+  // 3. Comportamiento original para mostrar/ocultar contraseña
   const input = document.getElementById('contrasena');
   const btn = document.getElementById('btnToggleContrasena');
   if (!input || !btn) return;
