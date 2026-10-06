@@ -58,6 +58,7 @@ if ($rolActualId === 1) {
         ['tipo' => 'header', 'texto' => 'PRINCIPAL'],
         ['tipo' => 'enlace', 'clave' => 'dashboard', 'icono' => 'fa-tachometer-alt', 'texto' => 'Dashboard', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
         ['tipo' => 'enlace', 'clave' => 'aprendices', 'icono' => 'fa-users', 'texto' => 'Aprendices de mis fichas', 'url' => RUTA_BASE . 'views/instructor/aprendices/index.php'],
+        ['tipo' => 'enlace', 'clave' => 'registrar-aprendices', 'icono' => 'fa-user-plus', 'texto' => 'Registrar aprendices', 'url' => RUTA_BASE . 'views/instructor/aprendices/create.php'],
         ['tipo' => 'enlace', 'clave' => 'asistencias', 'icono' => 'fa-clipboard-check', 'texto' => 'Asistencias', 'url' => RUTA_BASE . 'views/instructor/asistencias/index.php'],
         ['tipo' => 'enlace', 'clave' => 'excusas', 'icono' => 'fa-file-medical', 'texto' => 'Excusas médicas', 'url' => RUTA_BASE . 'views/instructor/excusas/index.php'],
         ['tipo' => 'enlace', 'clave' => 'reportes', 'icono' => 'fa-chart-bar', 'texto' => 'Reportes', 'url' => RUTA_BASE . 'views/instructor/reportes/index.php'],
