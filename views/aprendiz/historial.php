@@ -70,16 +70,7 @@ ob_start();
 
 <!-- aqui se ve le resumen del historial -->
 <div class="row">
-  <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
-    <div class="info-box info-box-sena">
-      <span class="info-box-icon"><i class="fas fa-user-check"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Asistencias</span>
-        <span class="info-box-number"><?= $resumenHistorial['presentes'] ?></span>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+  <div class="col-lg-6 col-md-6 col-sm-12 mb-3">
     <div class="info-box info-box-amarillo">
       <span class="info-box-icon"><i class="fas fa-clock"></i></span>
       <div class="info-box-content">
@@ -88,21 +79,12 @@ ob_start();
       </div>
     </div>
   </div>
-  <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+  <div class="col-lg-6 col-md-6 col-sm-12 mb-3">
     <div class="info-box info-box-rojo">
       <span class="info-box-icon"><i class="fas fa-user-slash"></i></span>
       <div class="info-box-content">
         <span class="info-box-text">Inasistencias</span>
         <span class="info-box-number"><?= $resumenHistorial['inasistencias'] ?></span>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
-    <div class="info-box info-box-azul">
-      <span class="info-box-icon"><i class="fas fa-sign-out-alt"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Salidas tempranas</span>
-        <span class="info-box-number"><?= $resumenHistorial['salidas_tempranas'] ?></span>
       </div>
     </div>
   </div>
