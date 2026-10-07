@@ -8,10 +8,10 @@ require_once dirname(__DIR__, 3) . '/config/conexion.php';
 
 // Variables del layout
 $paginaTitulo = 'Asistencias de mis fichas';
-$menuActivo   = 'asistencias';
+$menuActivo = 'asistencias';
 $miga = [
-    ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
-    ['label' => 'Asistencias'],
+  ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
+  ['label' => 'Asistencias'],
 ];
 
 // Instructor autenticado
@@ -32,22 +32,22 @@ $estadosPermitidos = ['Presente', 'Retardo', 'Salida temprana', 'Inasistencia'];
 
 function esFechaValida(string $fecha): bool
 {
-    $objetoFecha = DateTime::createFromFormat('Y-m-d', $fecha);
+  $objetoFecha = DateTime::createFromFormat('Y-m-d', $fecha);
 
-    return $objetoFecha
-        && $objetoFecha->format('Y-m-d') === $fecha;
+  return $objetoFecha
+    && $objetoFecha->format('Y-m-d') === $fecha;
 }
 
 if ($fechaDesde !== '' && !esFechaValida($fechaDesde)) {
-    $fechaDesde = '';
+  $fechaDesde = '';
 }
 
 if ($fechaHasta !== '' && !esFechaValida($fechaHasta)) {
-    $fechaHasta = '';
+  $fechaHasta = '';
 }
 
 if (!in_array($estadoSeleccionado, $estadosPermitidos, true)) {
-    $estadoSeleccionado = '';
+  $estadoSeleccionado = '';
 }
 
 // Consulta base (MISMAS tablas, columnas, JOINs, WHERE base)
@@ -71,30 +71,30 @@ $sqlAsistencias = "
 $parametros = [':id_instructor' => $idInstructor];
 
 if ($fechaDesde !== '') {
-    $sqlAsistencias .= ' AND asistencia.fecha_asistencia >= :fecha_desde';
-    $parametros[':fecha_desde'] = $fechaDesde;
+  $sqlAsistencias .= ' AND asistencia.fecha_asistencia >= :fecha_desde';
+  $parametros[':fecha_desde'] = $fechaDesde;
 }
 
 if ($fechaHasta !== '') {
-    $sqlAsistencias .= ' AND asistencia.fecha_asistencia <= :fecha_hasta';
-    $parametros[':fecha_hasta'] = $fechaHasta;
+  $sqlAsistencias .= ' AND asistencia.fecha_asistencia <= :fecha_hasta';
+  $parametros[':fecha_hasta'] = $fechaHasta;
 }
 
 if ($fichaSeleccionada !== '') {
-    $sqlAsistencias .= ' AND ficha.id_ficha = :id_ficha';
-    $parametros[':id_ficha'] = $fichaSeleccionada;
+  $sqlAsistencias .= ' AND ficha.id_ficha = :id_ficha';
+  $parametros[':id_ficha'] = $fichaSeleccionada;
 }
 
 if ($estadoSeleccionado === 'Presente') {
-    $sqlAsistencias .= " AND asistencia.estado_entrada = 'PUNTUAL'
+  $sqlAsistencias .= " AND asistencia.estado_entrada = 'PUNTUAL'
                           AND (asistencia.estado_salida IS NULL OR asistencia.estado_salida <> 'SALIDA_ANTICIPADA')";
 } elseif ($estadoSeleccionado === 'Retardo') {
-    $sqlAsistencias .= " AND asistencia.estado_entrada = 'RETARDO'
+  $sqlAsistencias .= " AND asistencia.estado_entrada = 'RETARDO'
                           AND (asistencia.estado_salida IS NULL OR asistencia.estado_salida <> 'SALIDA_ANTICIPADA')";
 } elseif ($estadoSeleccionado === 'Salida temprana') {
-    $sqlAsistencias .= " AND asistencia.estado_salida = 'SALIDA_ANTICIPADA'";
+  $sqlAsistencias .= " AND asistencia.estado_salida = 'SALIDA_ANTICIPADA'";
 } elseif ($estadoSeleccionado === 'Inasistencia') {
-    $sqlAsistencias .= " AND asistencia.estado_entrada = 'INASISTENCIA'";
+  $sqlAsistencias .= " AND asistencia.estado_entrada = 'INASISTENCIA'";
 }
 
 $sqlAsistencias .= ' ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC';
@@ -105,26 +105,32 @@ $asistenciasInstructor = $consulta->fetchAll();
 
 // Post-proceso: mapear estados a etiquetas legibles
 foreach ($asistenciasInstructor as &$asistencia) {
-    if ($asistencia['estado_entrada'] === 'INASISTENCIA') {
-        $asistencia['estado'] = 'Inasistencia';
-    } elseif ($asistencia['estado_salida'] === 'SALIDA_ANTICIPADA') {
-        $asistencia['estado'] = 'Salida temprana';
-    } elseif ($asistencia['estado_entrada'] === 'RETARDO') {
-        $asistencia['estado'] = 'Retardo';
-    } else {
-        $asistencia['estado'] = 'Presente';
-    }
+  if ($asistencia['estado_entrada'] === 'INASISTENCIA') {
+    $asistencia['estado'] = 'Inasistencia';
+  } elseif ($asistencia['estado_salida'] === 'SALIDA_ANTICIPADA') {
+    $asistencia['estado'] = 'Salida temprana';
+  } elseif ($asistencia['estado_entrada'] === 'RETARDO') {
+    $asistencia['estado'] = 'Retardo';
+  } else {
+    $asistencia['estado'] = 'Presente';
+  }
 }
 unset($asistencia);
 
-function claseEstadoAsistencia($estado) {
-    switch ($estado) {
-        case 'Presente':        return 'badge-success';
-        case 'Retardo':         return 'badge-warning';
-        case 'Salida temprana': return 'badge-info';
-        case 'Inasistencia':    return 'badge-danger';
-        default:                return 'badge-secondary';
-    }
+function claseEstadoAsistencia($estado)
+{
+  switch ($estado) {
+    case 'Presente':
+      return 'badge-success';
+    case 'Retardo':
+      return 'badge-warning';
+    case 'Salida temprana':
+      return 'badge-info';
+    case 'Inasistencia':
+      return 'badge-danger';
+    default:
+      return 'badge-secondary';
+  }
 }
 
 ob_start();
@@ -141,11 +147,13 @@ ob_start();
     <form method="get" class="row mb-3">
       <div class="col-md-3 col-sm-6 mb-2">
         <label class="small text-muted mb-1">Desde</label>
-        <input type="date" name="desde" class="form-control form-control-sm" value="<?= htmlspecialchars($fechaDesde) ?>">
+        <input type="date" name="desde" class="form-control form-control-sm"
+          value="<?= htmlspecialchars($fechaDesde) ?>">
       </div>
       <div class="col-md-3 col-sm-6 mb-2">
         <label class="small text-muted mb-1">Hasta</label>
-        <input type="date" name="hasta" class="form-control form-control-sm" value="<?= htmlspecialchars($fechaHasta) ?>">
+        <input type="date" name="hasta" class="form-control form-control-sm"
+          value="<?= htmlspecialchars($fechaHasta) ?>">
       </div>
       <div class="col-md-3 col-sm-6 mb-2">
         <label class="small text-muted mb-1">Ficha</label>
@@ -161,12 +169,14 @@ ob_start();
         <select name="estado" class="form-control form-control-sm">
           <option value="">Todos los estados</option>
           <?php foreach ($estadosPermitidos as $estado): ?>
-            <option value="<?= htmlspecialchars($estado) ?>" <?= $estadoSeleccionado === $estado ? 'selected' : '' ?>><?= htmlspecialchars($estado) ?></option>
+            <option value="<?= htmlspecialchars($estado) ?>" <?= $estadoSeleccionado === $estado ? 'selected' : '' ?>>
+              <?= htmlspecialchars($estado) ?></option>
           <?php endforeach; ?>
         </select>
       </div>
       <div class="col-md-3 col-sm-6 mb-2 d-flex align-items-end">
-        <button type="submit" class="btn btn-outline-sena btn-sm btn-block"><i class="fas fa-filter"></i> Filtrar</button>
+        <button type="submit" class="btn btn-outline-sena btn-sm btn-block"><i class="fas fa-filter"></i>
+          Filtrar</button>
       </div>
     </form>
 
@@ -191,7 +201,9 @@ ob_start();
               <td><span class="badge badge-info">Ficha #<?= htmlspecialchars($asistencia['id_ficha']) ?></span></td>
               <td><?= htmlspecialchars($asistencia['entrada'] ?? '--') ?></td>
               <td><?= htmlspecialchars($asistencia['salida'] ?? '--') ?></td>
-              <td><span class="badge badge-estado <?= claseEstadoAsistencia($asistencia['estado']) ?>"><?= htmlspecialchars($asistencia['estado']) ?></span></td>
+              <td><span
+                  class="badge badge-estado <?= claseEstadoAsistencia($asistencia['estado']) ?>"><?= htmlspecialchars($asistencia['estado']) ?></span>
+              </td>
               <td>
                 <?php if ($asistencia['minutos_retardo'] > 0): ?>
                   <span class="badge badge-warning"><?= htmlspecialchars($asistencia['minutos_retardo']) ?> min</span>

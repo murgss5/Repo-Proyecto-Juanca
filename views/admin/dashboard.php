@@ -6,7 +6,7 @@
  * ------------------------------------------------------------
  * Dashboard con datos reales de la base de datos.
  * ============================================================
- */             
+ */
 
 require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(1);
@@ -15,10 +15,10 @@ require_once dirname(__DIR__) . '/../config/conexion.php';
 
 // --- Variables del layout ---
 $paginaTitulo = 'Dashboard';
-$menuActivo   = 'dashboard';
+$menuActivo = 'dashboard';
 $miga = [
-    ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/admin/dashboard.php'],
-    ['label' => 'Dashboard'],
+  ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/admin/dashboard.php'],
+  ['label' => 'Dashboard'],
 ];
 
 $conexion = (new Conexion())->conectar();
@@ -28,7 +28,7 @@ $totalFichas = (int) $conexion->query('SELECT COUNT(*) FROM ficha')->fetchColumn
 $excusasPendientes = (int) $conexion->query("SELECT COUNT(*) FROM excusa WHERE estado = 'PENDIENTE'")->fetchColumn();
 
 $consultaHoy = $conexion->query(
-    "SELECT
+  "SELECT
         SUM(CASE WHEN estado_entrada IN ('PUNTUAL', 'RETARDO') THEN 1 ELSE 0 END) AS presentes,
         SUM(CASE WHEN estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos,
         SUM(CASE WHEN estado_entrada = 'INASISTENCIA' THEN 1 ELSE 0 END) AS inasistencias,
@@ -40,13 +40,13 @@ $retardosHoy = (int) ($consultaHoy['retardos'] ?? 0);
 $inasistenciasHoy = (int) ($consultaHoy['inasistencias'] ?? 0);
 
 $graficaSemana = [
-    'labels' => ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
-    'presentes' => array_fill(0, 6, 0),
-    'retardos' => array_fill(0, 6, 0),
-    'inasistencias' => array_fill(0, 6, 0),
+  'labels' => ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+  'presentes' => array_fill(0, 6, 0),
+  'retardos' => array_fill(0, 6, 0),
+  'inasistencias' => array_fill(0, 6, 0),
 ];
 $consultaSemana = $conexion->query(
-    "SELECT
+  "SELECT
         WEEKDAY(fecha_asistencia) AS dia,
         SUM(CASE WHEN estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS presentes,
         SUM(CASE WHEN estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos,
@@ -57,14 +57,14 @@ $consultaSemana = $conexion->query(
      GROUP BY WEEKDAY(fecha_asistencia)"
 );
 foreach ($consultaSemana as $dia) {
-    $indice = (int) $dia['dia'];
-    $graficaSemana['presentes'][$indice] = (int) $dia['presentes'];
-    $graficaSemana['retardos'][$indice] = (int) $dia['retardos'];
-    $graficaSemana['inasistencias'][$indice] = (int) $dia['inasistencias'];
+  $indice = (int) $dia['dia'];
+  $graficaSemana['presentes'][$indice] = (int) $dia['presentes'];
+  $graficaSemana['retardos'][$indice] = (int) $dia['retardos'];
+  $graficaSemana['inasistencias'][$indice] = (int) $dia['inasistencias'];
 }
 
 $consultaIngresos = $conexion->query(
-    "SELECT DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora,
+  "SELECT DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora,
         CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
         ficha.id_ficha, aprendiz.codigo_rfid
      FROM asistencia
@@ -77,7 +77,7 @@ $consultaIngresos = $conexion->query(
 $ultimosIngresos = $consultaIngresos->fetchAll();
 
 $consultaRetardos = $conexion->query(
-    "SELECT DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora,
+  "SELECT DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora,
         CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
         ficha.id_ficha, asistencia.minutos_retardo
      FROM asistencia
@@ -252,27 +252,32 @@ ob_start();
   <div class="card-body">
     <div class="row">
       <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/aprendices/index.php" class="btn btn-outline-sena btn-block tarjeta-accion py-3">
+        <a href="<?= RUTA_BASE ?>views/admin/aprendices/index.php"
+          class="btn btn-outline-sena btn-block tarjeta-accion py-3">
           <i class="fas fa-users fa-2x mb-2"></i><br>Aprendices
         </a>
       </div>
       <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/fichas/index.php" class="btn btn-outline-sena btn-block tarjeta-accion py-3">
+        <a href="<?= RUTA_BASE ?>views/admin/fichas/index.php"
+          class="btn btn-outline-sena btn-block tarjeta-accion py-3">
           <i class="fas fa-layer-group fa-2x mb-2"></i><br>Fichas
         </a>
       </div>
       <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/asistencias/index.php" class="btn btn-outline-sena btn-block tarjeta-accion py-3">
+        <a href="<?= RUTA_BASE ?>views/admin/asistencias/index.php"
+          class="btn btn-outline-sena btn-block tarjeta-accion py-3">
           <i class="fas fa-clipboard-check fa-2x mb-2"></i><br>Asistencias
         </a>
       </div>
       <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/excusas/index.php" class="btn btn-outline-sena btn-block tarjeta-accion py-3">
+        <a href="<?= RUTA_BASE ?>views/admin/excusas/index.php"
+          class="btn btn-outline-sena btn-block tarjeta-accion py-3">
           <i class="fas fa-file-medical fa-2x mb-2"></i><br>Excusas
         </a>
       </div>
       <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/reportes/index.php" class="btn btn-outline-sena btn-block tarjeta-accion py-3">
+        <a href="<?= RUTA_BASE ?>views/admin/reportes/index.php"
+          class="btn btn-outline-sena btn-block tarjeta-accion py-3">
           <i class="fas fa-chart-bar fa-2x mb-2"></i><br>Reportes
         </a>
       </div>

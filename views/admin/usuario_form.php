@@ -1,18 +1,83 @@
 <?php
-require_once dirname(__DIR__, 2) . '/includes/autenticacion.php'; exigirRol(1);
-require_once dirname(__DIR__, 2) . '/includes/constantes.php'; require_once dirname(__DIR__, 2) . '/config/conexion.php';
-$rolGestionado=$rolGestionado??3; $edicion=$edicion??false; $modulo=$rolGestionado===3?'aprendices':'instructores';
-if(empty($_SESSION['token_csrf']))$_SESSION['token_csrf']=bin2hex(random_bytes(32));
-$conexion=(new Conexion())->conectar(); $datos=['id_usuario'=>'','nombre_usuario'=>'','identificacion'=>'','nombre'=>'','apellido'=>'','telefono'=>'','codigo_rfid'=>'','id_ficha'=>''];
-if($edicion){$id=filter_input(INPUT_GET,'id',FILTER_VALIDATE_INT);$sql='SELECT u.id_usuario,u.nombre_usuario,u.identificacion,u.nombre,u.apellido,u.telefono,ap.codigo_rfid,ap.fk_ficha AS id_ficha FROM usuario u '.($rolGestionado===3?'INNER JOIN aprendiz ap ON ap.fk_usuario=u.id_usuario':'LEFT JOIN aprendiz ap ON 1=0').' WHERE u.id_usuario=? AND u.fk_rol=?';$q=$conexion->prepare($sql);$q->execute([$id,$rolGestionado]);$datos=$q->fetch();if(!$datos){header('Location: index.php?error=Usuario no encontrado.');exit;}}
-$fichas=$rolGestionado===3?$conexion->query('SELECT id_ficha,nombre_programa FROM ficha ORDER BY id_ficha')->fetchAll():[];
-$paginaTitulo=($edicion?'Editar ':'Nuevo ').($rolGestionado===3?'aprendiz':'instructor');$menuActivo=$modulo;$miga=[['label'=>'Inicio','url'=>RUTA_BASE.'views/admin/dashboard.php'],['label'=>ucfirst($modulo),'url'=>RUTA_BASE.'views/admin/'.$modulo.'/index.php'],['label'=>$paginaTitulo]];
+require_once dirname(__DIR__, 2) . '/includes/autenticacion.php';
+exigirRol(1);
+require_once dirname(__DIR__, 2) . '/includes/constantes.php';
+require_once dirname(__DIR__, 2) . '/config/conexion.php';
+$rolGestionado = $rolGestionado ?? 3;
+$edicion = $edicion ?? false;
+$modulo = $rolGestionado === 3 ? 'aprendices' : 'instructores';
+if (empty($_SESSION['token_csrf']))
+    $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
+$conexion = (new Conexion())->conectar();
+$datos = ['id_usuario' => '', 'nombre_usuario' => '', 'identificacion' => '', 'nombre' => '', 'apellido' => '', 'telefono' => '', 'codigo_rfid' => '', 'id_ficha' => ''];
+if ($edicion) {
+    $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+    $sql = 'SELECT u.id_usuario,u.nombre_usuario,u.identificacion,u.nombre,u.apellido,u.telefono,ap.codigo_rfid,ap.fk_ficha AS id_ficha FROM usuario u ' . ($rolGestionado === 3 ? 'INNER JOIN aprendiz ap ON ap.fk_usuario=u.id_usuario' : 'LEFT JOIN aprendiz ap ON 1=0') . ' WHERE u.id_usuario=? AND u.fk_rol=?';
+    $q = $conexion->prepare($sql);
+    $q->execute([$id, $rolGestionado]);
+    $datos = $q->fetch();
+    if (!$datos) {
+        header('Location: index.php?error=Usuario no encontrado.');
+        exit;
+    }
+}
+$fichas = $rolGestionado === 3 ? $conexion->query('SELECT id_ficha,nombre_programa FROM ficha ORDER BY id_ficha')->fetchAll() : [];
+$paginaTitulo = ($edicion ? 'Editar ' : 'Nuevo ') . ($rolGestionado === 3 ? 'aprendiz' : 'instructor');
+$menuActivo = $modulo;
+$miga = [['label' => 'Inicio', 'url' => RUTA_BASE . 'views/admin/dashboard.php'], ['label' => ucfirst($modulo), 'url' => RUTA_BASE . 'views/admin/' . $modulo . '/index.php'], ['label' => $paginaTitulo]];
 ob_start(); ?>
-<?php if(isset($_GET['error'])):?><div class="alert alert-danger"><?=htmlspecialchars($_GET['error'])?></div><?php endif;?>
-<div class="card"><div class="card-header"><h3 class="card-title"><?=$paginaTitulo?></h3></div><form action="<?=RUTA_BASE?>controllers/gestionar_usuario.php" method="post"><div class="card-body">
-<input type="hidden" name="accion" value="<?=$edicion?'editar':'crear'?>"><input type="hidden" name="rol" value="<?=$rolGestionado?>"><?php if($edicion):?><input type="hidden" name="id_usuario" value="<?=htmlspecialchars($datos['id_usuario'])?>"><?php endif;?><input type="hidden" name="token_csrf" value="<?=htmlspecialchars($_SESSION['token_csrf'])?>">
-<div class="row"><div class="col-md-4 form-group"><label>Usuario *</label><input name="nombre_usuario" class="form-control" value="<?=htmlspecialchars($datos['nombre_usuario'])?>" required></div><div class="col-md-4 form-group"><label>Contraseña <?=$edicion?'(dejar vacía para conservar)':'*'?></label><input type="password" name="contrasena" class="form-control" <?=$edicion?'':'required'?> minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}" autocomplete="new-password"><small class="form-text text-muted">Mínimo 8 caracteres, una mayúscula, una minúscula y un número.</small></div><div class="col-md-4 form-group"><label>Documento *</label><input name="documento" class="form-control" value="<?=htmlspecialchars($datos['identificacion'])?>" required></div></div>
-<div class="row"><div class="col-md-4 form-group"><label>Nombres *</label><input name="nombre" class="form-control" value="<?=htmlspecialchars($datos['nombre'])?>" required></div><div class="col-md-4 form-group"><label>Apellidos *</label><input name="apellido" class="form-control" value="<?=htmlspecialchars($datos['apellido'])?>" required></div><div class="col-md-4 form-group"><label>Teléfono</label><input name="telefono" class="form-control" value="<?=htmlspecialchars($datos['telefono']??'')?>" inputmode="numeric" maxlength="10" pattern="3[0-9]{9}"><small class="form-text text-muted">Debe tener 10 dígitos y comenzar por 3.</small></div></div>
-<?php if($rolGestionado===3):?><div class="row"><div class="col-md-6 form-group"><label>Ficha *</label><select name="id_ficha" class="form-control" required><option value="">Seleccione...</option><?php foreach($fichas as $ficha):?><option value="<?=$ficha['id_ficha']?>" <?=strval($datos['id_ficha'])===strval($ficha['id_ficha'])?'selected':''?>>Ficha #<?=$ficha['id_ficha']?> — <?=htmlspecialchars($ficha['nombre_programa'])?></option><?php endforeach;?></select></div><?php if($edicion):?><div class="col-md-6 form-group"><label>RFID *</label><input name="codigo_rfid" class="form-control" value="<?=htmlspecialchars($datos['codigo_rfid']??'')?>" required></div><?php endif;?></div><?php endif;?>
-</div><div class="card-footer text-right"><a class="btn btn-secondary" href="<?=RUTA_BASE?>views/admin/<?=$modulo?>/index.php">Cancelar</a><button class="btn btn-primary" type="submit">Guardar</button></div></form></div>
-<?php $contenido=ob_get_clean();include __DIR__.'/../layouts/layout_admin.php';
+<?php if (isset($_GET['error'])): ?>
+    <div class="alert alert-danger"><?= htmlspecialchars($_GET['error']) ?></div><?php endif; ?>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><?= $paginaTitulo ?></h3>
+    </div>
+    <form action="<?= RUTA_BASE ?>controllers/gestionar_usuario.php" method="post">
+        <div class="card-body">
+            <input type="hidden" name="accion" value="<?= $edicion ? 'editar' : 'crear' ?>"><input type="hidden" name="rol"
+                value="<?= $rolGestionado ?>"><?php if ($edicion): ?><input type="hidden" name="id_usuario"
+                    value="<?= htmlspecialchars($datos['id_usuario']) ?>"><?php endif; ?><input type="hidden" name="token_csrf"
+                value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
+            <div class="row">
+                <div class="col-md-4 form-group"><label>Usuario *</label><input name="nombre_usuario"
+                        class="form-control" value="<?= htmlspecialchars($datos['nombre_usuario']) ?>" required></div>
+                <div class="col-md-4 form-group"><label>Contraseña
+                        <?= $edicion ? '(dejar vacía para conservar)' : '*' ?></label><input type="password" name="contrasena"
+                        class="form-control" <?= $edicion ? '' : 'required' ?> minlength="8"
+                        pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}" autocomplete="new-password"><small
+                        class="form-text text-muted">Mínimo 8 caracteres, una mayúscula, una minúscula y un
+                        número.</small></div>
+                <div class="col-md-4 form-group"><label>Documento *</label><input name="documento" class="form-control"
+                        value="<?= htmlspecialchars($datos['identificacion']) ?>" required></div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 form-group"><label>Nombres *</label><input name="nombre" class="form-control"
+                        value="<?= htmlspecialchars($datos['nombre']) ?>" required></div>
+                <div class="col-md-4 form-group"><label>Apellidos *</label><input name="apellido" class="form-control"
+                        value="<?= htmlspecialchars($datos['apellido']) ?>" required></div>
+                <div class="col-md-4 form-group"><label>Teléfono</label><input name="telefono" class="form-control"
+                        value="<?= htmlspecialchars($datos['telefono'] ?? '') ?>" inputmode="numeric" maxlength="10"
+                        pattern="3[0-9]{9}"><small class="form-text text-muted">Debe tener 10 dígitos y comenzar por
+                        3.</small></div>
+            </div>
+            <?php if ($rolGestionado === 3): ?>
+                <div class="row">
+                    <div class="col-md-6 form-group"><label>Ficha *</label><select name="id_ficha" class="form-control"
+                            required>
+                            <option value="">Seleccione...</option><?php foreach ($fichas as $ficha): ?>
+                                <option value="<?= $ficha['id_ficha'] ?>"
+                                    <?= strval($datos['id_ficha']) === strval($ficha['id_ficha']) ? 'selected' : '' ?>>Ficha
+                                    #<?= $ficha['id_ficha'] ?> — <?= htmlspecialchars($ficha['nombre_programa']) ?></option>
+                            <?php endforeach; ?>
+                        </select></div><?php if ($edicion): ?>
+                        <div class="col-md-6 form-group"><label>RFID *</label><input name="codigo_rfid" class="form-control"
+                                value="<?= htmlspecialchars($datos['codigo_rfid'] ?? '') ?>" required></div><?php endif; ?>
+                </div><?php endif; ?>
+        </div>
+        <div class="card-footer text-right"><a class="btn btn-secondary"
+                href="<?= RUTA_BASE ?>views/admin/<?= $modulo ?>/index.php">Cancelar</a><button class="btn btn-primary"
+                type="submit">Guardar</button></div>
+    </form>
+</div>
+<?php $contenido = ob_get_clean();
+include __DIR__ . '/../layouts/layout_admin.php';
