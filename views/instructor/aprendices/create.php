@@ -317,7 +317,7 @@ ob_start();
           </div>
           <div class="card-body py-2 px-3">
             <p class="text-muted mb-2 small">
-              El archivo debe ser un Excel original (<strong>.xlsx</strong>) exportado de Sofia Plus con los siguientes encabezados en la primera fila, exactamente en este orden:
+              El archivo debe ser un Excel original (<strong>.xlsx</strong>) 
             </p>
             
             <div class="table-responsive mb-2">
@@ -334,13 +334,6 @@ ob_start();
                   </tr>
                 </thead>
               </table>
-            </div>
-
-            <div class="p-2 rounded bg-white border small text-muted">
-              <strong class="text-dark"><i class="fas fa-exclamation-triangle text-warning mr-1"></i> Notas importantes:</strong>
-              <span class="d-inline-block ml-1 mr-2">• No modifique los encabezados ni altere el orden de las columnas.</span>
-              <span class="d-inline-block mr-2">• El documento se leerá como texto (preserva ceros iniciales).</span>
-              <span class="d-inline-block">• En esta fase solo se realizará validación y previsualización de los datos.</span>
             </div>
           </div>
         </div>
