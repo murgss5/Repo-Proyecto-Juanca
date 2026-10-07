@@ -40,7 +40,10 @@ $consultaAprendices = $conexion->prepare(
         usuario.tipo_documento,
         usuario.identificacion AS documento,
         CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS nombre,
+        usuario.nombre AS solo_nombre,
+        usuario.apellido AS solo_apellido,
         usuario.telefono,
+        usuario.correo_electronico,
         aprendiz.codigo_rfid,
         ficha.id_ficha,
         ficha.nombre_programa
@@ -136,6 +139,23 @@ ob_start();
                           data-rfid="<?= htmlspecialchars((string)$aprendiz['codigo_rfid'], ENT_QUOTES, 'UTF-8') ?>"
                           data-ficha="<?= htmlspecialchars((string)$aprendiz['id_ficha'], ENT_QUOTES, 'UTF-8') ?>"
                           title="Ver"><i class="fas fa-eye"></i></button>
+                          
+                  <button type="button" class="btn btn-warning text-white" data-toggle="modal"
+                          data-target="#modalEditarAprendiz"
+                          data-id-aprendiz="<?= htmlspecialchars((string)$aprendiz['id_aprendiz'], ENT_QUOTES, 'UTF-8') ?>"
+                          data-tipo-documento="<?= htmlspecialchars((string)($aprendiz['tipo_documento'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                          data-documento="<?= htmlspecialchars((string)$aprendiz['documento'], ENT_QUOTES, 'UTF-8') ?>"
+                          data-nombres="<?= htmlspecialchars((string)$aprendiz['solo_nombre'], ENT_QUOTES, 'UTF-8') ?>"
+                          data-apellidos="<?= htmlspecialchars((string)$aprendiz['solo_apellido'], ENT_QUOTES, 'UTF-8') ?>"
+                          data-telefono="<?= htmlspecialchars((string)($aprendiz['telefono'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                          data-correo="<?= htmlspecialchars((string)($aprendiz['correo_electronico'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                          title="Editar"><i class="fas fa-edit"></i></button>
+
+                  <button type="button" class="btn btn-danger" data-toggle="modal"
+                          data-target="#modalEliminarAprendiz"
+                          data-id-aprendiz="<?= htmlspecialchars((string)$aprendiz['id_aprendiz'], ENT_QUOTES, 'UTF-8') ?>"
+                          data-nombre="<?= htmlspecialchars((string)$aprendiz['nombre'], ENT_QUOTES, 'UTF-8') ?>"
+                          title="Borrar"><i class="fas fa-trash"></i></button>
                 </div>
               </td>
             </tr>
@@ -210,10 +230,114 @@ ob_start();
   </div>
 </div>
 
+<!-- Modal para Editar Aprendiz -->
+<div class="modal fade" id="modalEditarAprendiz" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <form action="../../../controllers/gestionar_aprendiz_instructor.php" method="POST" class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title text-white"><i class="fas fa-edit"></i> Editar Aprendiz</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="accion" value="editar_aprendiz">
+        <input type="hidden" name="id_aprendiz" id="edit_id_aprendiz">
+        <input type="hidden" name="token_csrf" value="<?= htmlspecialchars((string)($_SESSION['token_csrf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+        
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Tipo Documento</label>
+            <select name="tipo_documento" id="edit_tipo_documento" class="form-control">
+              <option value="">Seleccione...</option>
+              <option value="CC">Cédula de Ciudadanía</option>
+              <option value="TI">Tarjeta de Identidad</option>
+              <option value="CE">Cédula de Extranjería</option>
+              <option value="PEP">PEP</option>
+              <option value="PPT">PPT</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Número Documento</label>
+            <input type="text" name="numero_documento" id="edit_numero_documento" class="form-control">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Nombres</label>
+            <input type="text" name="nombre" id="edit_nombres" class="form-control" required>
+          </div>
+          <div class="form-group col-md-6">
+            <label>Apellidos</label>
+            <input type="text" name="apellidos" id="edit_apellidos" class="form-control" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label>Teléfono</label>
+            <input type="text" name="telefono" id="edit_telefono" class="form-control">
+          </div>
+          <div class="form-group col-md-6">
+            <label>Correo Electrónico</label>
+            <input type="email" name="correo" id="edit_correo" class="form-control">
+          </div>
+        </div>
+        <small class="text-muted">Ficha, Rol, Usuario y Contraseña no pueden ser editados.</small>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-warning text-white"><i class="fas fa-save"></i> Guardar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal para Eliminar Aprendiz -->
+<div class="modal fade" id="modalEliminarAprendiz" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <form action="../../../controllers/gestionar_aprendiz_instructor.php" method="POST" class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="accion" value="eliminar_aprendiz">
+        <input type="hidden" name="id_aprendiz" id="delete_id_aprendiz">
+        <input type="hidden" name="token_csrf" value="<?= htmlspecialchars((string)($_SESSION['token_csrf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+        <p>¿Está seguro de que desea eliminar al aprendiz <strong id="delete_nombre_aprendiz"></strong>?</p>
+        <p class="text-danger small"><i class="fas fa-info-circle"></i> Esta acción no se puede deshacer. Si el aprendiz tiene asistencias registradas, no podrá ser eliminado.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Sí, eliminar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <input type="hidden" id="csrf_token_rfid" value="<?= htmlspecialchars((string)($_SESSION['token_csrf'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Rellenar modal editar
+    $('#modalEditarAprendiz').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        $('#edit_id_aprendiz').val(button.data('id-aprendiz'));
+        $('#edit_tipo_documento').val(button.data('tipo-documento'));
+        $('#edit_numero_documento').val(button.data('documento'));
+        $('#edit_nombres').val(button.data('nombres'));
+        $('#edit_apellidos').val(button.data('apellidos'));
+        $('#edit_telefono').val(button.data('telefono'));
+        $('#edit_correo').val(button.data('correo'));
+    });
+
+    // Rellenar modal eliminar
+    $('#modalEliminarAprendiz').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        $('#delete_id_aprendiz').val(button.data('id-aprendiz'));
+        $('#delete_nombre_aprendiz').text(button.data('nombre'));
+    });
+
     let colaGlobal = [];
     let indiceGlobal = 0;
     let modoGlobal = false;
@@ -258,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnSelf.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Consultando...');
 
         $.ajax({
-            url: '../../controllers/ajax/listar_rfid_pendientes.php',
+            url: '../../../controllers/ajax/listar_rfid_pendientes.php',
             method: 'POST',
             dataType: 'json',
             data: {
@@ -346,7 +470,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const idFicha = $('#rfidIdFicha').val();
 
         $.ajax({
-            url: '../../controllers/ajax/registrar_rfid.php',
+            url: '../../../controllers/ajax/registrar_rfid.php',
             method: 'POST',
             dataType: 'json',
             data: {

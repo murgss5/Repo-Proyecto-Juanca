@@ -65,36 +65,22 @@ class AprendizModel
         $apellidos = trim((string)($datos['apellidos'] ?? ''));
 
         // 3. Manejo de identificación única en MySQL:
-        // Si tiene documento, validar que no esté repetido
-        if ($numDoc !== '') {
-            $stmt = $conexion->prepare('SELECT id_usuario FROM usuario WHERE identificacion = ?');
-            $stmt->execute([$numDoc]);
-            if ($stmt->fetch()) {
-                return [
-                    'success' => false,
-                    'error'   => "El número de documento '{$numDoc}' ya está registrado en el sistema."
-                ];
-            }
-            $identificacionParaGuardar = $numDoc;
-        } else {
-            // El documento está vacío: regla crítica de campos vacíos.
-            // Si la base de datos permite almacenar "" directamente sin colisión de clave única, se usa "".
-            $stmt = $conexion->prepare("SELECT COUNT(*) FROM usuario WHERE identificacion = ''");
-            $stmt->execute();
-            $existeVacio = (int)$stmt->fetchColumn();
-
-            if ($existeVacio === 0) {
-                $identificacionParaGuardar = '';
-            } else {
-                // Si ya existe un registro con "", para que la restricción UNIQUE de MySQL
-                // no impida registrar múltiples filas sin documento, usamos espacios de ancho cero
-                // que visualmente son vacíos pero a nivel de clave única permiten coexistir múltiples registros.
-                $stmt = $conexion->prepare("SELECT COUNT(*) FROM usuario WHERE identificacion LIKE '%\xE2\x80\x8B%'");
-                $stmt->execute();
-                $conteoZwsp = (int)$stmt->fetchColumn() + 1;
-                $identificacionParaGuardar = str_repeat("\xE2\x80\x8B", $conteoZwsp);
-            }
+        if ($numDoc === '') {
+            return [
+                'success' => false,
+                'error'   => 'El número de documento es obligatorio.'
+            ];
         }
+
+        $stmt = $conexion->prepare('SELECT id_usuario FROM usuario WHERE identificacion = ?');
+        $stmt->execute([$numDoc]);
+        if ($stmt->fetch()) {
+            return [
+                'success' => false,
+                'error'   => "El número de documento '{$numDoc}' ya está registrado en el sistema."
+            ];
+        }
+        $identificacionParaGuardar = $numDoc;
 
         // Iniciar transacción para garantizar inserción atómica en usuario y aprendiz
         $conexion->beginTransaction();
@@ -229,45 +215,41 @@ class AprendizModel
         $duplicados  = 0;
         $errores     = [];
         $documentosVistosEnLote = [];
+        $aprendicesCreados = [];
+
+        // Obtener el nombre del programa
+        $stmtFicha = $conexion->prepare('SELECT nombre_programa FROM ficha WHERE id_ficha = ?');
+        $stmtFicha->execute([$idFicha]);
+        $nombrePrograma = (string)$stmtFicha->fetchColumn();
 
         foreach ($aprendices as $fila) {
             $numDoc    = trim((string)($fila['numero_documento'] ?? ''));
             $nombre    = trim((string)($fila['nombre'] ?? ''));
             $apellidos = trim((string)($fila['apellidos'] ?? ''));
             $celular   = trim((string)($fila['celular'] ?? ''));
+            $tipoDoc   = trim((string)($fila['tipo_documento'] ?? 'No especificado'));
 
             // 1. Control de duplicados por número de documento
-            if ($numDoc !== '') {
-                // Duplicado en el mismo lote
-                if (isset($documentosVistosEnLote[$numDoc])) {
-                    $duplicados++;
-                    continue;
-                }
-                $documentosVistosEnLote[$numDoc] = true;
-
-                // Duplicado ya existente en la base de datos
-                $stmtVerif = $conexion->prepare('SELECT id_usuario FROM usuario WHERE identificacion = ?');
-                $stmtVerif->execute([$numDoc]);
-                if ($stmtVerif->fetch()) {
-                    $duplicados++;
-                    continue;
-                }
-                $identificacionParaGuardar = $numDoc;
-            } else {
-                // Manejo de identificación vacía para permitir registros sin documento
-                $stmt = $conexion->prepare("SELECT COUNT(*) FROM usuario WHERE identificacion = ''");
-                $stmt->execute();
-                $existeVacio = (int)$stmt->fetchColumn();
-
-                if ($existeVacio === 0) {
-                    $identificacionParaGuardar = '';
-                } else {
-                    $stmt = $conexion->prepare("SELECT COUNT(*) FROM usuario WHERE identificacion LIKE '%\xE2\x80\x8B%'");
-                    $stmt->execute();
-                    $conteoZwsp = (int)$stmt->fetchColumn() + 1;
-                    $identificacionParaGuardar = str_repeat("\xE2\x80\x8B", $conteoZwsp);
-                }
+            if ($numDoc === '') {
+                $errores[] = "Error fila " . ($fila['fila'] ?? '') . ": El número de documento es obligatorio.";
+                continue;
             }
+
+            // Duplicado en el mismo lote
+            if (isset($documentosVistosEnLote[$numDoc])) {
+                $duplicados++;
+                continue;
+            }
+            $documentosVistosEnLote[$numDoc] = true;
+
+            // Duplicado ya existente en la base de datos
+            $stmtVerif = $conexion->prepare('SELECT id_usuario FROM usuario WHERE identificacion = ?');
+            $stmtVerif->execute([$numDoc]);
+            if ($stmtVerif->fetch()) {
+                $duplicados++;
+                continue;
+            }
+            $identificacionParaGuardar = $numDoc;
 
             // Iniciar transacción individual para garantizar atomicidad de cada aprendiz
             $conexion->beginTransaction();
@@ -328,9 +310,20 @@ class AprendizModel
                     'INSERT INTO aprendiz (codigo_rfid, fk_ficha, fk_usuario) VALUES (?, ?, ?)'
                 );
                 $stmtAprendiz->execute([$rfid, $idFicha, $idUsuario]);
+                $idAprendiz = (int)$conexion->lastInsertId();
 
                 $conexion->commit();
                 $registrados++;
+
+                $aprendicesCreados[] = [
+                    'id_aprendiz' => $idAprendiz,
+                    'id_ficha' => $idFicha,
+                    'nombre_completo' => trim($nombre . ' ' . $apellidos),
+                    'tipo_documento' => $tipoDoc,
+                    'identificacion' => $numDoc,
+                    'codigo_rfid_temporal' => $rfid,
+                    'programa' => $nombrePrograma
+                ];
 
             } catch (\Throwable $e) {
                 if ($conexion->inTransaction()) {
@@ -344,8 +337,120 @@ class AprendizModel
             'success'     => true,
             'registrados' => $registrados,
             'duplicados'  => $duplicados,
-            'errores'     => $errores
+            'errores'     => $errores,
+            'aprendices_creados' => $aprendicesCreados
         ];
     }
-}
+    /**
+     * Obtiene un aprendiz validando que pertenezca a una ficha del instructor.
+     */
+    public static function obtenerAprendizDeInstructor(int $idAprendiz, int $idInstructor): ?array
+    {
+        $conexion = (new Conexion())->conectar();
+        $stmt = $conexion->prepare(
+            'SELECT a.id_aprendiz, u.id_usuario, u.tipo_documento, u.identificacion, u.nombre, u.apellido, u.telefono, u.correo_electronico
+             FROM aprendiz a
+             INNER JOIN usuario u ON a.fk_usuario = u.id_usuario
+             INNER JOIN ficha f ON a.fk_ficha = f.id_ficha
+             WHERE a.id_aprendiz = :id_aprendiz AND f.fk_usuario = :id_instructor'
+        );
+        $stmt->bindValue(':id_aprendiz', $idAprendiz, PDO::PARAM_INT);
+        $stmt->bindValue(':id_instructor', $idInstructor, PDO::PARAM_INT);
+        $stmt->execute();
+        $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $resultado ?: null;
+    }
 
+    /**
+     * Edita los datos de un aprendiz validando propiedad y duplicados de documento.
+     */
+    public static function editarAprendizDeInstructor(int $idAprendiz, int $idInstructor, array $datos): array
+    {
+        $aprendiz = self::obtenerAprendizDeInstructor($idAprendiz, $idInstructor);
+        if (!$aprendiz) {
+            return ['success' => false, 'error' => 'Aprendiz no encontrado o no autorizado.'];
+        }
+
+        $idUsuario = (int)$aprendiz['id_usuario'];
+        $tipoDoc = trim($datos['tipo_documento'] ?? '');
+        $numDoc = trim($datos['numero_documento'] ?? '');
+        $nombre = trim($datos['nombre'] ?? '');
+        $apellidos = trim($datos['apellidos'] ?? '');
+        $telefono = trim($datos['telefono'] ?? '');
+        $correo = trim($datos['correo'] ?? '');
+
+        $conexion = (new Conexion())->conectar();
+
+        // Validar si el número de documento está vacío
+        if ($numDoc === '') {
+            return ['success' => false, 'error' => 'El número de documento es obligatorio.'];
+        }
+
+        // Validar documento único si cambia
+        if ($numDoc !== $aprendiz['identificacion']) {
+            $stmt = $conexion->prepare('SELECT id_usuario FROM usuario WHERE identificacion = ? AND id_usuario != ?');
+            $stmt->execute([$numDoc, $idUsuario]);
+            if ($stmt->fetch()) {
+                return ['success' => false, 'error' => 'El número de documento ya se encuentra registrado.'];
+            }
+        }
+
+        try {
+            $stmt = $conexion->prepare(
+                'UPDATE usuario SET tipo_documento = ?, identificacion = ?, nombre = ?, apellido = ?, telefono = ?, correo_electronico = ? WHERE id_usuario = ?'
+            );
+            $stmt->execute([
+                $tipoDoc !== '' ? $tipoDoc : null,
+                $numDoc,
+                $nombre,
+                $apellidos,
+                $telefono !== '' ? $telefono : null,
+                $correo !== '' ? $correo : null,
+                $idUsuario
+            ]);
+            return ['success' => true, 'error' => null];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'error' => 'Error al actualizar: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Elimina un aprendiz validando que no tenga asistencias y pertenezca al instructor.
+     */
+    public static function eliminarAprendizDeInstructor(int $idAprendiz, int $idInstructor): array
+    {
+        $aprendiz = self::obtenerAprendizDeInstructor($idAprendiz, $idInstructor);
+        if (!$aprendiz) {
+            return ['success' => false, 'error' => 'Aprendiz no encontrado o no autorizado.'];
+        }
+
+        $idUsuario = (int)$aprendiz['id_usuario'];
+        $conexion = (new Conexion())->conectar();
+
+        // Validar si tiene asistencias
+        $stmtAsist = $conexion->prepare('SELECT COUNT(*) FROM asistencia WHERE fk_aprendiz = ?');
+        $stmtAsist->execute([$idAprendiz]);
+        if ((int)$stmtAsist->fetchColumn() > 0) {
+            return ['success' => false, 'error' => 'No se puede eliminar el aprendiz porque ya tiene registros de asistencia asociados.'];
+        }
+
+        $conexion->beginTransaction();
+        try {
+            // Eliminar aprendiz
+            $stmtDelApr = $conexion->prepare('DELETE FROM aprendiz WHERE id_aprendiz = ?');
+            $stmtDelApr->execute([$idAprendiz]);
+
+            // Eliminar usuario asegurando rol = 3 (Aprendiz)
+            $stmtDelUsu = $conexion->prepare('DELETE FROM usuario WHERE id_usuario = ? AND fk_rol = 3');
+            $stmtDelUsu->execute([$idUsuario]);
+
+            $conexion->commit();
+            return ['success' => true, 'error' => null];
+        } catch (\Throwable $e) {
+            if ($conexion->inTransaction()) {
+                $conexion->rollBack();
+            }
+            return ['success' => false, 'error' => 'Error al eliminar: ' . $e->getMessage()];
+        }
+    }
+}

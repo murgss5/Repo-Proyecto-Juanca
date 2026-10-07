@@ -110,11 +110,35 @@ try {
     ]);
 
     if ($qUpdate->rowCount() === 1) {
+        $es_flujo_importacion = false;
+        $pendientes_restantes = 0;
+
+        // Comprobar si existe la sesion de importacion pendiente
+        if (isset($_SESSION['rfid_importacion_pendiente']) && is_array($_SESSION['rfid_importacion_pendiente'])) {
+            $es_flujo_importacion = true;
+            $aprendices_pendientes = $_SESSION['rfid_importacion_pendiente']['aprendices'] ?? [];
+            
+            // Remover al aprendiz actual de la cola si esta presente
+            $nueva_cola = array_filter($aprendices_pendientes, function($a) use ($idAprendiz) {
+                return (int)$a['id_aprendiz'] !== (int)$idAprendiz;
+            });
+            
+            $_SESSION['rfid_importacion_pendiente']['aprendices'] = array_values($nueva_cola);
+            $pendientes_restantes = count($_SESSION['rfid_importacion_pendiente']['aprendices']);
+            
+            // Si ya no quedan, podemos limpiar la variable de sesion
+            if ($pendientes_restantes === 0) {
+                unset($_SESSION['rfid_importacion_pendiente']);
+            }
+        }
+
         echo json_encode([
             'success' => true,
             'message' => 'Cdigo RFID registrado correctamente.',
             'id_aprendiz' => $idAprendiz,
-            'codigo_rfid' => $nuevoRfid
+            'codigo_rfid' => $nuevoRfid,
+            'es_flujo_importacion' => $es_flujo_importacion,
+            'pendientes_restantes' => $pendientes_restantes
         ]);
         exit;
     } else {

@@ -185,16 +185,22 @@ if ($accion === 'confirmar_importar_excel') {
     }
 
     $registrados = (int)$resultado['registrados'];
-    $duplicados  = (int)$resultado['duplicados'];
 
-    if ($duplicados > 0) {
-        $mensaje = "Importación completada. {$registrados} aprendices fueron registrados y {$duplicados} ya existían.";
+    if ($registrados > 0 && !empty($resultado['aprendices_creados'])) {
+        $_SESSION['rfid_importacion_pendiente'] = [
+            'id_importacion' => bin2hex(random_bytes(16)),
+            'id_ficha'       => $idFicha,
+            'id_instructor'  => $idInstructor,
+            'aprendices'     => $resultado['aprendices_creados'],
+            'created_at'     => time(),
+            'expires_at'     => time() + 1800 // 30 minutos
+        ];
+        header('Location: ' . RUTA_BASE . 'views/instructor/aprendices/importar_rfid.php');
+        exit;
     } else {
-        $mensaje = "Importación completada correctamente. Se registraron {$registrados} aprendices.";
+        header('Location: ' . RUTA_BASE . 'views/instructor/aprendices/create.php?mensaje=' . urlencode('La importación terminó, pero no hubo aprendices nuevos que requieran registro RFID.'));
+        exit;
     }
-
-    header('Location: ' . RUTA_BASE . 'views/instructor/aprendices/create.php?mensaje=' . urlencode($mensaje));
-    exit;
 }
 
 // ============================================================
@@ -204,6 +210,57 @@ if ($accion === 'cancelar_importacion_excel') {
     unset($_SESSION['import_preview_instructor']);
     header('Location: ' . RUTA_BASE . 'views/instructor/aprendices/create.php?mensaje=' . urlencode('Operación de importación cancelada.'));
     exit;
+}
+
+// ============================================================
+// 5. EDITAR APRENDIZ (INSTRUCTOR)
+// ============================================================
+if ($accion === 'editar_aprendiz') {
+    $idAprendiz = filter_input(INPUT_POST, 'id_aprendiz', FILTER_VALIDATE_INT);
+    if (!$idAprendiz) {
+        header('Location: ' . RUTA_BASE . 'views/instructor/aprendices/index.php?error=' . urlencode('ID de aprendiz inválido.'));
+        exit;
+    }
+
+    $datos = [
+        'tipo_documento'   => trim($_POST['tipo_documento'] ?? ''),
+        'numero_documento' => trim($_POST['numero_documento'] ?? ''),
+        'nombre'           => trim($_POST['nombre'] ?? ''),
+        'apellidos'        => trim($_POST['apellidos'] ?? ''),
+        'telefono'         => trim($_POST['telefono'] ?? ''),
+        'correo'           => trim($_POST['correo'] ?? '')
+    ];
+
+    $resultado = AprendizModel::editarAprendizDeInstructor($idAprendiz, $idInstructor, $datos);
+
+    if ($resultado['success']) {
+        header('Location: ' . RUTA_BASE . 'views/instructor/aprendices/index.php?mensaje=' . urlencode('Aprendiz actualizado correctamente.'));
+        exit;
+    } else {
+        header('Location: ' . RUTA_BASE . 'views/instructor/aprendices/index.php?error=' . urlencode($resultado['error']));
+        exit;
+    }
+}
+
+// ============================================================
+// 6. ELIMINAR APRENDIZ (INSTRUCTOR)
+// ============================================================
+if ($accion === 'eliminar_aprendiz') {
+    $idAprendiz = filter_input(INPUT_POST, 'id_aprendiz', FILTER_VALIDATE_INT);
+    if (!$idAprendiz) {
+        header('Location: ' . RUTA_BASE . 'views/instructor/aprendices/index.php?error=' . urlencode('ID de aprendiz inválido.'));
+        exit;
+    }
+
+    $resultado = AprendizModel::eliminarAprendizDeInstructor($idAprendiz, $idInstructor);
+
+    if ($resultado['success']) {
+        header('Location: ' . RUTA_BASE . 'views/instructor/aprendices/index.php?mensaje=' . urlencode('Aprendiz eliminado correctamente.'));
+        exit;
+    } else {
+        header('Location: ' . RUTA_BASE . 'views/instructor/aprendices/index.php?error=' . urlencode($resultado['error']));
+        exit;
+    }
 }
 
 // Acción no reconocida
