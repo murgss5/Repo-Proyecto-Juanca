@@ -87,7 +87,7 @@ function menuActivo($clave) {
 <aside class="main-sidebar sidebar-dark-sena elevation-4">
   <!-- Marca del sistema -->
   <a href="<?= RUTA_BASE ?>" class="brand-link">
-    <img src="<?= RUTA_BASE ?>assets/img/logo-sena.svg" alt="Logo SENA" class="brand-image img-circle elevation-3">
+    <img src="<?= RUTA_BASE ?>assets/img/sena.svg" alt="Logo SENA" class="brand-image img-circle elevation-3">
     <span class="brand-text font-weight-light">SENA &middot; Ingreso</span>
   </a>
 

@@ -22,7 +22,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SENA | Iniciar sesion</title>
-  <link rel="icon" href="<?= RUTA_BASE ?>assets/img/logo-sena.svg">
+  <link rel="icon" href="<?= RUTA_BASE ?>assets/img/sena.svg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=swap">
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/icons/fontawesome/css/all.min.css">
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/bootstrap.min.css">
@@ -35,7 +35,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
 <div class="pagina-login">
   <div class="login-card card card-outline">
     <div class="card-header text-center">
-      <img src="<?= RUTA_BASE ?>assets/img/logo-sena.svg" alt="Logo SENA" width="72" height="72">
+      <img src="<?= RUTA_BASE ?>assets/img/sena.svg" alt="Logo SENA" width="72" height="72">
       <h1 class="h4 mt-2 mb-0 font-weight-bold text-sena">SENA</h1>
       <p class="text-muted mb-0">Sistema de Control de Ingreso de Aprendices</p>
     </div>

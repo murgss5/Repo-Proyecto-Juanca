@@ -57,15 +57,25 @@ $instructorId = $_SESSION['id_usuario'];
 $fechaHoy = date('Y-m-d');
 $diaSemana = date('l'); // Lunes, Martes, etc en ingles
 $diasMap = [
-    'Monday' => 'Lunes',
-    'Tuesday' => 'Martes',
+    'Monday'    => 'Lunes',
+    'Tuesday'   => 'Martes',
+    'Wednesday' => 'Miércoles',
+    'Thursday'  => 'Jueves',
+    'Friday'    => 'Viernes',
+    'Saturday'  => 'Sábado',
+    'Sunday'    => 'Domingo'
+];
+$diasMapAlt = [
+    'Monday'    => 'Lunes',
+    'Tuesday'   => 'Martes',
     'Wednesday' => 'Miercoles',
-    'Thursday' => 'Jueves',
-    'Friday' => 'Viernes',
-    'Saturday' => 'Sabado',
-    'Sunday' => 'Domingo'
+    'Thursday'  => 'Jueves',
+    'Friday'    => 'Viernes',
+    'Saturday'  => 'Sabado',
+    'Sunday'    => 'Domingo'
 ];
 $diaSemanaEs = $diasMap[$diaSemana] ?? $diaSemana;
+$diaSemanaAlt = $diasMapAlt[$diaSemana] ?? $diaSemana;
 
 $conexion = (new Conexion())->conectar();
 
@@ -85,15 +95,17 @@ try {
         throw new Exception('La ficha no pertenece al instructor');
     }
 
-    // Validar que el horario pertenezca a la ficha y sea para el dia actual
+    // Validar que el horario pertenezca a la ficha y sea para el dia actual (con o sin tilde)
     $q = $conexion->prepare(
         "SELECT id_horario, entrada, salida FROM horario 
-         WHERE id_horario = :horario_id AND fk_ficha = :ficha_id AND dia_semana = :dia_semana"
+         WHERE id_horario = :horario_id AND fk_ficha = :ficha_id 
+           AND (dia_semana = :dia_semana OR dia_semana = :dia_semana_alt)"
     );
     $q->execute([
         ':horario_id' => $horarioId,
         ':ficha_id' => $fichaId,
-        ':dia_semana' => $diasMap[date('l')] ?? date('l')
+        ':dia_semana' => $diaSemanaEs,
+        ':dia_semana_alt' => $diaSemanaAlt
     ]);
     $horario = $q->fetch();
     if (!$horario) {
@@ -102,13 +114,14 @@ try {
 
     // Validar ventana de apertura: desde 15 min antes hasta 60 min despues de la entrada
     $entradaHorario = $horario['entrada']; // formato HH:MM:SS
-    $entradaDateTime = DateTime::createFromFormat('H:i:s', $entradaHorario);
+    $entradaDateTime = DateTime::createFromFormat('H:i:s', strlen($entradaHorario) === 5 ? $entradaHorario . ':00' : $entradaHorario);
     $ahora = new DateTime();
     $ventanaInicio = clone $entradaDateTime;
     $ventanaInicio->modify('-15 minutes');
     $ventanaFin = clone $entradaDateTime;
     $ventanaFin->modify('+60 minutes');
-    $horaFinHorario = DateTime::createFromFormat('H:i:s', $horario['salida']);
+    $salidaHorario = $horario['salida'];
+    $horaFinHorario = DateTime::createFromFormat('H:i:s', strlen($salidaHorario) === 5 ? $salidaHorario . ':00' : $salidaHorario);
 
     if ($ahora < $ventanaInicio) {
         throw new Exception('Aun no es hora de abrir la jornada. Ventana abre a las ' . $ventanaInicio->format('H:i'));
@@ -142,7 +155,13 @@ try {
 
     // Obtener hora actual del servidor
     $horaAperturaReal = date('Y-m-d H:i:s');
-    $horaLimitePuntualidad = date('Y-m-d H:i:s', strtotime($horaAperturaReal . ' + 10 minutes'));
+    
+    // Calcular limite de puntualidad: fecha/hora de inicio programado + 10 minutos
+    $horaEntradaProg = strlen($horario['entrada']) === 5 ? $horario['entrada'] . ':00' : $horario['entrada'];
+    $inicioProgramado = DateTime::createFromFormat('Y-m-d H:i:s', $fechaHoy . ' ' . $horaEntradaProg);
+    $limitePuntualidadObj = clone $inicioProgramado;
+    $limitePuntualidadObj->modify('+10 minutes');
+    $horaLimitePuntualidad = $limitePuntualidadObj->format('Y-m-d H:i:s');
 
     // Crear nueva sesion
     $q = $conexion->prepare(

@@ -76,18 +76,28 @@ foreach ($consulta->fetchAll() as $dia) {
 date_default_timezone_set('America/Bogota');
 $diaSemana = date('l');
 $diasMap = [
-    'Monday' => 'Lunes',
-    'Tuesday' => 'Martes',
+    'Monday'    => 'Lunes',
+    'Tuesday'   => 'Martes',
+    'Wednesday' => 'Miércoles',
+    'Thursday'  => 'Jueves',
+    'Friday'    => 'Viernes',
+    'Saturday'  => 'Sábado',
+    'Sunday'    => 'Domingo'
+];
+$diasMapAlt = [
+    'Monday'    => 'Lunes',
+    'Tuesday'   => 'Martes',
     'Wednesday' => 'Miercoles',
-    'Thursday' => 'Jueves',
-    'Friday' => 'Viernes',
-    'Saturday' => 'Sabado',
-    'Sunday' => 'Domingo'
+    'Thursday'  => 'Jueves',
+    'Friday'    => 'Viernes',
+    'Saturday'  => 'Sabado',
+    'Sunday'    => 'Domingo'
 ];
 $diaSemanaEs = $diasMap[$diaSemana] ?? $diaSemana;
+$diaSemanaAlt = $diasMapAlt[$diaSemana] ?? $diaSemana;
 $fechaHoy = date('Y-m-d');
-$consulta = $conexion->prepare("SELECT f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida, COUNT(a.id_aprendiz) AS total_aprendices FROM ficha f INNER JOIN horario h ON h.fk_ficha = f.id_ficha LEFT JOIN aprendiz a ON a.fk_ficha = f.id_ficha WHERE f.fk_usuario = :id_instructor AND h.dia_semana = :dia_semana GROUP BY f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida ORDER BY h.entrada ASC");
-$consulta->execute([':id_instructor' => $idInstructor, ':dia_semana' => $diaSemanaEs]);
+$consulta = $conexion->prepare("SELECT f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida, COUNT(a.id_aprendiz) AS total_aprendices FROM ficha f INNER JOIN horario h ON h.fk_ficha = f.id_ficha LEFT JOIN aprendiz a ON a.fk_ficha = f.id_ficha WHERE f.fk_usuario = :id_instructor AND (h.dia_semana = :dia_semana OR h.dia_semana = :dia_semana_alt) GROUP BY f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida ORDER BY h.entrada ASC");
+$consulta->execute([':id_instructor' => $idInstructor, ':dia_semana' => $diaSemanaEs, ':dia_semana_alt' => $diaSemanaAlt]);
 $fichasConHorarioHoy = $consulta->fetchAll();
 
 // Jornadas de hoy
@@ -170,7 +180,6 @@ ob_start();
                     <div class="text-center text-muted py-4">
                         <i class="fas fa-calendar-times fa-2x mb-2"></i>
                         <p class="mb-0">No tienes fichas con horario para hoy (<?= $diaSemanaEs ?>, <?= $fechaHoy ?>).</p>
-                        <small class="text-muted d-block">PHP date('w')=<?= date('w') ?>, date('l')=<?= date('l') ?>, TZ=<?= date_default_timezone_get() ?></small>
                     </div>
                 <?php else: ?>
                     <div class="row">
@@ -259,6 +268,19 @@ ob_start();
                                             </button>
                                         </form>
                                     </div>
+                                    <?php if (defined('MODO_PRUEBAS_RFID') && MODO_PRUEBAS_RFID === true && $estado === 'abierta'): ?>
+                                    <div class="mt-3 p-3 border border-warning rounded bg-light simulador-rfid-box">
+                                        <div class="text-warning font-weight-bold mb-2" style="font-size: 0.85rem;">
+                                            <i class="fas fa-flask mr-1"></i> Modo de prueba: esta acción guarda asistencias reales sin utilizar el lector físico
+                                        </div>
+                                        <button type="button" 
+                                                class="btn btn-warning btn-sm btn-block btn-simular-ingreso font-weight-bold" 
+                                                data-ficha-id="<?= htmlspecialchars($fichaId) ?>">
+                                            <i class="fas fa-id-card mr-1"></i> Simular ingreso del siguiente aprendiz
+                                        </button>
+                                        <div class="simulador-resultado mt-2" style="display: none;"></div>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -423,6 +445,150 @@ ob_start();
             } else if (detalleDiv) {
                 detalleDiv.style.display = 'none';
             }
+
+            var simBox = card.querySelector('.simulador-rfid-box');
+            if (simBox) {
+                simBox.style.display = (estado === 'abierta') ? 'block' : 'none';
+            }
+        }
+
+        // Manejador para simular ingreso del siguiente aprendiz
+        var confirmacionPreviaSimulacion = false;
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.btn-simular-ingreso');
+            if (!btn) return;
+
+            e.preventDefault();
+
+            var fichaId = btn.getAttribute('data-ficha-id');
+            if (!fichaId) return;
+
+            var card = btn.closest('.card');
+            var resultadoDiv = card ? card.querySelector('.simulador-resultado') : null;
+
+            if (!confirmacionPreviaSimulacion) {
+                var confirmacion = window.confirm(
+                    "¿Confirma que desea simular el ingreso del siguiente aprendiz para esta jornada abierta?\n\nEsta acción registrará una asistencia real en la base de datos."
+                );
+                if (!confirmacion) return;
+                confirmacionPreviaSimulacion = true;
+            }
+
+            // Deshabilitar botón durante procesamiento para evitar dobles clics
+            btn.disabled = true;
+            var contenidoOriginal = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Procesando...';
+
+            if (resultadoDiv) {
+                resultadoDiv.style.display = 'none';
+                resultadoDiv.innerHTML = '';
+            }
+
+            var formData = new FormData();
+            formData.append('ficha_id', fichaId);
+            formData.append('token_csrf', tokenCsrf);
+
+            fetch(rutaBase + 'controllers/simular_ingreso_rfid.php', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function (res) {
+                return res.json().then(function (data) {
+                    return { status: res.status, ok: res.ok, data: data };
+                });
+            })
+            .then(function (resObj) {
+                var data = resObj.data;
+                if (!resObj.ok || !data.success) {
+                    if (resultadoDiv) {
+                        resultadoDiv.className = 'simulador-resultado mt-2 alert alert-warning p-2 mb-0';
+                        resultadoDiv.innerHTML = '<i class="fas fa-info-circle mr-1"></i> ' + escapeHtml(data.message || 'No fue posible realizar la simulación');
+                        resultadoDiv.style.display = 'block';
+                    }
+                    if (data && data.pendientes_restantes === 0) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Sin aprendices pendientes';
+                        return;
+                    }
+                } else {
+                    var d = data.data;
+                    var badgeClase = d.estado === 'PUNTUAL' ? 'badge-success' : 'badge-warning';
+                    var textoEstado = d.estado;
+                    if (d.estado === 'RETARDO' && d.minutos_retardo > 0) {
+                        textoEstado += ' (' + d.minutos_retardo + ' min)';
+                    }
+
+                    if (resultadoDiv) {
+                        resultadoDiv.className = 'simulador-resultado mt-2 alert alert-success p-2 mb-0';
+                        resultadoDiv.innerHTML = 
+                            '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                                '<strong><i class="fas fa-user-check mr-1"></i> ' + escapeHtml(d.aprendiz) + '</strong>' +
+                                '<span class="badge ' + badgeClase + '">' + textoEstado + '</span>' +
+                            '</div>' +
+                            '<div class="small text-muted">' +
+                                'Hora: ' + d.hora + ' | Pendientes con RFID: <strong>' + d.pendientes_restantes + '</strong>' +
+                            '</div>';
+                        resultadoDiv.style.display = 'block';
+                    }
+
+                    // Actualizar contador "Presentes hoy" en las tarjetas superiores si existe
+                    var presentesElem = document.querySelector('.info-box-azul .info-box-number');
+                    if (presentesElem) {
+                        var valActual = parseInt(presentesElem.textContent.trim(), 10) || 0;
+                        presentesElem.textContent = valActual + 1;
+                    }
+
+                    // Actualizar tabla de últimos ingresos hoy si existe
+                    var tablaIngresos = null;
+                    var headers = document.querySelectorAll('.card-header h3');
+                    headers.forEach(function (h) {
+                        if (h.textContent.indexOf('Ingresos registrados hoy') !== -1) {
+                            tablaIngresos = h.closest('.card').querySelector('table tbody');
+                        }
+                    });
+                    if (tablaIngresos) {
+                        var filaVacia = tablaIngresos.querySelector('td.text-muted');
+                        if (filaVacia && filaVacia.getAttribute('colspan')) {
+                            tablaIngresos.innerHTML = '';
+                        }
+                        var nuevaFila = document.createElement('tr');
+                        nuevaFila.innerHTML = 
+                            '<td><span class="badge badge-success">' + d.hora + '</span></td>' +
+                            '<td>' + escapeHtml(d.aprendiz) + '</td>' +
+                            '<td>Ficha #' + fichaId + '</td>';
+                        tablaIngresos.insertBefore(nuevaFila, tablaIngresos.firstChild);
+                    }
+
+                    if (d.pendientes_restantes === 0) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Sin aprendices pendientes';
+                        return;
+                    }
+                }
+
+                // Restaurar botón
+                btn.disabled = false;
+                btn.innerHTML = contenidoOriginal;
+            })
+            .catch(function (err) {
+                if (resultadoDiv) {
+                    resultadoDiv.className = 'simulador-resultado mt-2 alert alert-danger p-2 mb-0';
+                    resultadoDiv.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i> Error al conectar con el servidor';
+                    resultadoDiv.style.display = 'block';
+                }
+                btn.disabled = false;
+                btn.innerHTML = contenidoOriginal;
+            });
+        });
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
         }
 
         // inicializar UI segun estado del servidor

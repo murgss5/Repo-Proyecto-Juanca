@@ -5,6 +5,7 @@
  */
 
 session_start();
+date_default_timezone_set('America/Bogota');
 require_once __DIR__ . '/../config/conexion.php';
 
 /**
@@ -116,13 +117,31 @@ try {
     // CREAR O EDITAR HORARIO
     $ficha = filter_input(INPUT_POST, 'id_ficha', FILTER_VALIDATE_INT);
     $dia = trim($_POST['dia_semana'] ?? '');
-    $entrada = $_POST['entrada'] ?? '';
-    $salida = $_POST['salida'] ?? '';
-    $dias = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+    $entrada = trim($_POST['entrada'] ?? '');
+    $salida = trim($_POST['salida'] ?? '');
 
+    $mapaDias = [
+        'lunes'     => 'Lunes',
+        'martes'    => 'Martes',
+        'miercoles' => 'Miércoles',
+        'miércoles' => 'Miércoles',
+        'jueves'    => 'Jueves',
+        'viernes'   => 'Viernes',
+        'sabado'    => 'Sábado',
+        'sábado'    => 'Sábado',
+        'domingo'   => 'Domingo'
+    ];
+    $diaKey = mb_strtolower($dia, 'UTF-8');
+    $diaNormalizado = $mapaDias[$diaKey] ?? null;
+
+    $regexHora = '/^(?:[01]\d|2[0-3]):[0-5]\d$/';
     // Valida datos obligatorios y formato
-    if (!$ficha || !in_array($dia, $dias, true) || !preg_match('/^\d{2}:\d{2}$/', $entrada) || !preg_match('/^\d{2}:\d{2}$/', $salida) || $salida <= $entrada) {
+    if (!$ficha || !$diaNormalizado || !preg_match($regexHora, $entrada) || !preg_match($regexHora, $salida)) {
         volverAcademico($modulo, 'error', 'Revise la ficha, el dia y el intervalo de horas.');
+    }
+
+    if ($salida <= $entrada) {
+        volverAcademico($modulo, 'error', 'La hora de salida debe ser posterior a la hora de entrada en el mismo día.');
     }
 
     // Verifica que la ficha exista
@@ -130,17 +149,19 @@ try {
     $q->execute([$ficha]);
     if (!$q->fetch()) volverAcademico($modulo, 'error', 'La ficha seleccionada no existe.');
 
-    // Verifica que no haya horario duplicado para esa ficha y dia
-    $q = $conexion->prepare('SELECT id_horario FROM horario WHERE fk_ficha=? AND dia_semana=? AND id_horario<>?');
-    $q->execute([$ficha, $dia, $id ?: 0]);
+    // Verifica que no haya horario duplicado para esa ficha y dia (soporta con y sin tilde)
+    $mapaAlt = ['Miércoles' => 'Miercoles', 'Sábado' => 'Sabado'];
+    $diaAlt = $mapaAlt[$diaNormalizado] ?? $diaNormalizado;
+    $q = $conexion->prepare('SELECT id_horario FROM horario WHERE fk_ficha=? AND (dia_semana=? OR dia_semana=?) AND id_horario<>?');
+    $q->execute([$ficha, $diaNormalizado, $diaAlt, $id ?: 0]);
     if ($q->fetch()) volverAcademico($modulo, 'error', 'Esta ficha ya tiene un horario para ese dia.');
 
     if ($accion === 'crear') {
-        $conexion->prepare('INSERT INTO horario(dia_semana,entrada,salida,fk_ficha) VALUES(?,?,?,?)')->execute([$dia, $entrada, $salida, $ficha]);
+        $conexion->prepare('INSERT INTO horario(dia_semana,entrada,salida,fk_ficha) VALUES(?,?,?,?)')->execute([$diaNormalizado, $entrada, $salida, $ficha]);
         volverAcademico($modulo, 'mensaje', 'Horario creado correctamente.');
     }
     if (!$id) volverAcademico($modulo, 'error', 'Horario no valido.');
-    $conexion->prepare('UPDATE horario SET dia_semana=?,entrada=?,salida=?,fk_ficha=? WHERE id_horario=?')->execute([$dia, $entrada, $salida, $ficha, $id]);
+    $conexion->prepare('UPDATE horario SET dia_semana=?,entrada=?,salida=?,fk_ficha=? WHERE id_horario=?')->execute([$diaNormalizado, $entrada, $salida, $ficha, $id]);
     volverAcademico($modulo, 'mensaje', 'Horario actualizado correctamente.');
 
 } catch (Throwable $e) {

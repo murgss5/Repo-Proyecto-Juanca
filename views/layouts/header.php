@@ -37,7 +37,7 @@ if ($usuarioActual === null) {
 $rolActualId = $usuarioActual['fk_rol'];
 $nombreRolActual = $usuarioActual['nombre_rol'];
 $nombreUsuarioActual = $usuarioActual['nombre_completo'];
-$fotoUsuario = RUTA_BASE . 'assets/img/logo-sena.svg';
+$fotoUsuario = RUTA_BASE . 'assets/img/sena.svg';
 
 $paginaTitulo = $paginaTitulo ?? 'Panel';
 $menuActivo   = $menuActivo ?? '';
@@ -51,7 +51,7 @@ $menuActivo   = $menuActivo ?? '';
   <title>SENA | <?= htmlspecialchars($paginaTitulo) ?></title>
 
   <!-- Icono de la página -->
-  <link rel="icon" href="<?= RUTA_BASE ?>assets/img/logo-sena.svg">
+  <link rel="icon" href="<?= RUTA_BASE ?>assets/img/sena.svg">
 
   <!-- Fuente institucional (opcional; si no hay internet usa la fuente del sistema) -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=swap">

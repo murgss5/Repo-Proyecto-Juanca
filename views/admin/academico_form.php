@@ -129,8 +129,16 @@ ob_start();
                     <div class="col-md-4 form-group">
                         <label>Día *</label>
                         <select class="form-control" name="dia_semana" required>
-                            <?php foreach (['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] as $dia): ?>
-                                <option <?= $datos['dia_semana'] === $dia ? 'selected' : '' ?>><?= $dia ?></option>
+                            <?php 
+                            $diasSemanaLista = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+                            $mapaNorm = ['miercoles' => 'miércoles', 'sabado' => 'sábado'];
+                            $diaActualNorm = mb_strtolower($datos['dia_semana'] ?? '', 'UTF-8');
+                            $diaActualNorm = $mapaNorm[$diaActualNorm] ?? $diaActualNorm;
+                            foreach ($diasSemanaLista as $dia): 
+                                $diaNorm = mb_strtolower($dia, 'UTF-8');
+                                $selected = ($diaActualNorm === $diaNorm) ? 'selected' : '';
+                            ?>
+                                <option value="<?= $dia ?>" <?= $selected ?>><?= $dia ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

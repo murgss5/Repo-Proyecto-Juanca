@@ -30,3 +30,10 @@ define('RUTA_BASE', str_repeat('../', max(0, $nivelProfundidad)));
 
 // Ruta fisica absoluta de la raiz del proyecto
 define('DIRECTORIO_PROYECTO', dirname(__DIR__));
+
+/**
+ * MODO DE PRUEBAS PARA SIMULACION DE INGRESOS RFID
+ * true  = Habilitado (muestra la herramienta en el panel del instructor en jornadas abiertas y permite procesar ingresos simulados).
+ * false = Deshabilitado (bloquea la interfaz y rechaza cualquier solicitud en el servidor).
+ */
+define('MODO_PRUEBAS_RFID', true);
