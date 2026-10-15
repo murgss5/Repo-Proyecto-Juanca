@@ -19,18 +19,6 @@ $miga = [
 $idInstructor = (int) $_SESSION['id_usuario'];
 $conexion = (new Conexion())->conectar();
 
-// --- Variables del layout ---
-$paginaTitulo = 'Dashboard del instructor';
-$menuActivo   = 'dashboard';
-$miga = [
-    ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
-    ['label' => 'Dashboard'],
-];
-
-// Instructor autenticado
-$idInstructor = (int) $_SESSION['id_usuario'];
-$conexion = (new Conexion())->conectar();
-
 
 // Total fichas
 $consulta = $conexion->prepare('SELECT COUNT(*) FROM ficha WHERE fk_usuario = :id_instructor');

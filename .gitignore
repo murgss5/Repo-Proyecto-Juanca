@@ -1,2 +1,6 @@
 /vendor/
 /composer.phar
+/scratch_excel*.txt
+/test.php
+/uploads/excusas/*
+!/uploads/excusas/.htaccess
