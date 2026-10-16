@@ -129,77 +129,76 @@ ob_start();
 
 <!-- Estilos específicos del Dashboard Aprendiz -->
 <style>
-/* Reglas para Modo Claro (por defecto) */
-body:not(.dark-mode) .dash-apr-card {
+.dash-apr-card {
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 0.5rem;
   background-color: #ffffff;
 }
 
-body:not(.dark-mode) .dash-apr-kpi {
+.dash-apr-kpi {
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-top-width: 4px !important;
   border-radius: 0.5rem;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-body:not(.dark-mode) .dash-apr-kpi:hover {
+.dash-apr-kpi:hover {
   box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.06);
 }
 
-/* 1. Retardos del mes (Claro): Ámbar (#D97706, fondo #FFFBEB, círculo #FEF3C7, icono ámbar oscuro #92400E) */
-body:not(.dark-mode) .dash-apr-kpi-retardos {
+/* 1. Retardos del mes: Ámbar (#D97706, fondo #FFFBEB, círculo #FEF3C7, icono ámbar oscuro #92400E) */
+.dash-apr-kpi-retardos {
   background-color: #FFFBEB !important;
   border-top-color: #D97706 !important;
 }
-body:not(.dark-mode) .dash-apr-kpi-retardos .dash-apr-icon-bubble {
+.dash-apr-kpi-retardos .dash-apr-icon-bubble {
   background-color: #FEF3C7 !important;
   color: #92400E !important;
 }
-body:not(.dark-mode) .dash-apr-kpi-retardos .dash-apr-badge {
+.dash-apr-kpi-retardos .dash-apr-badge {
   background-color: #FEF3C7;
   color: #92400E;
   border: 1px solid #FDE68A;
 }
 
-/* 2. Inasistencias del mes (Claro): Rojo (#DC2626, fondo #FEF2F2, círculo #FEE2E2, icono rojo oscuro #991B1B) */
-body:not(.dark-mode) .dash-apr-kpi-inasistencias {
+/* 2. Inasistencias del mes: Rojo (#DC2626, fondo #FEF2F2, círculo #FEE2E2, icono rojo oscuro #991B1B) */
+.dash-apr-kpi-inasistencias {
   background-color: #FEF2F2 !important;
   border-top-color: #DC2626 !important;
 }
-body:not(.dark-mode) .dash-apr-kpi-inasistencias .dash-apr-icon-bubble {
+.dash-apr-kpi-inasistencias .dash-apr-icon-bubble {
   background-color: #FEE2E2 !important;
   color: #991B1B !important;
 }
-body:not(.dark-mode) .dash-apr-kpi-inasistencias .dash-apr-badge {
+.dash-apr-kpi-inasistencias .dash-apr-badge {
   background-color: #FEE2E2;
   color: #991B1B;
   border: 1px solid #FECACA;
 }
 
-/* 3. Excusas pendientes (Claro): Azul (#2563EB, fondo #EFF6FF, círculo #DBEAFE, icono azul oscuro #1E40AF) */
-body:not(.dark-mode) .dash-apr-kpi-excusas {
+/* 3. Excusas pendientes: Azul (#2563EB, fondo #EFF6FF, círculo #DBEAFE, icono azul oscuro #1E40AF) */
+.dash-apr-kpi-excusas {
   background-color: #EFF6FF !important;
   border-top-color: #2563EB !important;
 }
-body:not(.dark-mode) .dash-apr-kpi-excusas .dash-apr-icon-bubble {
+.dash-apr-kpi-excusas .dash-apr-icon-bubble {
   background-color: #DBEAFE !important;
   color: #1E40AF !important;
 }
-body:not(.dark-mode) .dash-apr-kpi-excusas .dash-apr-badge {
+.dash-apr-kpi-excusas .dash-apr-badge {
   background-color: #DBEAFE;
   color: #1E40AF;
   border: 1px solid #BFDBFE;
 }
 
-body:not(.dark-mode) .dash-apr-kpi-title {
+.dash-apr-kpi-title {
   color: #374151;
   letter-spacing: 0.025em;
 }
-body:not(.dark-mode) .dash-apr-kpi-desc {
+.dash-apr-kpi-desc {
   color: #4B5563;
 }
 
-body:not(.dark-mode) .dash-apr-quick-btn {
+.dash-apr-quick-btn {
   display: flex;
   align-items: center;
   padding: 0.9rem 1.1rem;
@@ -210,7 +209,7 @@ body:not(.dark-mode) .dash-apr-quick-btn {
   text-decoration: none !important;
   transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-body:not(.dark-mode) .dash-apr-quick-btn:hover {
+.dash-apr-quick-btn:hover {
   background-color: #f8fdf6;
   border-color: #39a900;
   color: #39a900;
@@ -236,96 +235,6 @@ body:not(.dark-mode) .dash-apr-quick-btn:hover {
 .dash-apr-quick-btn:focus-visible {
   outline: 2px solid #39a900;
   outline-offset: 2px;
-}
-
-/* Reglas explícitas para Modo Oscuro (body.dark-mode) */
-body.dark-mode .dash-apr-card {
-  border: 1px solid #3B475B !important;
-  border-radius: 0.5rem;
-  background-color: #1F2937 !important;
-}
-
-body.dark-mode .dash-apr-kpi {
-  background-color: #1F2937 !important;
-  border: 1px solid #3B475B !important;
-  border-top-width: 4px !important;
-  border-radius: 0.5rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-body.dark-mode .dash-apr-kpi:hover {
-  box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.4);
-}
-
-/* KPI Retardos (Oscuro): Superficie #1F2937, borde ámbar #D97706, icono #FDE68A sobre fondo suave */
-body.dark-mode .dash-apr-kpi-retardos {
-  background-color: #1F2937 !important;
-  border-top-color: #D97706 !important;
-}
-body.dark-mode .dash-apr-kpi-retardos .dash-apr-icon-bubble {
-  background-color: rgba(217, 119, 6, 0.2) !important;
-  color: #FDE68A !important;
-}
-body.dark-mode .dash-apr-kpi-retardos .dash-apr-badge {
-  background-color: rgba(217, 119, 6, 0.2) !important;
-  color: #FDE68A !important;
-  border: 1px solid rgba(217, 119, 6, 0.4) !important;
-}
-
-/* KPI Inasistencias (Oscuro): Superficie #1F2937, borde rojo #DC2626, icono #FCA5A5 sobre fondo suave */
-body.dark-mode .dash-apr-kpi-inasistencias {
-  background-color: #1F2937 !important;
-  border-top-color: #DC2626 !important;
-}
-body.dark-mode .dash-apr-kpi-inasistencias .dash-apr-icon-bubble {
-  background-color: rgba(220, 38, 38, 0.2) !important;
-  color: #FCA5A5 !important;
-}
-body.dark-mode .dash-apr-kpi-inasistencias .dash-apr-badge {
-  background-color: rgba(220, 38, 38, 0.2) !important;
-  color: #FCA5A5 !important;
-  border: 1px solid rgba(220, 38, 38, 0.4) !important;
-}
-
-/* KPI Excusas (Oscuro): Superficie #1F2937, borde azul #2563EB, icono #93C5FD sobre fondo suave */
-body.dark-mode .dash-apr-kpi-excusas {
-  background-color: #1F2937 !important;
-  border-top-color: #2563EB !important;
-}
-body.dark-mode .dash-apr-kpi-excusas .dash-apr-icon-bubble {
-  background-color: rgba(37, 99, 235, 0.2) !important;
-  color: #93C5FD !important;
-}
-body.dark-mode .dash-apr-kpi-excusas .dash-apr-badge {
-  background-color: rgba(37, 99, 235, 0.2) !important;
-  color: #93C5FD !important;
-  border: 1px solid rgba(37, 99, 235, 0.4) !important;
-}
-
-body.dark-mode .dash-apr-kpi-title {
-  color: #CBD5E1 !important;
-  letter-spacing: 0.025em;
-}
-body.dark-mode .dash-apr-kpi-desc {
-  color: #A8B5C7 !important;
-}
-
-/* Botones de acceso rápido (Oscuro) */
-body.dark-mode .dash-apr-quick-btn {
-  display: flex;
-  align-items: center;
-  padding: 0.9rem 1.1rem;
-  background-color: #1F2937 !important;
-  border: 1px solid #3B475B !important;
-  border-radius: 0.5rem;
-  color: #F1F5F9 !important;
-  text-decoration: none !important;
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-}
-body.dark-mode .dash-apr-quick-btn:hover {
-  background-color: #293548 !important;
-  border-color: #39a900 !important;
-  color: #86efac !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -441,7 +350,7 @@ body.dark-mode .dash-apr-quick-btn:hover {
   <!-- Columna 1: Resumen de Asistencia -->
   <div class="col-lg-6 col-12 mb-4">
     <div class="card h-100 shadow-sm dash-apr-card">
-      <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+      <div class="card-header border-bottom d-flex align-items-center justify-content-between">
         <h3 class="card-title font-weight-bold text-dark mb-0">
           <i class="fas fa-chart-bar text-sena mr-2"></i> Resumen de asistencia
         </h3>
@@ -500,7 +409,7 @@ body.dark-mode .dash-apr-quick-btn:hover {
   <!-- Columna 2: Estado de mis excusas -->
   <div class="col-lg-6 col-12 mb-4">
     <div class="card h-100 shadow-sm dash-apr-card">
-      <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+      <div class="card-header border-bottom d-flex align-items-center justify-content-between">
         <h3 class="card-title font-weight-bold text-dark mb-0">
           <i class="fas fa-file-medical text-sena mr-2"></i> Estado de mis excusas
         </h3>
@@ -581,7 +490,7 @@ body.dark-mode .dash-apr-quick-btn:hover {
 
 <!-- 4. Fila inferior: Accesos rápidos compactos -->
 <div class="card shadow-sm dash-apr-card mb-4">
-  <div class="card-header bg-white border-bottom">
+  <div class="card-header border-bottom">
     <h3 class="card-title font-weight-bold text-dark mb-0">
       <i class="fas fa-bolt text-sena mr-2"></i> Accesos rápidos
     </h3>

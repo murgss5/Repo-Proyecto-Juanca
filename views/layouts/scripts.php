@@ -30,8 +30,5 @@
 
 <!-- Scripts personalizados del proyecto -->
 <script src="<?= RUTA_BASE ?>assets/js/custom.js"></script>
-
-<!-- Gestor global de temas (Claro / Oscuro / Sistema) -->
-<script src="<?= RUTA_BASE ?>assets/js/theme-manager.js"></script>
 </body>
 </html>
