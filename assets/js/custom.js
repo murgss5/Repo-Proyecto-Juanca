@@ -220,6 +220,42 @@
         }
       });
     }
+  // ---------- Revalidación de sesión ante restauración de historial / bfcache ----------
+  window.addEventListener("pageshow", function (event) {
+    var esRestaurado = !!event.persisted;
+    if (!esRestaurado && window.performance && window.performance.getEntriesByType) {
+      var navEntries = window.performance.getEntriesByType("navigation");
+      if (navEntries.length > 0 && navEntries[0].type === "back_forward") {
+        esRestaurado = true;
+      }
+    }
+
+    if (esRestaurado) {
+      var wrapper = document.querySelector(".wrapper");
+      if (wrapper) {
+        wrapper.style.visibility = "hidden";
+      }
+
+      $.ajax({
+        url: baseUrl + "controllers/ajax/verificar_sesion.php",
+        type: "GET",
+        cache: false,
+        headers: { "Cache-Control": "no-cache" },
+        dataType: "json",
+        success: function (data) {
+          if (data && data.autenticado) {
+            if (wrapper) {
+              wrapper.style.visibility = "visible";
+            }
+          } else {
+            window.location.replace(baseUrl + "views/auth/login.php");
+          }
+        },
+        error: function () {
+          window.location.replace(baseUrl + "views/auth/login.php");
+        }
+      });
+    }
   });
 
 })(jQuery);

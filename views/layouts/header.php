@@ -68,8 +68,14 @@ $menuActivo   = $menuActivo ?? '';
   <!-- AdminLTE -->
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/adminlte.min.css">
 
+  <!-- SweetAlert2 -->
+  <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/plugins/sweetalert2/sweetalert2.min.css">
+
   <!-- Estilos personalizados del proyecto -->
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/custom.css">
+
+  <!-- Detección temprana de tema y prevención de destello blanco (FOUC) -->
+  <script src="<?= RUTA_BASE ?>assets/js/theme-init.js"></script>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed" data-base="<?= RUTA_BASE ?>">
 <div class="wrapper">

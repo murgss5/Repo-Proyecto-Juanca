@@ -8,9 +8,36 @@
  */
 
 // cabeceras anti cache para evitar cache de paginas protegidas
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: 0");
+if (!headers_sent()) {
+    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Pragma: no-cache");
+    header("Expires: 0");
+}
+
+/**
+ * Inicia la sesion con configuracion de cookies segura e inicializa token CSRF
+ */
+function asegurarSesionIniciada(): void
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        $esHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? null) == 443;
+        if (!headers_sent()) {
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path'     => '/',
+                'domain'   => '',
+                'secure'   => $esHttps,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+        }
+        session_start();
+    }
+
+    if (empty($_SESSION['token_csrf']) || !is_string($_SESSION['token_csrf'])) {
+        $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
+    }
+}
 
 /**
  * redirige al formulario de login calculando la ruta correcta segun la profundidad del script
@@ -19,6 +46,21 @@ function redirigirAlLogin(): void
 {
     $profundidad = substr_count(trim(dirname($_SERVER['SCRIPT_NAME']), '/'), '/');
     $rutaBase = str_repeat('../', max(0, $profundidad));
+
+    // Si es peticion AJAX o solicita JSON, responder HTTP 401 sin redireccion HTML
+    $solicitadoCon = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
+    $acepta = $_SERVER['HTTP_ACCEPT'] ?? '';
+    if (strtolower($solicitadoCon) === 'xmlhttprequest' || stripos($acepta, 'application/json') !== false) {
+        http_response_code(401);
+        header('Content-Type: application/json; charset=UTF-8');
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        echo json_encode([
+            'success'   => false,
+            'error'     => 'Sesion no activa o expirada.',
+            'redirect'  => $rutaBase . 'views/auth/login.php'
+        ]);
+        exit;
+    }
 
     header('Location: ' . $rutaBase . 'views/auth/login.php');
     exit;
@@ -31,10 +73,7 @@ function redirigirAlLogin(): void
  */
 function exigirRol(int ...$rolesPermitidos): void
 {
-    // inicia la sesion si no esta activa
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
-    }
+    asegurarSesionIniciada();
 
     // obtiene el rol del usuario de la sesion
     $rolActual = $_SESSION['fk_rol'] ?? null;
@@ -72,9 +111,7 @@ function setFlash(string $tipo, string $mensaje): void
  */
 function getFlash(): ?array
 {
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
-    }
+    asegurarSesionIniciada();
     $flash = $_SESSION['flash'] ?? null;
     if ($flash) {
         unset($_SESSION['flash']);
@@ -88,10 +125,7 @@ function getFlash(): ?array
  */
 function usuarioActual(): ?array
 {
-    // inicia la sesion si no esta activa
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        session_start();
-    }
+    asegurarSesionIniciada();
 
     // valida que exista id_usuario en sesion
     if (!isset($_SESSION['id_usuario']) || $_SESSION['id_usuario'] === '') {

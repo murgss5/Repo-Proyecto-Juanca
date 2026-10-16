@@ -28,11 +28,51 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/bootstrap.min.css">
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/adminlte.min.css">
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/plugins/sweetalert2/sweetalert2.min.css">
+  <!-- Estilos personalizados del proyecto -->
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/custom.css">
+
+  <!-- Detección temprana de tema y prevención de destello blanco (FOUC) -->
+  <script src="<?= RUTA_BASE ?>assets/js/theme-init.js"></script>
 </head>
 <body class="hold-transition">
 
-<div class="pagina-login">
+<div class="pagina-login position-relative">
+  <!-- Selector de apariencia flotante en Login -->
+  <div class="login-theme-wrapper position-absolute" style="top: 1.25rem; right: 1.5rem; z-index: 100;">
+    <div class="dropdown sena-theme-dropdown">
+      <button type="button" 
+              class="btn btn-sm btn-outline-light sena-theme-toggle-btn" 
+              id="btnSelectorTemaLogin" 
+              data-toggle="dropdown" 
+              aria-haspopup="true" 
+              aria-expanded="false" 
+              title="Cambiar apariencia" 
+              aria-label="Cambiar apariencia">
+        <i class="fas fa-desktop sena-theme-icon-current" aria-hidden="true"></i>
+        <span class="ml-1 sena-theme-label-current">Sistema</span>
+        <i class="fas fa-caret-down fa-xs ml-1" aria-hidden="true"></i>
+      </button>
+      <div class="dropdown-menu dropdown-menu-right sena-theme-menu shadow-sm" aria-labelledby="btnSelectorTemaLogin" role="menu">
+        <div class="dropdown-header small font-weight-bold text-muted px-3 py-1">Apariencia</div>
+        <button type="button" class="dropdown-item sena-theme-option d-flex align-items-center px-3 py-2" data-theme-value="light" role="menuitem">
+          <i class="fas fa-sun fa-fw mr-2 text-warning" aria-hidden="true"></i>
+          <span class="flex-grow-1">Claro</span>
+          <i class="fas fa-check sena-theme-check fa-xs ml-2 text-sena" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="dropdown-item sena-theme-option d-flex align-items-center px-3 py-2" data-theme-value="dark" role="menuitem">
+          <i class="fas fa-moon fa-fw mr-2 text-primary" aria-hidden="true"></i>
+          <span class="flex-grow-1">Oscuro</span>
+          <i class="fas fa-check sena-theme-check fa-xs ml-2 text-sena" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="dropdown-item sena-theme-option d-flex align-items-center px-3 py-2" data-theme-value="system" role="menuitem">
+          <i class="fas fa-desktop fa-fw mr-2 text-secondary" aria-hidden="true"></i>
+          <span class="flex-grow-1">Sistema</span>
+          <i class="fas fa-check sena-theme-check fa-xs ml-2 text-sena" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="login-card card card-outline">
     <div class="card-header text-center">
       <img src="<?= RUTA_BASE ?>assets/img/sena.svg" alt="Logo SENA" width="72" height="72">
@@ -52,12 +92,12 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
       <!-- Formulario de login que envia a controllers/login.php -->
       <form id="formLogin" action="<?= RUTA_BASE ?>controllers/login.php" method="post" autocomplete="off" novalidate>
         <div class="form-group">
-          <label for="nombre_usuario">Usuario</label>
+          <label for="nombre_usuario">Usuario o número de cédula</label>
           <div class="input-group">
             <div class="input-group-prepend">
               <span class="input-group-text"><i class="fas fa-id-card"></i></span>
             </div>
-            <input type="text" id="nombre_usuario" name="nombre_usuario" class="form-control" placeholder="Ej. instructor_prueba" required>
+            <input type="text" id="nombre_usuario" name="nombre_usuario" class="form-control" placeholder="Ej. 1002345678 o nombre de usuario" required>
           </div>
         </div>
 
@@ -183,5 +223,6 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
   });
 })();
 </script>
+<script src="<?= RUTA_BASE ?>assets/js/theme-manager.js"></script>
 </body>
 </html>

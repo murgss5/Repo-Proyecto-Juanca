@@ -138,6 +138,7 @@ $nombreArchivo = "reporte_asistencia_{$fechaReporte}.csv";
 
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="' . $nombreArchivo . '"');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 

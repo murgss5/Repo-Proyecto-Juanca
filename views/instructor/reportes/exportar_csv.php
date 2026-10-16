@@ -50,6 +50,7 @@ $consulta->execute($parametros);
 
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="reporte_mis_fichas_' . date('Ymd_His') . '.csv"');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');
 $salida = fopen('php://output', 'w');

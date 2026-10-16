@@ -16,11 +16,11 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 }
 
 // obtiene los datos del formulario
-$nombre_usuario = trim($_POST["nombre_usuario"] ?? "");
+$identificador = trim($_POST["nombre_usuario"] ?? "");
 $contrasena = $_POST["contrasena"] ?? "";
 
 // valida que los campos no esten vacios
-if ($nombre_usuario === "" || $contrasena === "") {
+if ($identificador === "" || $contrasena === "") {
     header("Location: ../views/auth/login.php?error=Todos los campos son obligatorios");
     exit;
 }
@@ -29,17 +29,28 @@ if ($nombre_usuario === "" || $contrasena === "") {
 $conexionBD = new Conexion();
 $conexion = $conexionBD->conectar();
 
-// busca el usuario por nombre de usuario
-$sql = "Select usuario.id_usuario, usuario.nombre_usuario,
+// busca el usuario por nombre de usuario o numero de identificacion (cedula)
+$sql = "SELECT usuario.id_usuario, usuario.nombre_usuario,
     usuario.contrasena, usuario.nombre, usuario.apellido, usuario.identificacion,
     usuario.telefono, usuario.fk_rol, rol.nombre_rol FROM usuario
-    INNER JOIN rol ON usuario.fk_rol = rol.id_rol WHERE usuario.nombre_usuario = :nombre_usuario
-    LIMIT 1";
+    INNER JOIN rol ON usuario.fk_rol = rol.id_rol
+    WHERE usuario.nombre_usuario = :usuario OR usuario.identificacion = :identificacion";
 $consulta = $conexion->prepare($sql);
-$consulta->bindValue(":nombre_usuario", $nombre_usuario, PDO::PARAM_STR);
+$consulta->bindValue(":usuario", $identificador, PDO::PARAM_STR);
+$consulta->bindValue(":identificacion", $identificador, PDO::PARAM_STR);
 
 $consulta->execute();
-$usuario = $consulta->fetch();
+$usuarios = $consulta->fetchAll();
+
+// Si hay ambigüedad (mas de una cuenta coincide con el identificador), no resolver silenciosamente
+if (count($usuarios) > 1) {
+    $correlacionId = bin2hex(random_bytes(8));
+    error_log("Ambiguedad de autenticacion [Correlacion ID: {$correlacionId}]: multiples cuentas detectadas para la solicitud.");
+    header("Location: ../views/auth/login.php?error=credenciales");
+    exit;
+}
+
+$usuario = $usuarios[0] ?? false;
 
 // funcion simple para detectar si la contrasena guardada es un hash valido de PHP
 function esHashContrasena(string $contrasenaGuardada): bool
@@ -77,11 +88,15 @@ if (!esHashContrasena($usuario["contrasena"])) {
 // regenera el ID de sesion por seguridad
 session_regenerate_id(true);
 
+// genera token CSRF seguro para la sesion autenticada
+$_SESSION['token_csrf'] = bin2hex(random_bytes(32));
+
 // crea variables de sesion con los datos del usuario
 $_SESSION["id_usuario"] = $usuario["id_usuario"];
 $_SESSION["nombre_usuario"] = $usuario["nombre_usuario"];
 $_SESSION["nombre"] = $usuario["nombre"];
 $_SESSION["apellido"] = $usuario["apellido"];
+$_SESSION["identificacion"] = $usuario["identificacion"];
 $_SESSION["fk_rol"] = $usuario["fk_rol"];
 $_SESSION["nombre_rol"] = $usuario["nombre_rol"];
 

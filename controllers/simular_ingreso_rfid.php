@@ -5,11 +5,16 @@
  * Permite simular una a una las entradas de aprendices con RFID asignado
  * para una jornada que se encuentre actualmente abierta.
  */
-
-session_start();
 require_once __DIR__ . '/../includes/constantes.php';
+require_once __DIR__ . '/../includes/autenticacion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/AsistenciaModel.php';
+
+asegurarSesionIniciada();
+
+header('Content-Type: application/json; charset=UTF-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 
 date_default_timezone_set('America/Bogota');
 

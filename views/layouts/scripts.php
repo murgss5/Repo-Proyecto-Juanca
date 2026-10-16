@@ -25,7 +25,13 @@
 <!-- AdminLTE -->
 <script src="<?= RUTA_BASE ?>assets/js/adminlte.min.js"></script>
 
+<!-- SweetAlert2 -->
+<script src="<?= RUTA_BASE ?>assets/plugins/sweetalert2/sweetalert2.min.js"></script>
+
 <!-- Scripts personalizados del proyecto -->
 <script src="<?= RUTA_BASE ?>assets/js/custom.js"></script>
+
+<!-- Gestor global de temas (Claro / Oscuro / Sistema) -->
+<script src="<?= RUTA_BASE ?>assets/js/theme-manager.js"></script>
 </body>
 </html>

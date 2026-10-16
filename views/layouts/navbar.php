@@ -56,6 +56,40 @@ if ($rolActualId === 1) {
       </li>
     <?php endforeach; ?>
 
+    <!-- Selector de apariencia (Tema: Claro / Oscuro / Sistema) -->
+    <li class="nav-item dropdown sena-theme-dropdown">
+      <button type="button" 
+              class="nav-link btn btn-link sena-theme-toggle-btn border-0 text-left" 
+              id="btnSelectorTema" 
+              data-toggle="dropdown" 
+              aria-haspopup="true" 
+              aria-expanded="false" 
+              title="Cambiar apariencia" 
+              aria-label="Cambiar apariencia (Tema actual: Sistema)">
+        <i class="fas fa-desktop sena-theme-icon-current" aria-hidden="true"></i>
+        <span class="d-none d-lg-inline ml-1 sena-theme-label-current">Sistema</span>
+        <i class="fas fa-caret-down fa-xs ml-1" aria-hidden="true"></i>
+      </button>
+      <div class="dropdown-menu dropdown-menu-right sena-theme-menu shadow-sm" aria-labelledby="btnSelectorTema" role="menu">
+        <div class="dropdown-header small font-weight-bold text-muted px-3 py-1">Apariencia</div>
+        <button type="button" class="dropdown-item sena-theme-option d-flex align-items-center px-3 py-2" data-theme-value="light" role="menuitem">
+          <i class="fas fa-sun fa-fw mr-2 text-warning" aria-hidden="true"></i>
+          <span class="flex-grow-1">Claro</span>
+          <i class="fas fa-check sena-theme-check fa-xs ml-2 text-sena" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="dropdown-item sena-theme-option d-flex align-items-center px-3 py-2" data-theme-value="dark" role="menuitem">
+          <i class="fas fa-moon fa-fw mr-2 text-primary" aria-hidden="true"></i>
+          <span class="flex-grow-1">Oscuro</span>
+          <i class="fas fa-check sena-theme-check fa-xs ml-2 text-sena" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="dropdown-item sena-theme-option d-flex align-items-center px-3 py-2" data-theme-value="system" role="menuitem">
+          <i class="fas fa-desktop fa-fw mr-2 text-secondary" aria-hidden="true"></i>
+          <span class="flex-grow-1">Sistema</span>
+          <i class="fas fa-check sena-theme-check fa-xs ml-2 text-sena" aria-hidden="true"></i>
+        </button>
+      </div>
+    </li>
+
     <!-- Menú del usuario -->
     <li class="nav-item dropdown">
       <a class="nav-link" data-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false">
@@ -68,9 +102,12 @@ if ($rolActualId === 1) {
           <small class="float-right text-muted"><?= htmlspecialchars($nombreRolActual) ?></small>
         </a>
         <div class="dropdown-divider"></div>
-        <a href="<?= RUTA_BASE ?>controllers/logout.php" class="dropdown-item text-danger">
-          <i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesión
-        </a>
+        <form action="<?= RUTA_BASE ?>controllers/logout.php" method="post" class="m-0 p-0" id="formLogoutNavbar">
+          <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf'] ?? '') ?>">
+          <button type="submit" class="dropdown-item text-danger border-0 bg-transparent text-left w-100" style="cursor: pointer;">
+            <i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesión
+          </button>
+        </form>
       </div>
     </li>
   </ul>

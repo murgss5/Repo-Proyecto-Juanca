@@ -79,9 +79,11 @@ if ($rolActualId === 1) {
 }
 
 // Verifica si una clave de menú está activa
-function menuActivo($clave) {
-    global $menuActivo;
-    return $menuActivo === $clave;
+if (!function_exists('menuActivo')) {
+    function menuActivo($clave) {
+        global $menuActivo;
+        return $menuActivo === $clave;
+    }
 }
 ?>
 <aside class="main-sidebar sidebar-dark-sena elevation-4">
@@ -123,27 +125,39 @@ function menuActivo($clave) {
               $claseLi = $tieneHijos ? 'has-treeview' : '';
               if ($tieneHijos && ($hijoActivo || $activo)) { $claseLi .= ' menu-open'; }
             ?>
-            <li class="nav-item <?= trim($claseLi) ?>">
-              <a href="<?= $item['url'] ?>" class="nav-link <?= ($activo || $hijoActivo) ? 'active' : '' ?>">
-                <i class="nav-icon fas <?= $item['icono'] ?>"></i>
-                <p>
-                  <?= htmlspecialchars($item['texto']) ?>
-                  <?php if ($tieneHijos): ?><i class="right fas fa-angle-left"></i><?php endif; ?>
-                </p>
-              </a>
-              <?php if ($tieneHijos): ?>
-                <ul class="nav nav-treeview">
-                  <?php foreach ($item['hijos'] as $hijo): ?>
-                    <li class="nav-item">
-                      <a href="<?= $hijo['url'] ?>" class="nav-link <?= menuActivo($hijo['clave']) ? 'active' : '' ?>">
-                        <i class="far fa-circle nav-icon"></i>
-                        <p><?= htmlspecialchars($hijo['texto']) ?></p>
-                      </a>
-                    </li>
-                  <?php endforeach; ?>
-                </ul>
-              <?php endif; ?>
-            </li>
+            <?php if ($item['clave'] === 'logout'): ?>
+              <li class="nav-item">
+                <form action="<?= $item['url'] ?>" method="post" class="m-0 p-0" id="formLogoutSidebar">
+                  <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf'] ?? '') ?>">
+                  <button type="submit" class="nav-link border-0 bg-transparent text-left w-100" style="cursor: pointer;">
+                    <i class="nav-icon fas <?= $item['icono'] ?>"></i>
+                    <p><?= htmlspecialchars($item['texto']) ?></p>
+                  </button>
+                </form>
+              </li>
+            <?php else: ?>
+              <li class="nav-item <?= trim($claseLi) ?>">
+                <a href="<?= $item['url'] ?>" class="nav-link <?= ($activo || $hijoActivo) ? 'active' : '' ?>">
+                  <i class="nav-icon fas <?= $item['icono'] ?>"></i>
+                  <p>
+                    <?= htmlspecialchars($item['texto']) ?>
+                    <?php if ($tieneHijos): ?><i class="right fas fa-angle-left"></i><?php endif; ?>
+                  </p>
+                </a>
+                <?php if ($tieneHijos): ?>
+                  <ul class="nav nav-treeview">
+                    <?php foreach ($item['hijos'] as $hijo): ?>
+                      <li class="nav-item">
+                        <a href="<?= $hijo['url'] ?>" class="nav-link <?= menuActivo($hijo['clave']) ? 'active' : '' ?>">
+                          <i class="far fa-circle nav-icon"></i>
+                          <p><?= htmlspecialchars($hijo['texto']) ?></p>
+                        </a>
+                      </li>
+                    <?php endforeach; ?>
+                  </ul>
+                <?php endif; ?>
+              </li>
+            <?php endif; ?>
           <?php endif; ?>
         <?php endforeach; ?>
       </ul>

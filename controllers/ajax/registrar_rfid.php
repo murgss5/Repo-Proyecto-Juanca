@@ -7,16 +7,16 @@
 require_once dirname(__DIR__, 2) . '/includes/autenticacion.php';
 require_once dirname(__DIR__, 2) . '/config/conexion.php';
 
+asegurarSesionIniciada();
+
 header('Content-Type: application/json; charset=UTF-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'error' => 'Mtodo no permitido.']);
     exit;
-}
-
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
 }
 
 $usuarioActual = usuarioActual();
