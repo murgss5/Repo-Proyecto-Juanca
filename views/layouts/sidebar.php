@@ -30,7 +30,7 @@ if ($rolActualId === 1) {
         ['tipo' => 'enlace', 'clave' => 'aprendices', 'icono' => 'fa-users', 'texto' => 'Aprendices', 'url' => RUTA_BASE . 'views/admin/aprendices/index.php',
             'hijos' => [
                 ['texto' => 'Listado', 'url' => RUTA_BASE . 'views/admin/aprendices/index.php', 'clave' => 'aprendices'],
-                ['texto' => 'Importar aprendices', 'url' => RUTA_BASE . 'views/admin/aprendices/importar.php', 'clave' => 'aprendices-importar'],
+                // ['texto' => 'Importar aprendices', 'url' => RUTA_BASE . 'views/admin/aprendices/importar.php', 'clave' => 'aprendices-importar'],
                 ['texto' => 'Nuevo aprendiz', 'url' => RUTA_BASE . 'views/admin/aprendices/create.php', 'clave' => 'aprendices-nuevo'],
             ]],
         ['tipo' => 'enlace', 'clave' => 'instructores', 'icono' => 'fa-chalkboard-teacher', 'texto' => 'Instructores', 'url' => RUTA_BASE . 'views/admin/instructores/index.php'],
