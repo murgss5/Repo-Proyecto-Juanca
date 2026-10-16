@@ -30,5 +30,14 @@
 
 <!-- Scripts personalizados del proyecto -->
 <script src="<?= RUTA_BASE ?>assets/js/custom.js"></script>
+
+<!-- Revalidación estricta ante navegación hacia atrás/adelante (bfcache) -->
+<script>
+  window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+      window.location.reload();
+    }
+  });
+</script>
 </body>
 </html>

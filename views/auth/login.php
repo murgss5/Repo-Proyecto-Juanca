@@ -33,14 +33,41 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
 </head>
 <body class="hold-transition">
 
-<div class="pagina-login position-relative">
-  <div class="login-card card card-outline">
-    <div class="card-header text-center">
-      <img src="<?= RUTA_BASE ?>assets/img/sena.svg" alt="Logo SENA" width="72" height="72">
-      <h1 class="h4 mt-2 mb-0 font-weight-bold text-sena">SENA</h1>
-      <p class="text-muted mb-0">Sistema de Control de Ingreso de Aprendices</p>
+<div class="login-split-container min-vh-100 d-flex flex-column flex-md-row">
+  <!-- Lado izquierdo: Marca y presentación institucional (visible en md y superiores) -->
+  <div class="login-brand-side login-split-side col-md-6 d-none d-md-flex flex-column justify-content-center align-items-center text-center p-5 text-white position-relative overflow-hidden">
+    <!-- Contenido central 100% centrado -->
+    <div class="login-brand-content d-flex flex-column align-items-center text-center my-auto">
+      <img src="<?= RUTA_BASE ?>assets/img/sena.svg" alt="Logo SENA" width="200" height="200" class="login-brand-logo mx-auto mb-4 img-fluid">
+      <h1 class="display-5 font-weight-bold text-white mb-3 text-center" style="line-height: 1.15; font-size: 2.3rem;">
+        Control de Ingreso<br>de Aprendices
+      </h1>
+      <p class="text-white-50 lead mb-0 text-center mx-auto" style="font-size: 1.05rem; line-height: 1.6; max-width: 440px;">
+        Bienvenido al sistema de registro, asistencia y control de acceso presencial para la comunidad SENA.
+      </p>
     </div>
-    <div class="card-body">
+
+    <!-- Pie inferior centrado -->
+    <div class="position-absolute pb-4 text-center text-white-50 small w-100" style="bottom: 0; left: 0; right: 0;">
+      Servicio Nacional de Aprendizaje
+    </div>
+  </div>
+
+  <!-- Lado derecho: Formulario de autenticación centrado -->
+  <div class="login-split-form-col col-md-6 col-12 d-flex flex-column justify-content-between align-items-center bg-white p-4 p-md-5 min-vh-100">
+    <!-- Cabecera visible solo en móvil -->
+    <div class="d-md-none w-100 text-center pt-3 pb-2">
+      <img src="<?= RUTA_BASE ?>assets/img/sena.svg" alt="Logo SENA" width="60" height="60" class="mb-2">
+      <h2 class="h5 font-weight-bold text-dark mb-0">SENA &middot; Control de Ingreso</h2>
+    </div>
+
+    <!-- Contenedor central del formulario -->
+    <div class="login-form-wrapper my-auto py-4">
+      <div class="mb-4">
+        <h3 class="font-weight-bold text-dark mb-1">Iniciar sesión</h3>
+        <p class="text-muted small mb-0">Ingresa tus datos para acceder al sistema</p>
+      </div>
+
       <?php if (isset($_GET['error'])): ?>
         <!-- Muestra mensaje de error seguro como alternativa si JS esta desactivado -->
         <noscript>
@@ -52,26 +79,26 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
 
       <!-- Formulario de login que envia a controllers/login.php -->
       <form id="formLogin" action="<?= RUTA_BASE ?>controllers/login.php" method="post" autocomplete="off" novalidate>
-        <div class="form-group">
-          <label for="nombre_usuario">Usuario o número de cédula</label>
+        <div class="form-group mb-3">
+          <label for="nombre_usuario" class="font-weight-bold text-dark small">Usuario o número de cédula <span class="text-danger">*</span></label>
           <div class="input-group">
             <div class="input-group-prepend">
-              <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+              <span class="input-group-text bg-light border-right-0 text-muted"><i class="fas fa-id-card"></i></span>
             </div>
-            <input type="text" id="nombre_usuario" name="nombre_usuario" class="form-control" placeholder="Ej. 1002345678 o nombre de usuario" required>
+            <input type="text" id="nombre_usuario" name="nombre_usuario" class="form-control border-left-0" placeholder="Ej. 1002345678 o nombre de usuario" required autocomplete="username">
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="contrasena">Contrasena</label>
+        <div class="form-group mb-4">
+          <label for="contrasena" class="font-weight-bold text-dark small">Contraseña <span class="text-danger">*</span></label>
           <div class="input-group">
             <div class="input-group-prepend">
-              <span class="input-group-text"><i class="fas fa-lock"></i></span>
+              <span class="input-group-text bg-light border-right-0 text-muted"><i class="fas fa-lock"></i></span>
             </div>
-            <input type="password" id="contrasena" name="contrasena" class="form-control" placeholder="••••••••" required>
+            <input type="password" id="contrasena" name="contrasena" class="form-control border-left-0 border-right-0" placeholder="••••••••" required autocomplete="current-password">
             <div class="input-group-append">
-              <button type="button" class="btn btn-outline-secondary" id="btnToggleContrasena"
-                aria-label="Mostrar contrasena"
+              <button type="button" class="btn btn-outline-secondary border-left-0" id="btnToggleContrasena"
+                aria-label="Mostrar contraseña"
                 aria-controls="contrasena"
                 aria-pressed="false"
                 tabindex="-1">
@@ -81,24 +108,15 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
           </div>
         </div>
 
-        <div class="form-group d-flex justify-content-between align-items-center">
-          <div class="custom-control custom-checkbox">
-            <input type="checkbox" class="custom-control-input" id="recordarme">
-            <label class="custom-control-label" for="recordarme">Recordarme</label>
-          </div>
-          <!-- Se conserva la vista recuperar_contrasena.php como referencia de la plantilla.
-               El enlace queda deshabilitado hasta implementar el flujo real de recuperacion. -->
-          <!-- <a href="<?= RUTA_BASE ?>views/auth/recuperar_contrasena.php" class="text-sena small">Olvido su contrasena?</a> -->
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block">
-          <i class="fas fa-sign-in-alt"></i> Ingresar
+        <button type="submit" class="btn btn-primary btn-block py-2 font-weight-bold shadow-sm">
+          <i class="fas fa-sign-in-alt mr-2"></i> Ingresar
         </button>
       </form>
-
     </div>
-    <div class="card-footer text-center">
-      <small class="text-muted">&copy; <?= date('Y') ?> SENA &middot; Servicio Nacional de Aprendizaje</small>
+
+    <!-- Footer discreto en el lado derecho -->
+    <div class="login-footer text-center text-muted small pb-2 w-100">
+      SENA &copy; 2026 &bull; Todos los derechos reservados
     </div>
   </div>
 </div>
@@ -137,38 +155,70 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
       const url = new URL(window.location.href);
       url.searchParams.delete('error');
       window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+
+      const userField = document.getElementById('nombre_usuario');
+      if (userField) {
+        userField.focus();
+      }
     });
   <?php endif; ?>
 
-  // 2. Validación visual frontal antes de enviar
+  // 2. Validación visual frontal antes de enviar con foco preciso
   const formLogin = document.getElementById('formLogin');
   if (formLogin) {
     formLogin.addEventListener('submit', function(e) {
       const userField = document.getElementById('nombre_usuario');
       const passField = document.getElementById('contrasena');
-      const userVal = userField.value.trim();
-      const passVal = passField.value;
+      const userVal = userField ? userField.value.trim() : '';
+      const passVal = passField ? passField.value : '';
 
-      if (!userVal || !passVal) {
+      // Si falta el usuario
+      if (!userVal) {
         e.preventDefault();
         Swal.fire({
           icon: 'warning',
-          title: 'Campos incompletos',
-          text: 'Ingrese su usuario y contraseña para continuar.',
+          title: 'Usuario requerido',
+          text: 'Por favor, ingrese su usuario o número de cédula para continuar.',
           confirmButtonText: 'Entendido',
-          confirmButtonColor: '#39A900'
-        }).then(() => {
-          if (!userVal) {
+          confirmButtonColor: '#39A900',
+          didClose: function() {
+            if (userField) {
+              userField.focus();
+            }
+          }
+        }).then(function() {
+          if (userField) {
             userField.focus();
-          } else {
+          }
+        });
+        return;
+      }
+
+      // Si el usuario está lleno pero falta la contraseña
+      if (!passVal) {
+        e.preventDefault();
+        Swal.fire({
+          icon: 'warning',
+          title: 'Contraseña requerida',
+          text: 'Por favor, ingrese su contraseña para continuar.',
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#39A900',
+          didClose: function() {
+            if (passField) {
+              passField.focus();
+            }
+          }
+        }).then(function() {
+          if (passField) {
             passField.focus();
           }
         });
+        return;
       }
     });
   }
 
-  // 3. Comportamiento original para mostrar/ocultar contraseña
+  // 3. Comportamiento para mostrar/ocultar contraseña
   const input = document.getElementById('contrasena');
   const btn = document.getElementById('btnToggleContrasena');
   if (!input || !btn) return;
@@ -179,7 +229,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
     input.type = mostrar ? 'text' : 'password';
     btn.querySelector('i').classList.toggle('fa-eye', !mostrar);
     btn.querySelector('i').classList.toggle('fa-eye-slash', mostrar);
-    btn.setAttribute('aria-label', mostrar ? 'Ocultar contrasena' : 'Mostrar contrasena');
+    btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
     btn.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
   });
 })();

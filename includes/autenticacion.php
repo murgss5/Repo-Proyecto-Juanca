@@ -10,6 +10,7 @@
 // cabeceras anti cache para evitar cache de paginas protegidas
 if (!headers_sent()) {
     header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Cache-Control: post-check=0, pre-check=0", false);
     header("Pragma: no-cache");
     header("Expires: 0");
 }
@@ -87,6 +88,13 @@ function exigirRol(int ...$rolesPermitidos): void
     if (!in_array((int) $rolActual, $rolesPermitidos, true)) {
         redirigirAlLogin();
     }
+
+    // Cabeceras anti-cache estrictas justo despues de validar la sesion
+    if (!headers_sent()) {
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Cache-Control: post-check=0, pre-check=0", false);
+        header("Pragma: no-cache");
+    }
 }
 
 /**
@@ -143,6 +151,13 @@ function usuarioActual(): ?array
     // acepta solamente roles 1, 2 y 3
     if (!in_array($fkRolInt, [1, 2, 3], true)) {
         return null;
+    }
+
+    // Cabeceras anti-cache estrictas justo despues de validar la sesion
+    if (!headers_sent()) {
+        header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+        header("Cache-Control: post-check=0, pre-check=0", false);
+        header("Pragma: no-cache");
     }
 
     // construye nombre_completo
