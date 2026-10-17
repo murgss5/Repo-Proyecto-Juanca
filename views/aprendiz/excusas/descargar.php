@@ -83,10 +83,10 @@ try {
     $mimeType = finfo_file($finfo, $rutaArchivoReal);
     finfo_close($finfo);
 
-    // Enviar cabeceras para descarga
+    // Enviar cabeceras para visualización o descarga
     header('Content-Type: ' . $mimeType);
     header('Content-Length: ' . filesize($rutaArchivoReal));
-    header('Content-Disposition: attachment; filename="' . basename($nombreSeguro) . '"');
+    header('Content-Disposition: inline; filename="' . basename($nombreSeguro) . '"');
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('Pragma: no-cache');
     header('Expires: 0');

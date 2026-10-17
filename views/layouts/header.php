@@ -75,4 +75,5 @@ $menuActivo   = $menuActivo ?? '';
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/custom.css">
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed" data-base="<?= RUTA_BASE ?>">
-<div class="wrapper">
+<div id="pageTransitionBar" class="page-transition-bar"></div>
+<div class="wrapper fade-in-content">

@@ -32,8 +32,9 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/custom.css">
 </head>
 <body class="hold-transition">
+<div id="pageTransitionBar" class="page-transition-bar"></div>
 
-<div class="login-split-container min-vh-100 d-flex flex-column flex-md-row">
+<div class="login-split-container min-vh-100 d-flex flex-column flex-md-row fade-in-content">
   <!-- Lado izquierdo: Marca y presentación institucional (visible en md y superiores) -->
   <div class="login-brand-side login-split-side col-md-6 d-none d-md-flex flex-column justify-content-center align-items-center text-center p-5 text-white position-relative overflow-hidden">
     <!-- Contenido central 100% centrado -->
@@ -215,23 +216,61 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
         });
         return;
       }
+
+      // Si ambos campos son válidos, activar la barra de carga de transición
+      iniciarTransicion();
     });
   }
 
   // 3. Comportamiento para mostrar/ocultar contraseña
   const input = document.getElementById('contrasena');
   const btn = document.getElementById('btnToggleContrasena');
-  if (!input || !btn) return;
+  if (input && btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const mostrar = input.type === 'password';
+      input.type = mostrar ? 'text' : 'password';
+      btn.querySelector('i').classList.toggle('fa-eye', !mostrar);
+      btn.querySelector('i').classList.toggle('fa-eye-slash', mostrar);
+      btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+      btn.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
+    });
+  }
 
-  btn.addEventListener('click', function(e) {
-    e.preventDefault();
-    const mostrar = input.type === 'password';
-    input.type = mostrar ? 'text' : 'password';
-    btn.querySelector('i').classList.toggle('fa-eye', !mostrar);
-    btn.querySelector('i').classList.toggle('fa-eye-slash', mostrar);
-    btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
-    btn.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
-  });
+  // 4. Control de barra de carga de navegación (Loading bar)
+  function iniciarTransicion() {
+    var bar = document.getElementById('pageTransitionBar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'pageTransitionBar';
+      bar.className = 'page-transition-bar';
+      document.body.prepend(bar);
+    }
+    bar.classList.remove('page-transition-finish');
+    bar.classList.remove('page-transition-loading');
+    void bar.offsetWidth;
+    bar.classList.add('page-transition-loading');
+  }
+
+  function finalizarTransicion() {
+    var bar = document.getElementById('pageTransitionBar');
+    if (bar) {
+      bar.classList.remove('page-transition-loading');
+      bar.classList.add('page-transition-finish');
+      setTimeout(function() {
+        if (bar && bar.classList.contains('page-transition-finish')) {
+          bar.classList.remove('page-transition-finish');
+        }
+      }, 350);
+    }
+  }
+
+  if (document.readyState === 'complete') {
+    finalizarTransicion();
+  } else {
+    window.addEventListener('load', finalizarTransicion);
+  }
+  window.addEventListener('pageshow', finalizarTransicion);
 })();
 </script>
 </body>

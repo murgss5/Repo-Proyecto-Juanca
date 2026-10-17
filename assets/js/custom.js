@@ -220,6 +220,96 @@
         }
       });
     }
+  });
+
+  // ---------- Barra de transición de página (Loading bar) ----------
+  function iniciarTransicion() {
+    var bar = document.getElementById("pageTransitionBar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "pageTransitionBar";
+      bar.className = "page-transition-bar";
+      document.body.prepend(bar);
+    }
+    bar.classList.remove("page-transition-finish");
+    bar.classList.remove("page-transition-loading");
+    void bar.offsetWidth; // Forzar reflow para reiniciar la animación
+    bar.classList.add("page-transition-loading");
+  }
+
+  function finalizarTransicion() {
+    var bar = document.getElementById("pageTransitionBar");
+    if (bar) {
+      bar.classList.remove("page-transition-loading");
+      bar.classList.add("page-transition-finish");
+      setTimeout(function () {
+        if (bar && bar.classList.contains("page-transition-finish")) {
+          bar.classList.remove("page-transition-finish");
+        }
+      }, 350);
+    }
+  }
+
+  // Finalizar barra cuando el DOM y la página estén listos o se recupere de bfcache
+  if (document.readyState === "complete") {
+    finalizarTransicion();
+  } else {
+    document.addEventListener("DOMContentLoaded", finalizarTransicion);
+    window.addEventListener("load", finalizarTransicion);
+  }
+  window.addEventListener("pageshow", finalizarTransicion);
+
+  // Interceptar clics en enlaces internos de navegación
+  document.addEventListener("click", function (e) {
+    var link = e.target && e.target.closest ? e.target.closest("a") : null;
+    if (!link) return;
+
+    var href = link.getAttribute("href");
+    if (!href) return;
+
+    // Omitir anclas, scripts, correo, teléfono, pestañas nuevas y descargas
+    if (
+      href.trim() === "" ||
+      href.startsWith("#") ||
+      href.startsWith("javascript:") ||
+      href.startsWith("mailto:") ||
+      href.startsWith("tel:") ||
+      link.target === "_blank" ||
+      link.hasAttribute("download") ||
+      e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.which === 2 || e.button === 1
+    ) {
+      return;
+    }
+
+    // Omitir widgets de AdminLTE / Bootstrap (modales, dropdowns, toggle de sidebar)
+    if (
+      link.hasAttribute("data-toggle") ||
+      link.hasAttribute("data-widget") ||
+      (link.getAttribute("role") === "button" && href === "#")
+    ) {
+      return;
+    }
+
+    // Verificar mismo origen
+    if (link.hostname && link.hostname !== window.location.hostname) {
+      return;
+    }
+
+    iniciarTransicion();
+  });
+
+  // Interceptar envíos de formularios legítimos (no prevenidos)
+  document.addEventListener("submit", function (e) {
+    if (e.defaultPrevented) return;
+    var form = e.target;
+    if (form && form.target === "_blank") return;
+    iniciarTransicion();
+  });
+
+  // Exponer globalmente si se necesita activar manualmente
+  window.iniciarTransicionPagina = iniciarTransicion;
+  window.finalizarTransicionPagina = finalizarTransicion;
+
   // ---------- Revalidación de sesión ante restauración de historial / bfcache ----------
   window.addEventListener("pageshow", function (event) {
     var esRestaurado = !!event.persisted;

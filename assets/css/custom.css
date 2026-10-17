@@ -18,6 +18,91 @@
 .badge-sena { background-color: var(--sena-verde) !important; color: #fff !important; }
 .bg-sena-oscuro { background-color: var(--sena-verde-oscuro) !important; }
 
+/* ---------- Barra de desplazamiento personalizada (Scrollbar) ---------- */
+/* Soporte estándar Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sena-verde) #f1f5f9;
+}
+
+/* WebKit (Chrome, Edge, Safari, Opera) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #39a900;
+  border-radius: 10px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sena-verde-oscuro);
+}
+
+/* ---------- Barra de carga de navegación (Transition effect) ---------- */
+.page-transition-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: #39a900;
+  box-shadow: 0 0 10px rgba(57, 169, 0, 0.7), 0 0 4px #39a900;
+  z-index: 99999;
+  pointer-events: none;
+  opacity: 1;
+  transition: width 0.25s ease, opacity 0.2s ease;
+}
+
+.page-transition-bar.page-transition-loading {
+  animation: pageTransitionProgress 8s cubic-bezier(0.1, 0.5, 0.1, 1) forwards;
+}
+
+@keyframes pageTransitionProgress {
+  0% {
+    width: 0%;
+    opacity: 1;
+  }
+  25% {
+    width: 30%;
+  }
+  50% {
+    width: 65%;
+  }
+  75% {
+    width: 82%;
+  }
+  100% {
+    width: 90%;
+  }
+}
+
+.page-transition-bar.page-transition-finish {
+  width: 100% !important;
+  opacity: 0;
+  transition: width 0.15s ease-out, opacity 0.2s ease 0.1s;
+}
+
+/* ---------- Animación de entrada de página ---------- */
+.fade-in-content {
+  animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ---------- Fondo general ---------- */
 body {
   background-color: #f4f6f9;
@@ -87,22 +172,35 @@ body {
 }
 
 /* ---------- Botones ---------- */
-.btn-primary {
+.btn-primary,
+.btn-success {
   background-color: var(--sena-verde);
   border-color: var(--sena-verde);
+  color: #ffffff;
 }
 .btn-primary:hover,
 .btn-primary:focus,
-.btn-primary:active {
-  background-color: var(--sena-verde-oscuro);
-  border-color: var(--sena-verde-oscuro);
+.btn-primary:active,
+.btn-success:hover,
+.btn-success:focus,
+.btn-success:active {
+  background-color: var(--sena-verde-oscuro) !important;
+  border-color: var(--sena-verde-oscuro) !important;
+  color: #ffffff;
 }
-.btn-outline-sena {
+.btn-outline-sena,
+.btn-outline-success {
   color: var(--sena-verde);
   border-color: var(--sena-verde);
 }
-.btn-outline-sena:hover {
+.btn-outline-sena:hover,
+.btn-outline-sena:focus,
+.btn-outline-sena:active,
+.btn-outline-success:hover,
+.btn-outline-success:focus,
+.btn-outline-success:active {
   background-color: var(--sena-verde);
+  border-color: var(--sena-verde);
   color: #ffffff;
 }
 
@@ -112,6 +210,9 @@ body {
   border: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
 }
+.card.card-outline.card-success {
+  border-top: 3px solid var(--sena-verde) !important;
+}
 .card-header {
   background-color: #ffffff;
   border-bottom: 1px solid #f0f2f5;
@@ -119,6 +220,20 @@ body {
 .card-header .card-title {
   color: #173b2b;
   font-weight: 600;
+}
+
+/* Efectos de elevación e interacción */
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+.hover-elevate {
+  transition: all 0.3s ease;
+}
+
+.hover-elevate:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* ---------- Tarjetas de estadística (info-box) ---------- */
