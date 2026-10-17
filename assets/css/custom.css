@@ -236,6 +236,77 @@ body {
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
 }
 
+/* ---------- Tarjetas KPI Premium (SaaS) ---------- */
+.card.kpi-card-premium {
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  border-top: 4px solid var(--theme-color) !important;
+  border-radius: 8px;
+  background-color: var(--theme-bg, #ffffff) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.3s ease;
+}
+
+.kpi-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.kpi-card-premium:hover .kpi-icon-circle {
+  transform: scale(1.08);
+}
+
+/* Modificadores de color KPI */
+.card.kpi-card-premium.kpi-warning {
+  --theme-color: #d97706;
+  background-color: #fefce8 !important;
+}
+.card.kpi-card-premium.kpi-warning .kpi-icon-circle {
+  background-color: #fef08a;
+  color: #d97706;
+}
+
+.card.kpi-card-premium.kpi-danger {
+  --theme-color: #dc2626;
+  background-color: #fef2f2 !important;
+}
+.card.kpi-card-premium.kpi-danger .kpi-icon-circle {
+  background-color: #fecaca;
+  color: #dc2626;
+}
+
+.card.kpi-card-premium.kpi-info {
+  --theme-color: #2563eb;
+  background-color: #eff6ff !important;
+}
+.card.kpi-card-premium.kpi-info .kpi-icon-circle {
+  background-color: #bfdbfe;
+  color: #2563eb;
+}
+
+.card.kpi-card-premium.kpi-success {
+  --theme-color: #16a34a;
+  background-color: #f0fdf4 !important;
+}
+.card.kpi-card-premium.kpi-success .kpi-icon-circle {
+  background-color: #bbf7d0;
+  color: #16a34a;
+}
+
+.table .thead-light th {
+  background-color: #f8fafc;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
 /* ---------- Tarjetas de estadística (info-box) ---------- */
 .info-box {
   border-radius: 8px;

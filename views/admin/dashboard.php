@@ -89,62 +89,98 @@ $consultaRetardos = $conexion->query(
 );
 $retardosRecientes = $consultaRetardos->fetchAll();
 
+$mesesEspanol = [
+  1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+  5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+  9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+];
+$mesActual = $mesesEspanol[(int) date('n')] . ' ' . date('Y');
+
 // --- Captura del contenido de la vista ---
 ob_start();
 ?>
-<!-- ==================== TARJETAS DE ESTADÍSTICAS ==================== -->
+<!-- ==================== TARJETAS DE ESTADÍSTICAS (KPIs) ==================== -->
 <div class="row">
-  <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
-    <div class="info-box info-box-sena">
-      <span class="info-box-icon"><i class="fas fa-users"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Total de aprendices</span>
-        <span class="info-box-number"><?= $totalAprendices ?></span>
+  <!-- Total de Aprendices -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card kpi-card-premium kpi-success hover-elevate h-100">
+      <div class="card-body p-3 d-flex justify-content-between align-items-start">
+        <div class="d-flex flex-column justify-content-between h-100 pr-2">
+          <div>
+            <h6 class="text-uppercase font-weight-bold text-muted mb-1" style="font-size: 0.75rem;">TOTAL APRENDICES</h6>
+            <h2 class="font-weight-bold text-dark mb-1"><?= number_format($totalAprendices) ?></h2>
+            <small class="text-muted"><i class="fas fa-info-circle mr-1 text-success"></i> Registrados en sistema</small>
+          </div>
+          <div class="mt-2">
+            <span class="badge font-weight-bold px-2 py-1" style="background-color: #bbf7d0; color: #166534; font-size: 0.72rem;"><?= $mesActual ?></span>
+          </div>
+        </div>
+        <div class="kpi-icon-circle">
+          <i class="fas fa-users"></i>
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
-    <div class="info-box info-box-sena-oscuro">
-      <span class="info-box-icon"><i class="fas fa-user-check"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Aprendices presentes hoy</span>
-        <span class="info-box-number"><?= $presentesHoy ?></span>
+
+  <!-- Retardos del Día -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card kpi-card-premium kpi-warning hover-elevate h-100">
+      <div class="card-body p-3 d-flex justify-content-between align-items-start">
+        <div class="d-flex flex-column justify-content-between h-100 pr-2">
+          <div>
+            <h6 class="text-uppercase font-weight-bold text-muted mb-1" style="font-size: 0.75rem;">RETARDOS DEL DÍA</h6>
+            <h2 class="font-weight-bold text-dark mb-1"><?= number_format($retardosHoy) ?></h2>
+            <small class="text-muted"><i class="fas fa-info-circle mr-1 text-warning"></i> Ingresos fuera de horario</small>
+          </div>
+          <div class="mt-2">
+            <span class="badge font-weight-bold px-2 py-1" style="background-color: #fef08a; color: #854d0e; font-size: 0.72rem;"><?= $mesActual ?></span>
+          </div>
+        </div>
+        <div class="kpi-icon-circle">
+          <i class="fas fa-clock"></i>
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
-    <div class="info-box info-box-amarillo">
-      <span class="info-box-icon"><i class="fas fa-clock"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Retardos del día</span>
-        <span class="info-box-number"><?= $retardosHoy ?></span>
+
+  <!-- Inasistencias del Día -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card kpi-card-premium kpi-danger hover-elevate h-100">
+      <div class="card-body p-3 d-flex justify-content-between align-items-start">
+        <div class="d-flex flex-column justify-content-between h-100 pr-2">
+          <div>
+            <h6 class="text-uppercase font-weight-bold text-muted mb-1" style="font-size: 0.75rem;">INASISTENCIAS DEL DÍA</h6>
+            <h2 class="font-weight-bold text-dark mb-1"><?= number_format($inasistenciasHoy) ?></h2>
+            <small class="text-muted"><i class="fas fa-info-circle mr-1 text-danger"></i> Sin registro de entrada</small>
+          </div>
+          <div class="mt-2">
+            <span class="badge font-weight-bold px-2 py-1" style="background-color: #fecaca; color: #991b1b; font-size: 0.72rem;"><?= $mesActual ?></span>
+          </div>
+        </div>
+        <div class="kpi-icon-circle">
+          <i class="fas fa-user-slash"></i>
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
-    <div class="info-box info-box-rojo">
-      <span class="info-box-icon"><i class="fas fa-user-slash"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Inasistencias del día</span>
-        <span class="info-box-number"><?= $inasistenciasHoy ?></span>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
-    <div class="info-box info-box-azul">
-      <span class="info-box-icon"><i class="fas fa-file-medical"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Excusas pendientes</span>
-        <span class="info-box-number"><?= $excusasPendientes ?></span>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
-    <div class="info-box info-box-gris">
-      <span class="info-box-icon"><i class="fas fa-layer-group"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Fichas registradas</span>
-        <span class="info-box-number"><?= $totalFichas ?></span>
+
+  <!-- Excusas Pendientes -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card kpi-card-premium kpi-info hover-elevate h-100">
+      <div class="card-body p-3 d-flex justify-content-between align-items-start">
+        <div class="d-flex flex-column justify-content-between h-100 pr-2">
+          <div>
+            <h6 class="text-uppercase font-weight-bold text-muted mb-1" style="font-size: 0.75rem;">EXCUSAS PENDIENTES</h6>
+            <h2 class="font-weight-bold text-dark mb-1"><?= number_format($excusasPendientes) ?></h2>
+            <small class="text-muted"><i class="fas fa-info-circle mr-1 text-primary"></i> Pendientes de revisión</small>
+          </div>
+          <div class="mt-2">
+            <span class="badge font-weight-bold px-2 py-1" style="background-color: #bfdbfe; color: #1e40af; font-size: 0.72rem;"><?= $mesActual ?></span>
+          </div>
+        </div>
+        <div class="kpi-icon-circle">
+          <i class="fas fa-file-medical"></i>
+        </div>
       </div>
     </div>
   </div>
@@ -152,13 +188,15 @@ ob_start();
 
 <!-- ==================== GRÁFICAS ==================== -->
 <div class="row">
-  <div class="col-md-7 mb-3">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-chart-bar text-sena"></i> Asistencia de la semana</h3>
+  <div class="col-lg-7 col-md-12 mb-4">
+    <div class="card border-0 shadow-sm mb-4 h-100">
+      <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
+        <h5 class="card-title font-weight-bold text-dark mb-0">
+          <i class="fas fa-chart-bar text-muted mr-2"></i> Asistencia de la semana
+        </h5>
       </div>
-      <div class="card-body">
-        <div style="height: 300px;">
+      <div class="card-body p-4">
+        <div style="height: 300px; position: relative;">
           <script>
             window.datosGraficaAdminSemana = <?= json_encode($graficaSemana) ?>;
             window.datosGraficaAdminHoy = <?= json_encode([$presentesHoy, $retardosHoy, $inasistenciasHoy, (int) ($consultaHoy['salidas_tempranas'] ?? 0)]) ?>;
@@ -168,13 +206,15 @@ ob_start();
       </div>
     </div>
   </div>
-  <div class="col-md-5 mb-3">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-chart-pie text-sena"></i> Asistencia de hoy</h3>
+  <div class="col-lg-5 col-md-12 mb-4">
+    <div class="card border-0 shadow-sm mb-4 h-100">
+      <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
+        <h5 class="card-title font-weight-bold text-dark mb-0">
+          <i class="fas fa-chart-pie text-muted mr-2"></i> Asistencia de hoy
+        </h5>
       </div>
-      <div class="card-body">
-        <div style="height: 300px;">
+      <div class="card-body p-4">
+        <div style="height: 300px; position: relative;">
           <canvas id="graficoAsistenciaHoy"></canvas>
         </div>
       </div>
@@ -184,102 +224,88 @@ ob_start();
 
 <!-- ==================== TABLAS RECIENTES ==================== -->
 <div class="row">
-  <div class="col-md-6 mb-3">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-sign-in-alt text-sena"></i> Últimos ingresos</h3>
+  <!-- Últimos ingresos -->
+  <div class="col-lg-6 col-md-12 mb-4">
+    <div class="card border-0 shadow-sm mb-4 h-100">
+      <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="card-title font-weight-bold text-dark mb-0">
+          <i class="fas fa-sign-in-alt text-muted mr-2"></i> Últimos ingresos
+        </h5>
+        <a href="<?= RUTA_BASE ?>views/admin/asistencias/index.php" class="btn btn-sm btn-link text-sena font-weight-bold p-0">Ver todos</a>
       </div>
       <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th>Hora</th>
-              <th>Aprendiz</th>
-              <th>Ficha</th>
-              <th>RFID</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($ultimosIngresos as $ingreso): ?>
+        <div class="table-responsive">
+          <table class="table table-borderless table-hover mb-0">
+            <thead class="thead-light">
               <tr>
-                <td><span class="badge badge-success"><?= htmlspecialchars($ingreso['hora']) ?></span></td>
-                <td><?= htmlspecialchars($ingreso['aprendiz']) ?></td>
-                <td>Ficha #<?= htmlspecialchars($ingreso['id_ficha']) ?></td>
-                <td><code><?= htmlspecialchars($ingreso['codigo_rfid']) ?></code></td>
+                <th class="font-weight-bold text-muted small text-uppercase">Hora</th>
+                <th class="font-weight-bold text-muted small text-uppercase">Aprendiz</th>
+                <th class="font-weight-bold text-muted small text-uppercase">Ficha</th>
+                <th class="font-weight-bold text-muted small text-uppercase">RFID</th>
               </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              <?php if (empty($ultimosIngresos)): ?>
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-4">No hay ingresos registrados el día de hoy</td>
+                </tr>
+              <?php else: ?>
+                <?php foreach ($ultimosIngresos as $ingreso): ?>
+                  <tr>
+                    <td><span class="badge badge-pill badge-success px-2 py-1"><?= htmlspecialchars($ingreso['hora']) ?></span></td>
+                    <td class="font-weight-500 text-dark"><?= htmlspecialchars($ingreso['aprendiz']) ?></td>
+                    <td class="text-muted">Ficha #<?= htmlspecialchars($ingreso['id_ficha']) ?></td>
+                    <td><code class="text-muted bg-light px-2 py-1 rounded"><?= htmlspecialchars($ingreso['codigo_rfid']) ?></code></td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-md-6 mb-3">
-    <div class="card">
-      <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-exclamation-triangle text-warning"></i> Retardos recientes</h3>
-      </div>
-      <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th>Hora</th>
-              <th>Aprendiz</th>
-              <th>Ficha</th>
-              <th>Min. retardo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($retardosRecientes as $retardo): ?>
-              <tr>
-                <td><?= htmlspecialchars($retardo['hora']) ?></td>
-                <td><?= htmlspecialchars($retardo['aprendiz']) ?></td>
-                <td>Ficha #<?= htmlspecialchars($retardo['id_ficha']) ?></td>
-                <td><span class="badge badge-warning"><?= htmlspecialchars($retardo['minutos_retardo']) ?> min</span></td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- ==================== ACCIONES RÁPIDAS ==================== -->
-<div class="card">
-  <div class="card-header">
-    <h3 class="card-title"><i class="fas fa-cog text-sena"></i> Administración rápida</h3>
-  </div>
-  <div class="card-body">
-    <div class="row">
-      <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/aprendices/index.php"
-          class="btn btn-outline-sena btn-block tarjeta-accion py-3">
-          <i class="fas fa-users fa-2x mb-2"></i><br>Aprendices
-        </a>
+  <!-- Retardos recientes -->
+  <div class="col-lg-6 col-md-12 mb-4">
+    <div class="card border-0 shadow-sm mb-4 h-100">
+      <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+        <h5 class="card-title font-weight-bold text-dark mb-0">
+          <i class="fas fa-exclamation-triangle text-muted mr-2"></i> Retardos recientes
+        </h5>
+        <a href="<?= RUTA_BASE ?>views/admin/asistencias/index.php" class="btn btn-sm btn-link text-sena font-weight-bold p-0">Ver todos</a>
       </div>
-      <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/fichas/index.php"
-          class="btn btn-outline-sena btn-block tarjeta-accion py-3">
-          <i class="fas fa-layer-group fa-2x mb-2"></i><br>Fichas
-        </a>
-      </div>
-      <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/asistencias/index.php"
-          class="btn btn-outline-sena btn-block tarjeta-accion py-3">
-          <i class="fas fa-clipboard-check fa-2x mb-2"></i><br>Asistencias
-        </a>
-      </div>
-      <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/excusas/index.php"
-          class="btn btn-outline-sena btn-block tarjeta-accion py-3">
-          <i class="fas fa-file-medical fa-2x mb-2"></i><br>Excusas
-        </a>
-      </div>
-      <div class="col-lg col-md-4 col-sm-6 mb-3">
-        <a href="<?= RUTA_BASE ?>views/admin/reportes/index.php"
-          class="btn btn-outline-sena btn-block tarjeta-accion py-3">
-          <i class="fas fa-chart-bar fa-2x mb-2"></i><br>Reportes
-        </a>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-borderless table-hover mb-0">
+            <thead class="thead-light">
+              <tr>
+                <th class="font-weight-bold text-muted small text-uppercase">Hora</th>
+                <th class="font-weight-bold text-muted small text-uppercase">Aprendiz</th>
+                <th class="font-weight-bold text-muted small text-uppercase">Ficha</th>
+                <th class="font-weight-bold text-muted small text-uppercase text-right">Min. retardo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (empty($retardosRecientes)): ?>
+                <tr>
+                  <td colspan="4" class="text-center text-muted py-4">No se registran retardos recientes</td>
+                </tr>
+              <?php else: ?>
+                <?php foreach ($retardosRecientes as $retardo): ?>
+                  <tr>
+                    <td class="text-muted"><?= htmlspecialchars($retardo['hora']) ?></td>
+                    <td class="font-weight-500 text-dark"><?= htmlspecialchars($retardo['aprendiz']) ?></td>
+                    <td class="text-muted">Ficha #<?= htmlspecialchars($retardo['id_ficha']) ?></td>
+                    <td class="text-right">
+                      <span class="badge badge-pill badge-warning px-2 py-1 font-weight-bold"><?= htmlspecialchars($retardo['minutos_retardo']) ?> min</span>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
