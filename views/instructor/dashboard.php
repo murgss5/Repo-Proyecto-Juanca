@@ -222,8 +222,7 @@ ob_start();
                                     <?php if ($estado === 'abierta'): ?>
                                         <div class="mb-2 p-2 bg-light rounded">
                                             <small>
-                                                <strong>Apertura:</strong> <?= $aperturaFmt ?> |
-                                                <strong>Límite puntualidad:</strong> <?= $limiteFmt ?>
+                                                <strong>Jornada abierta a las <?= $aperturaFmt ?>.</strong> Límite sin retardo: <?= $limiteFmt ?>
                                             </small>
                                         </div>
                                     <?php elseif ($estado === 'cerrada_manual'): ?>
@@ -408,15 +407,18 @@ ob_start();
 
             // actualizar detalle de horas
             if (estado === 'abierta' && datos) {
-                var aperturaFmt = datos.hora_apertura ? datos.hora_apertura.substring(0,5) : '--:--';
-                var limiteFmt = datos.hora_limite_puntualidad ? datos.hora_limite_puntualidad.substring(0,5) : '--:--';
+                var rawApertura = datos.hora_apertura_real || datos.hora_apertura || '';
+                var aperturaFmt = rawApertura.length >= 16 ? rawApertura.substring(11, 16) : (rawApertura.substring(0, 5) || '--:--');
+                var rawLimite = datos.hora_limite_puntualidad || '';
+                var limiteFmt = rawLimite.length >= 16 ? rawLimite.substring(11, 16) : (rawLimite.substring(0, 5) || '--:--');
+
                 if (!detalleDiv) {
                     detalleDiv = document.createElement('div');
                     detalleDiv.className = 'mb-2 p-2 bg-light rounded';
-                    detalleDiv.innerHTML = '<small><strong>Apertura:</strong> ' + aperturaFmt + ' | <strong>Límite puntualidad:</strong> ' + limiteFmt + '</small>';
+                    detalleDiv.innerHTML = '<small><strong>Jornada abierta a las ' + aperturaFmt + '.</strong> Límite sin retardo: ' + limiteFmt + '</small>';
                     if (btnAbrir) btnAbrir.parentNode.insertBefore(detalleDiv, btnAbrir);
                 } else {
-                    detalleDiv.innerHTML = '<small><strong>Apertura:</strong> ' + aperturaFmt + ' | <strong>Límite puntualidad:</strong> ' + limiteFmt + '</small>';
+                    detalleDiv.innerHTML = '<small><strong>Jornada abierta a las ' + aperturaFmt + '.</strong> Límite sin retardo: ' + limiteFmt + '</small>';
                 }
                 if (detalleDiv) detalleDiv.style.display = 'block';
             } else if (estado === 'cerrada_manual' && datos) {

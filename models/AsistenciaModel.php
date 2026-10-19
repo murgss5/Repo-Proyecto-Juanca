@@ -126,15 +126,22 @@ class AsistenciaModel
                     ];
                 }
 
-                // Determinar estado de entrada comparando con hora limite
-                $esPuntual = ($horaActual <= $horaLimitePuntualidad);
-                $estadoEntrada = $esPuntual ? 'PUNTUAL' : 'RETARDO';
-                $minutosRetardo = 0;
+                // Calculo dinamico de retardo: hora_apertura_real + 10 minutos
+                $horaApertura = $sesion['hora_apertura_real'] ?? $horaActual;
+                $limiteSinRetardo = strtotime($horaApertura) + (10 * 60);
+                $horaLlegada = strtotime($horaActual);
 
-                if (!$esPuntual) {
-                    $diff = strtotime($horaActual) - strtotime($horaLimitePuntualidad);
-                    $minutosRetardo = (int)ceil($diff / 60);
+                $minutosRetardo = 0;
+                if ($horaLlegada > $limiteSinRetardo) {
+                    $minutosRetardo = (int)round(($horaLlegada - $limiteSinRetardo) / 60);
+                    if ($minutosRetardo < 1) {
+                        $minutosRetardo = 1;
+                    }
+                    $estadoEntrada = 'RETARDO';
+                } else {
+                    $estadoEntrada = 'PUNTUAL';
                 }
+                $esPuntual = ($estadoEntrada === 'PUNTUAL');
 
                 // Insertar nueva asistencia
                 $q = $conexion->prepare(

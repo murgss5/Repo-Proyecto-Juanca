@@ -112,26 +112,9 @@ try {
         throw new Exception('El horario no pertenece a la ficha o no es para hoy');
     }
 
-    // Validar ventana de apertura: desde 15 min antes hasta 60 min despues de la entrada
-    $entradaHorario = $horario['entrada']; // formato HH:MM:SS
-    $entradaDateTime = DateTime::createFromFormat('H:i:s', strlen($entradaHorario) === 5 ? $entradaHorario . ':00' : $entradaHorario);
-    $ahora = new DateTime();
-    $ventanaInicio = clone $entradaDateTime;
-    $ventanaInicio->modify('-15 minutes');
-    $ventanaFin = clone $entradaDateTime;
-    $ventanaFin->modify('+60 minutes');
-    $salidaHorario = $horario['salida'];
-    $horaFinHorario = DateTime::createFromFormat('H:i:s', strlen($salidaHorario) === 5 ? $salidaHorario . ':00' : $salidaHorario);
-
-    if ($ahora < $ventanaInicio) {
-        throw new Exception('Aun no es hora de abrir la jornada. Ventana abre a las ' . $ventanaInicio->format('H:i'));
-    }
-    if ($ahora > $ventanaFin) {
-        throw new Exception('La ventana de apertura ha finalizado. Cerrada a las ' . $ventanaFin->format('H:i'));
-    }
-    if ($ahora >= $horaFinHorario) {
-        throw new Exception('La jornada ya ha finalizado');
-    }
+    // Apertura flexible sin restriccion de hora maxima:
+    // Se eliminan las restricciones de ventana para permitir aperturas tardias.
+    // La jornada podra abrirse en cualquier momento del dia programado mientras este 'sin_iniciar'.
 
     // Verificar si ya existe una sesion abierta o cerrada para esta ficha/fecha
     $q = $conexion->prepare(
@@ -153,13 +136,11 @@ try {
         throw new Exception('Ya existe una jornada (abierta o cerrada) para esta ficha hoy');
     }
 
-    // Obtener hora actual del servidor
+    // Obtener hora actual exacta del servidor (hora real de apertura)
     $horaAperturaReal = date('Y-m-d H:i:s');
     
-    // Calcular limite de puntualidad: fecha/hora de inicio programado + 10 minutos
-    $horaEntradaProg = strlen($horario['entrada']) === 5 ? $horario['entrada'] . ':00' : $horario['entrada'];
-    $inicioProgramado = DateTime::createFromFormat('Y-m-d H:i:s', $fechaHoy . ' ' . $horaEntradaProg);
-    $limitePuntualidadObj = clone $inicioProgramado;
+    // Calcular limite de puntualidad dinamico: exactamente hora de apertura real + 10 minutos
+    $limitePuntualidadObj = new DateTime($horaAperturaReal);
     $limitePuntualidadObj->modify('+10 minutes');
     $horaLimitePuntualidad = $limitePuntualidadObj->format('Y-m-d H:i:s');
 
@@ -186,7 +167,7 @@ try {
     $horaAperturaFmt = date('H:i', strtotime($horaAperturaReal));
     $horaLimiteFmt = date('H:i', strtotime($horaLimitePuntualidad));
 
-    setFlash('success', "Jornada abierta correctamente. Los aprendices podran registrar asistencia hasta las {$horaLimiteFmt} como puntuales.");
+    setFlash('success', "Jornada abierta correctamente a las {$horaAperturaFmt}. Límite sin retardo: {$horaLimiteFmt}.");
     header('Location: ../views/instructor/dashboard.php');
     exit;
 

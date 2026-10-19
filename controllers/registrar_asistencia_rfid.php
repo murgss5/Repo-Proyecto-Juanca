@@ -1,8 +1,9 @@
 <?php
 /**
  * controlador: Registrar asistencia por RFID
- * Registra entrada/salida de aprendiz validando sesion de jornada abierta
- * Mantiene compatibilidad total con lectores fisicos RFID via POST
+ * Registra entrada/salida de aprendiz validando sesion de jornada abierta.
+ * Aplica ventana dinamica de 10 minutos sin retardo desde la apertura real del instructor.
+ * Mantiene compatibilidad total con lectores fisicos RFID via POST.
  */
 
 session_start();
