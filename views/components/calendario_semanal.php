@@ -172,7 +172,7 @@ $linkSemanaSiguiente = $urlBaseModulo . '?fecha=' . urlencode($estructuraSemana[
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalDetalleClaseLabel">
-                    <i class="fas fa-calendar-check text-sena"></i> Detalle de la Clase
+                    <i class="fas fa-calendar-check text-white mr-1"></i> Detalle de la Clase
                 </h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>

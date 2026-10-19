@@ -1,24 +1,36 @@
 /**
- * Estilos para el Calendario Semanal Visual de Horarios - SENA
- * Basado en la referencia visual: tema oscuro sofisticado, cuadrícula horaria visible,
- * encabezados con días y números, indicador de día actual en verde esmeralda y bloques proporcionales.
+ * ============================================================
+ * ESTILOS VISUALES: CALENDARIO SEMANAL DE HORARIOS - SENA
+ * ============================================================
+ * Adaptado a la identidad visual del sistema Control de Asistencia:
+ * - Paleta institucional: verde SENA (#39a900), verde oscuro (#2b7d00), verde claro (#eaf6e3)
+ * - Fondos claros (#ffffff, #f4f6f9, #f8fafc) consistentes con AdminLTE
+ * - Bloques de clases con fondo suave y acento lateral verde intenso
+ * - Tipografía institucional legible con alto contraste
+ * ============================================================
  */
 
 :root {
-  --cal-bg-main: #14171a;
-  --cal-bg-card: #1a1e22;
-  --cal-bg-header: #21262c;
-  --cal-border-grid: #282f37;
-  --cal-border-subtle: rgba(255, 255, 255, 0.07);
-  --cal-text-light: #f1f5f9;
-  --cal-text-muted: #8e9cae;
-  --cal-text-dim: #5c6877;
+  --cal-bg-main: #ffffff;
+  --cal-bg-card: #ffffff;
+  --cal-bg-header: #f8fafc;
+  --cal-bg-hours: #f8fafc;
+  --cal-border-grid: #e2e8f0;
+  --cal-border-subtle: #f1f5f9;
+  --cal-text-main: #1e293b;
+  --cal-text-muted: #64748b;
+  --cal-text-dim: #94a3b8;
   --cal-sena-green: #39a900;
-  --cal-sena-green-dark: #227300;
-  --cal-block-bg-start: #0e6336;
-  --cal-block-bg-end: #094726;
-  --cal-block-border: #1fa45a;
-  --cal-block-highlight: #4ade80;
+  --cal-sena-green-dark: #2b7d00;
+  --cal-sena-green-light: #eaf6e3;
+  --cal-sena-green-mint: #f0fdf4;
+  --cal-block-bg: #eaf6e3;
+  --cal-block-bg-gradient: linear-gradient(135deg, #f0fdf4 0%, #eaf6e3 100%);
+  --cal-block-border: #bbf7d0;
+  --cal-block-highlight: #39a900;
+  --cal-block-title: #143a2a;
+  --cal-block-badge: #166534;
+  --cal-block-meta: #15803d;
   --cal-row-height: 64px;
 }
 
@@ -26,11 +38,11 @@
 .calendario-componente {
   background-color: var(--cal-bg-main);
   border: 1px solid var(--cal-border-grid);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   margin-bottom: 25px;
-  color: var(--cal-text-light);
+  color: var(--cal-text-main);
   font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -40,8 +52,8 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
-  background-color: var(--cal-bg-header);
+  padding: 12px 18px;
+  background-color: #ffffff;
   border-bottom: 1px solid var(--cal-border-grid);
   gap: 12px;
 }
@@ -53,9 +65,9 @@
 }
 
 .calendario-btn-nav {
-  background-color: #262c33;
-  color: var(--cal-text-light);
-  border: 1px solid #363e48;
+  background-color: #ffffff;
+  color: #495057;
+  border: 1px solid #ced4da;
   border-radius: 6px;
   padding: 6px 14px;
   font-size: 13px;
@@ -69,9 +81,9 @@
 }
 
 .calendario-btn-nav:hover {
-  background-color: #313842;
-  color: #ffffff;
-  border-color: #485361;
+  background-color: #f8fafc;
+  color: #1e293b;
+  border-color: #adb5bd;
   transform: translateY(-1px);
 }
 
@@ -79,13 +91,13 @@
   background-color: var(--cal-sena-green);
   border-color: var(--cal-sena-green);
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(57, 169, 0, 0.4);
+  box-shadow: 0 2px 6px rgba(57, 169, 0, 0.35);
 }
 
 .calendario-titulo-rango {
   font-size: 16px;
   font-weight: 700;
-  color: #ffffff;
+  color: #173b2b;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -104,9 +116,9 @@
 }
 
 .calendario-select-ficha {
-  background-color: #262c33;
-  color: #ffffff;
-  border: 1px solid #3a424e;
+  background-color: #ffffff;
+  color: #495057;
+  border: 1px solid #ced4da;
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 13px;
@@ -114,6 +126,7 @@
   min-width: 200px;
   max-width: 320px;
   cursor: pointer;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
 .calendario-select-ficha:focus {
@@ -123,9 +136,9 @@
 }
 
 .calendario-badge-info {
-  background-color: #1f2d24;
-  color: #86efac;
-  border: 1px solid #235d39;
+  background-color: var(--cal-sena-green-light);
+  color: var(--cal-sena-green-dark);
+  border: 1px solid #bbf7d0;
   border-radius: 20px;
   padding: 5px 12px;
   font-size: 12px;
@@ -135,11 +148,15 @@
   gap: 6px;
 }
 
+.calendario-badge-info i {
+  color: var(--cal-sena-green);
+}
+
 /* ---------- Mensaje de alerta informativa ---------- */
 .calendario-aviso-semana {
-  background-color: #17202a;
-  border-left: 4px solid #0284c7;
-  color: #bae6fd;
+  background-color: #f0fdf4;
+  border-left: 4px solid var(--cal-sena-green);
+  color: #166534;
   padding: 10px 16px;
   margin: 12px 16px 0 16px;
   border-radius: 6px;
@@ -147,6 +164,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.calendario-aviso-semana i {
+  color: var(--cal-sena-green);
 }
 
 /* ---------- Wrapper con desplazamiento horizontal ---------- */
@@ -184,7 +205,7 @@
   color: var(--cal-text-muted);
   text-transform: uppercase;
   border-right: 1px solid var(--cal-border-grid);
-  background-color: var(--cal-bg-header);
+  background-color: #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -219,7 +240,7 @@
   justify-content: center;
   font-size: 17px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--cal-text-main);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -227,20 +248,21 @@
   transition: all 0.2s ease;
 }
 
-/* Resaltado del día actual (igual a la referencia visual con círculo verde) */
+/* Resaltado del día actual (indicador sena verde suave y número destacado) */
 .calendario-header-dia.es-hoy {
   background-color: rgba(57, 169, 0, 0.08);
 }
 
 .calendario-header-dia.es-hoy .dia-abrev {
-  color: #86efac;
+  color: var(--cal-sena-green-dark);
+  font-weight: 800;
 }
 
 .calendario-header-dia.es-hoy .dia-numero {
   background-color: var(--cal-sena-green);
   color: #ffffff;
   font-weight: 800;
-  box-shadow: 0 0 14px rgba(57, 169, 0, 0.7);
+  box-shadow: 0 2px 8px rgba(57, 169, 0, 0.4);
 }
 
 /* ---------- Cuerpo de la cuadrícula ---------- */
@@ -253,7 +275,7 @@
 
 /* Columna izquierda de horas */
 .calendario-columna-horas {
-  background-color: #16191c;
+  background-color: var(--cal-bg-hours);
   border-right: 1px solid var(--cal-border-grid);
   position: sticky;
   left: 0;
@@ -280,8 +302,8 @@
   position: relative;
   border-right: 1px solid var(--cal-border-grid);
   background-color: var(--cal-bg-main);
-  /* Líneas horizontales de guía horaria */
-  background-image: linear-gradient(to bottom, var(--cal-border-grid) 1px, transparent 1px);
+  /* Líneas horizontales de guía horaria suaves */
+  background-image: linear-gradient(to bottom, var(--cal-border-subtle) 1px, transparent 1px);
   background-size: 100% var(--cal-row-height);
   box-sizing: border-box;
 }
@@ -294,22 +316,22 @@
   background-color: rgba(57, 169, 0, 0.02);
 }
 
-/* ---------- Bloques verdes de clases (Cards de formación) ---------- */
+/* ---------- Bloques verdes de clases (Cards de formación en tonos suaves con alto contraste) ---------- */
 .calendario-bloque-clase {
   position: absolute;
   box-sizing: border-box;
-  background: linear-gradient(135deg, var(--cal-block-bg-start) 0%, var(--cal-block-bg-end) 100%);
+  background: var(--cal-block-bg-gradient);
   border: 1px solid var(--cal-block-border);
   border-left: 4px solid var(--cal-block-highlight);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 8px 10px;
   margin: 1px 3px;
-  color: #ffffff;
+  color: var(--cal-text-main);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(57, 169, 0, 0.06);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   z-index: 5;
@@ -317,8 +339,8 @@
 
 .calendario-bloque-clase:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(31, 164, 90, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  border-color: #86efac;
+  box-shadow: 0 4px 12px rgba(57, 169, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-color: var(--cal-sena-green);
   z-index: 15;
 }
 
@@ -326,9 +348,9 @@
 .bloque-header {
   font-size: 11px;
   font-weight: 700;
-  color: #a7f3d0;
-  letter-spacing: 0.3px;
-  margin-bottom: 4px;
+  color: var(--cal-block-badge);
+  letter-spacing: 0.2px;
+  margin-bottom: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -337,14 +359,19 @@
   gap: 4px;
 }
 
+.bloque-header i {
+  color: var(--cal-sena-green);
+  font-size: 10px;
+}
+
 /* Título de formación / programa / competencia */
 .bloque-titulo {
   font-size: 12px;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--cal-block-title);
   line-height: 1.25;
   text-transform: uppercase;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -355,7 +382,8 @@
 /* Pie del bloque: Instructor y metadatos */
 .bloque-meta {
   font-size: 11px;
-  color: #d1fae5;
+  color: var(--cal-block-meta);
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -364,18 +392,18 @@
   text-overflow: ellipsis;
   margin-top: auto;
   padding-top: 4px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(57, 169, 0, 0.18);
 }
 
 .bloque-meta i {
-  color: #86efac;
+  color: var(--cal-sena-green);
   font-size: 11px;
 }
 
 .bloque-meta-extra {
   font-size: 10.5px;
-  color: #a7f3d0;
-  opacity: 0.9;
+  color: var(--cal-sena-green-dark);
+  opacity: 0.95;
   display: flex;
   gap: 8px;
   margin-top: 2px;
@@ -387,14 +415,14 @@
 }
 
 .calendario-bloque-clase.bloque-corto .bloque-header {
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   font-size: 10.5px;
 }
 
 .calendario-bloque-clase.bloque-corto .bloque-titulo {
   font-size: 11px;
   -webkit-line-clamp: 1;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .calendario-bloque-clase.bloque-corto .bloque-meta {
@@ -402,36 +430,36 @@
   padding-top: 2px;
 }
 
-/* ---------- Modal de detalle de clase ---------- */
+/* ---------- Modal de detalle de clase (Claro y acorde a AdminLTE) ---------- */
 .modal-horario-detalle .modal-content {
-  background-color: #1a1e23;
-  color: #f1f5f9;
-  border: 1px solid #363e48;
-  border-radius: 12px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  background-color: #ffffff;
+  color: var(--cal-text-main);
+  border: 1px solid var(--cal-border-grid);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
 .modal-horario-detalle .modal-header {
-  background: linear-gradient(135deg, #123d24 0%, #0e2f1c 100%);
-  border-bottom: 1px solid #285436;
-  border-top-left-radius: 12px;
-  border-top-right-radius: 12px;
-  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--cal-sena-green) 0%, var(--cal-sena-green-dark) 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  padding: 14px 20px;
 }
 
 .modal-horario-detalle .modal-title {
   color: #ffffff;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .modal-horario-detalle .close {
   color: #ffffff;
   text-shadow: none;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .modal-horario-detalle .close:hover {
@@ -439,7 +467,8 @@
 }
 
 .modal-horario-detalle .modal-body {
-  padding: 22px 24px;
+  padding: 20px 24px;
+  background-color: #ffffff;
 }
 
 .modal-horario-detalle .detalle-item {
@@ -452,9 +481,9 @@
 .modal-horario-detalle .detalle-icono {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  background-color: #242c34;
-  color: var(--cal-sena-green);
+  border-radius: 6px;
+  background-color: var(--cal-sena-green-light);
+  color: var(--cal-sena-green-dark);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -463,9 +492,9 @@
 }
 
 .modal-horario-detalle .detalle-label {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
-  color: #8c9ba8;
+  color: var(--cal-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 2px;
@@ -473,15 +502,15 @@
 
 .modal-horario-detalle .detalle-valor {
   font-size: 14px;
-  color: #ffffff;
-  font-weight: 500;
+  color: var(--cal-text-main);
+  font-weight: 600;
 }
 
 .modal-horario-detalle .modal-footer {
-  background-color: #14171b;
-  border-top: 1px solid #2d343e;
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
+  background-color: #f8fafc;
+  border-top: 1px solid var(--cal-border-grid);
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
   padding: 12px 20px;
 }
 
