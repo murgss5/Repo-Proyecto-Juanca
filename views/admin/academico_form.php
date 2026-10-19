@@ -22,7 +22,11 @@ $conexion = (new Conexion())->conectar();
 // datos por defecto segun entidad
 $datos = $entidad === 'ficha'
     ? ['id_ficha' => '', 'nombre_programa' => '', 'jornada' => '', 'fk_usuario' => '']
-    : ['id_horario' => '', 'fk_ficha' => '', 'dia_semana' => '', 'entrada' => '', 'salida' => ''];
+    : [
+        'id_horario' => '', 'fk_ficha' => '', 'instructor_id' => '', 'dia_semana' => '',
+        'entrada' => '', 'salida' => '', 'competencia' => '', 'tipo_bloque' => 'completo',
+        'ambiente' => '', 'estado' => 'Activo', 'observaciones' => '', 'fecha_inicio' => '', 'fecha_fin' => ''
+      ];
 
 // si es edicion, carga datos existentes
 if ($edicion) {
@@ -37,14 +41,12 @@ if ($edicion) {
     }
 }
 
-// obtiene instructores para fichas
-$instructores = $entidad === 'ficha'
-    ? $conexion->query('SELECT id_usuario, nombre, apellido FROM usuario WHERE fk_rol = 2 ORDER BY nombre, apellido')->fetchAll()
-    : [];
+// obtiene instructores activos para fichas y horarios
+$instructores = $conexion->query('SELECT id_usuario, nombre, apellido FROM usuario WHERE fk_rol = 2 ORDER BY nombre, apellido')->fetchAll();
 
 // obtiene fichas para horarios
 $fichas = $entidad === 'horario'
-    ? $conexion->query('SELECT id_ficha, nombre_programa FROM ficha ORDER BY id_ficha')->fetchAll()
+    ? $conexion->query('SELECT id_ficha, nombre_programa, ambiente_principal FROM ficha ORDER BY id_ficha')->fetchAll()
     : [];
 
 // variables para layout
@@ -113,21 +115,36 @@ ob_start();
             <?php else: ?>
                 <input type="hidden" name="id_horario" value="<?= $datos['id_horario'] ?>">
 
-                <div class="form-group">
-                    <label>Ficha *</label>
-                    <select class="form-control" name="id_ficha" required>
-                        <option value="">Seleccione...</option>
-                        <?php foreach ($fichas as $f): ?>
-                            <option value="<?= $f['id_ficha'] ?>" <?= strval($datos['fk_ficha']) === strval($f['id_ficha']) ? 'selected' : '' ?>>
-                                Ficha #<?= $f['id_ficha'] ?> — <?= htmlspecialchars($f['nombre_programa']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Ficha *</label>
+                        <select class="form-control" name="id_ficha" required>
+                            <option value="">Seleccione una ficha...</option>
+                            <?php foreach ($fichas as $f): ?>
+                                <option value="<?= $f['id_ficha'] ?>" <?= strval($datos['fk_ficha']) === strval($f['id_ficha']) ? 'selected' : '' ?>>
+                                    Ficha #<?= $f['id_ficha'] ?> — <?= htmlspecialchars($f['nombre_programa']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 form-group">
+                        <label>Instructor asignado</label>
+                        <select class="form-control" name="instructor_id">
+                            <option value="">(Usar el instructor líder asignado a la ficha)</option>
+                            <?php foreach ($instructores as $i): ?>
+                                <option value="<?= $i['id_usuario'] ?>" <?= strval($datos['instructor_id'] ?? '') === strval($i['id_usuario']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($i['nombre'] . ' ' . $i['apellido']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="form-text text-muted">Permite asignar instructores diferentes a clases específicas de la misma ficha.</small>
+                    </div>
                 </div>
 
                 <div class="row">
                     <div class="col-md-4 form-group">
-                        <label>Día *</label>
+                        <label>Día de la semana *</label>
                         <select class="form-control" name="dia_semana" required>
                             <?php 
                             $diasSemanaLista = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -151,6 +168,55 @@ ob_start();
                         <label>Hora de salida *</label>
                         <input class="form-control" type="time" name="salida" required
                             value="<?= htmlspecialchars(substr($datos['salida'], 0, 5)) ?>">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Formación / Competencia / Nombre del Bloque</label>
+                        <input class="form-control" type="text" name="competencia" maxlength="100"
+                            placeholder="Ej: TÉCNICO - ESPECIALISTA - COMERCIO Y SERVICIOS 5"
+                            value="<?= htmlspecialchars($datos['competencia'] ?? '') ?>">
+                        <small class="form-text text-muted">Aparece destacado dentro del bloque verde del calendario.</small>
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label>Ambiente / Aula</label>
+                        <input class="form-control" type="text" name="ambiente" maxlength="100"
+                            placeholder="Ej: Taller 9, Aula 201"
+                            value="<?= htmlspecialchars($datos['ambiente'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label>Tipo de bloque</label>
+                        <select class="form-control" name="tipo_bloque">
+                            <option value="completo" <?= (($datos['tipo_bloque'] ?? 'completo') === 'completo') ? 'selected' : '' ?>>Continuo (Completo)</option>
+                            <option value="partido" <?= (($datos['tipo_bloque'] ?? '') === 'partido') ? 'selected' : '' ?>>Partido</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3 form-group">
+                        <label>Estado</label>
+                        <select class="form-control" name="estado">
+                            <option value="Activo" <?= (($datos['estado'] ?? 'Activo') === 'Activo') ? 'selected' : '' ?>>Activo</option>
+                            <option value="Inactivo" <?= (($datos['estado'] ?? '') === 'Inactivo') ? 'selected' : '' ?>>Inactivo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label>Fecha inicio vigencia (opcional)</label>
+                        <input class="form-control" type="date" name="fecha_inicio"
+                            value="<?= htmlspecialchars($datos['fecha_inicio'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label>Fecha fin vigencia (opcional)</label>
+                        <input class="form-control" type="date" name="fecha_fin"
+                            value="<?= htmlspecialchars($datos['fecha_fin'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label>Observaciones (opcional)</label>
+                        <input class="form-control" type="text" name="observaciones" maxlength="255"
+                            placeholder="Notas complementarias"
+                            value="<?= htmlspecialchars($datos['observaciones'] ?? '') ?>">
                     </div>
                 </div>
             <?php endif; ?>
