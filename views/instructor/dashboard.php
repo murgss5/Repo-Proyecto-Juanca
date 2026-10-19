@@ -84,7 +84,7 @@ $diasMapAlt = [
 $diaSemanaEs = $diasMap[$diaSemana] ?? $diaSemana;
 $diaSemanaAlt = $diasMapAlt[$diaSemana] ?? $diaSemana;
 $fechaHoy = date('Y-m-d');
-$consulta = $conexion->prepare("SELECT f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida, COUNT(a.id_aprendiz) AS total_aprendices FROM ficha f INNER JOIN horario h ON h.fk_ficha = f.id_ficha LEFT JOIN aprendiz a ON a.fk_ficha = f.id_ficha WHERE f.fk_usuario = :id_instructor AND (h.dia_semana = :dia_semana OR h.dia_semana = :dia_semana_alt) GROUP BY f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida ORDER BY h.entrada ASC");
+$consulta = $conexion->prepare("SELECT f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida, COUNT(a.id_aprendiz) AS total_aprendices FROM ficha f INNER JOIN horario h ON h.fk_ficha = f.id_ficha LEFT JOIN aprendiz a ON a.fk_ficha = f.id_ficha WHERE COALESCE(h.instructor_id, f.fk_usuario) = :id_instructor AND (h.dia_semana = :dia_semana OR h.dia_semana = :dia_semana_alt) AND (h.estado = 'Activo' OR h.estado IS NULL) GROUP BY f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida ORDER BY h.entrada ASC");
 $consulta->execute([':id_instructor' => $idInstructor, ':dia_semana' => $diaSemanaEs, ':dia_semana_alt' => $diaSemanaAlt]);
 $fichasConHorarioHoy = $consulta->fetchAll();
 

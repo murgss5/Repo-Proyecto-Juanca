@@ -57,6 +57,7 @@ if ($rolActualId === 1) {
     $itemsMenu = [
         ['tipo' => 'header', 'texto' => 'PRINCIPAL'],
         ['tipo' => 'enlace', 'clave' => 'dashboard', 'icono' => 'fa-tachometer-alt', 'texto' => 'Dashboard', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
+        ['tipo' => 'enlace', 'clave' => 'horarios', 'icono' => 'fa-calendar-alt', 'texto' => 'Horarios', 'url' => RUTA_BASE . 'views/instructor/horarios/index.php'],
         ['tipo' => 'enlace', 'clave' => 'aprendices', 'icono' => 'fa-users', 'texto' => 'Aprendices de mis fichas', 'url' => RUTA_BASE . 'views/instructor/aprendices/index.php'],
         ['tipo' => 'enlace', 'clave' => 'registrar-aprendices', 'icono' => 'fa-user-plus', 'texto' => 'Registrar aprendices', 'url' => RUTA_BASE . 'views/instructor/aprendices/create.php'],
         ['tipo' => 'enlace', 'clave' => 'asistencias', 'icono' => 'fa-clipboard-check', 'texto' => 'Asistencias', 'url' => RUTA_BASE . 'views/instructor/asistencias/index.php'],
@@ -69,6 +70,7 @@ if ($rolActualId === 1) {
     $itemsMenu = [
         ['tipo' => 'header', 'texto' => 'PRINCIPAL'],
         ['tipo' => 'enlace', 'clave' => 'dashboard', 'icono' => 'fa-tachometer-alt', 'texto' => 'Mi dashboard', 'url' => RUTA_BASE . 'views/aprendiz/dashboard.php'],
+        ['tipo' => 'enlace', 'clave' => 'horarios', 'icono' => 'fa-calendar-alt', 'texto' => 'Horarios', 'url' => RUTA_BASE . 'views/aprendiz/horarios/index.php'],
         ['tipo' => 'enlace', 'clave' => 'perfil', 'icono' => 'fa-user', 'texto' => 'Mi perfil', 'url' => RUTA_BASE . 'views/aprendiz/perfil.php'],
         ['tipo' => 'enlace', 'clave' => 'historial', 'icono' => 'fa-history', 'texto' => 'Mi historial', 'url' => RUTA_BASE . 'views/aprendiz/historial.php'],
         ['tipo' => 'enlace', 'clave' => 'excusas', 'icono' => 'fa-file-medical', 'texto' => 'Mis excusas', 'url' => RUTA_BASE . 'views/aprendiz/excusas/index.php'],

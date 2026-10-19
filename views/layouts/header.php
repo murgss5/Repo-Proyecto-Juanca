@@ -73,6 +73,9 @@ $menuActivo   = $menuActivo ?? '';
 
   <!-- Estilos personalizados del proyecto -->
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/custom.css">
+
+  <!-- Estilos del calendario semanal visual -->
+  <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/calendario.css">
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed" data-base="<?= RUTA_BASE ?>">
 <div id="pageTransitionBar" class="page-transition-bar"></div>
