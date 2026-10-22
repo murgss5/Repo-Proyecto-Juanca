@@ -15,7 +15,7 @@ $miga = [
 ];
 
 // Instructor autenticado
-$idInstructor = (int) $_SESSION['id_usuario'];
+$idInstructor = (int)($_SESSION['instructor']['id_usuario'] ?? 0);
 $conexion = (new Conexion())->conectar();
 
 // Fichas del instructor (para filtro select)

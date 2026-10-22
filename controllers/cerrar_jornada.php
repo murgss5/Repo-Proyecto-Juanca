@@ -13,7 +13,8 @@ require_once __DIR__ . '/../includes/autenticacion.php';
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
-$rolUsuario = $_SESSION['fk_rol'] ?? null;
+$usuarioSesion = usuarioActual(2) ?? usuarioActual(1);
+$rolUsuario = $usuarioSesion['fk_rol'] ?? null;
 if (!in_array($rolUsuario, [1, 2], true)) {
     http_response_code(403);
     setFlash('error', 'Acceso denegado: se requiere rol Instructor o Administrador');
@@ -55,7 +56,7 @@ if (!$fichaId) {
 // Configurar zona horaria
 date_default_timezone_set('America/Bogota');
 
-$usuarioId = $_SESSION['id_usuario'];
+$usuarioId = $usuarioSesion['id_usuario'];
 $fechaHoy = date('Y-m-d');
 
 $conexion = (new Conexion())->conectar();

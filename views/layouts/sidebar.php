@@ -9,6 +9,21 @@
  * ============================================================
  */
 
+require_once dirname(__DIR__, 2) . '/includes/constantes.php';
+require_once dirname(__DIR__, 2) . '/includes/autenticacion.php';
+
+$rolActualId = rolId();
+
+$usuarioData = usuarioActual();
+$nombreUsuarioActual = $usuarioData['nombre'] ?? 'Usuario';
+$fotoUsuario = $usuarioData['foto'] ?? RUTA_BASE . '/assets/img/default-user.png';
+
+// Determinar el nombre del rol en texto
+$nombreRolActual = 'Usuario';
+if ($rolActualId === 1) $nombreRolActual = 'Administrador';
+elseif ($rolActualId === 2) $nombreRolActual = 'Instructor';
+elseif ($rolActualId === 3) $nombreRolActual = 'Aprendiz';
+
 // Icono según el rol real
 $iconoRol = 'fa-user-shield';
 if ($rolActualId === 2) {
@@ -129,8 +144,9 @@ if (!function_exists('menuActivo')) {
             ?>
             <?php if ($item['clave'] === 'logout'): ?>
               <li class="nav-item">
-                <form action="<?= $item['url'] ?>" method="post" class="m-0 p-0" id="formLogoutSidebar">
+                <form action="<?= $item['url'] ?>?rol=<?= urlencode($rolClaveActual ?? '') ?>" method="post" class="m-0 p-0" id="formLogoutSidebar">
                   <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf'] ?? '') ?>">
+                  <input type="hidden" name="rol" value="<?= htmlspecialchars($rolClaveActual ?? '') ?>">
                   <button type="submit" class="nav-link border-0 bg-transparent text-left w-100" style="cursor: pointer;">
                     <i class="nav-icon fas <?= $item['icono'] ?>"></i>
                     <p><?= htmlspecialchars($item['texto']) ?></p>

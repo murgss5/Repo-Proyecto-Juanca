@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../../includes/autenticacion.php';
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
-if (($_SESSION['fk_rol'] ?? null) != 3) {
+if (empty($_SESSION['aprendiz']['id_usuario'])) {
     http_response_code(403);
     exit('Acceso denegado: se requiere rol Aprendiz');
 }
@@ -41,7 +41,7 @@ try {
     );
     $consultaExcusa->execute([
         ':id_excusa' => $idExcusa,
-        ':id_usuario' => $_SESSION['id_usuario'],
+        ':id_usuario' => $_SESSION['aprendiz']['id_usuario'],
     ]);
 
     $excusa = $consultaExcusa->fetch();

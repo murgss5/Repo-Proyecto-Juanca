@@ -33,7 +33,7 @@ $consultaExcusas = $conexion->prepare(
      WHERE ficha.fk_usuario = :id_instructor
      ORDER BY excusa.fecha_subida DESC, excusa.id_excusa DESC"
 );
-$consultaExcusas->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaExcusas->bindValue(':id_instructor', $_SESSION['instructor']['id_usuario'], PDO::PARAM_INT);
 $consultaExcusas->execute();
 $excusasInstructor = $consultaExcusas->fetchAll();
 

@@ -27,7 +27,7 @@ $consultaExcusa = $conexion->prepare(
 );
 $consultaExcusa->execute([
     ':id_excusa' => $idExcusa,
-    ':id_instructor' => $_SESSION['id_usuario'],
+    ':id_instructor' => $_SESSION['instructor']['id_usuario'],
 ]);
 $excusa = $consultaExcusa->fetch();
 

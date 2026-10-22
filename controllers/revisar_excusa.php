@@ -6,6 +6,7 @@
 
 session_start();
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../includes/autenticacion.php';
 
 /**
  * funcion auxiliar para redirigir al listado de excusas con mensaje
@@ -19,7 +20,8 @@ function volverAExcusas(string $parametro, string $mensaje): void
 }
 
 // Verifica que sea POST y que el usuario sea instructor (rol 2)
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_SESSION['fk_rol'] ?? null) != 2) {
+$usuarioInstructor = usuarioActual(2);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$usuarioInstructor) {
     volverAExcusas('error', 'No tiene permiso para revisar excusas.');
 }
 
@@ -54,7 +56,7 @@ $consultaPropiedad = $conexion->prepare(
 );
 $consultaPropiedad->execute([
     ':id_excusa' => $idExcusa,
-    ':id_instructor' => $_SESSION['id_usuario'],
+    ':id_instructor' => $usuarioInstructor['id_usuario'],
 ]);
 
 if (!$consultaPropiedad->fetchColumn()) {
@@ -66,7 +68,7 @@ try {
     $consultaRevision = $conexion->prepare('CALL revisar_excusa(:id_excusa, :id_instructor, :decision)');
     $consultaRevision->execute([
         ':id_excusa' => $idExcusa,
-        ':id_instructor' => $_SESSION['id_usuario'],
+        ':id_instructor' => $usuarioInstructor['id_usuario'],
         ':decision' => $decision,
     ]);
 

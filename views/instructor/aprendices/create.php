@@ -22,7 +22,7 @@ if (empty($_SESSION['token_csrf'])) {
     $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
 }
 
-$idInstructor = (int)$_SESSION['id_usuario'];
+$idInstructor = (int)($_SESSION['instructor']['id_usuario'] ?? 0);
 $fichasInstructor = AprendizModel::obtenerFichasInstructor($idInstructor);
 
 // Verificar modo de visualización: manual o importación Excel (por defecto)

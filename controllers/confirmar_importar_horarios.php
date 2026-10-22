@@ -10,7 +10,7 @@ require_once __DIR__ . '/../includes/autenticacion.php';
 require_once __DIR__ . '/../includes/HorarioValidator.php';
 
 // validar post y rol admin
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_SESSION['fk_rol'] ?? null) != 1) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_SESSION['admin']['id_usuario'])) {
     header('Location: ../views/auth/login.php');
     exit;
 }

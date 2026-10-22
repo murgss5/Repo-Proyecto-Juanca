@@ -27,7 +27,7 @@ $miga = [
 ];
 
 $conexion = (new Conexion())->conectar();
-$idUsuario = (int)$_SESSION['id_usuario'];
+$idUsuario = (int)($_SESSION['aprendiz']['id_usuario'] ?? 0);
 
 // Consulta cronológica de asistencias del aprendiz autenticado
 $consultaHistorial = $conexion->prepare(

@@ -12,7 +12,7 @@ require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/models/HorarioModel.php';
 
 asegurarSesionIniciada();
-$idUsuarioAprendiz = (int)$_SESSION['id_usuario'];
+$idUsuarioAprendiz = (int)($_SESSION['aprendiz']['id_usuario'] ?? 0);
 
 // Parámetros de consulta seguros (sólo fecha para navegación de semana)
 $fechaConsulta = filter_input(INPUT_GET, 'fecha', FILTER_DEFAULT);

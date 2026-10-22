@@ -25,7 +25,7 @@ function volver(string $tipo, string $mensaje, int $rol, ?int $id = null): void
 }
 
 // Verifica que sea POST y que el usuario sea administrador (rol 1)
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || ($_SESSION['fk_rol'] ?? null) != 1) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_SESSION['admin']['id_usuario'])) {
     header('Location: ../views/auth/login.php');
     exit;
 }

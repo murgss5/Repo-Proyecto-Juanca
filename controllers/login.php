@@ -8,6 +8,7 @@
 session_start();
 // carga la clase de conexion a la base de datos
 require_once __DIR__ . '/../config/conexion.php';
+require_once __DIR__ . '/../includes/autenticacion.php';
 
 // verifica que el formulario fue enviado por POST
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -85,34 +86,35 @@ if (!esHashContrasena($usuario["contrasena"])) {
     // si falla el UPDATE, no impedimos el login ya validado
 }
 
-// regenera el ID de sesion por seguridad
+// regenera el ID de sesion por seguridad preservando datos existentes
 session_regenerate_id(true);
 
-// genera token CSRF seguro para la sesion autenticada
-$_SESSION['token_csrf'] = bin2hex(random_bytes(32));
+// genera token CSRF seguro para la sesion si aun no existe
+if (empty($_SESSION['token_csrf']) || !is_string($_SESSION['token_csrf'])) {
+    $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
+}
 
-// crea variables de sesion con los datos del usuario
-$_SESSION["id_usuario"] = $usuario["id_usuario"];
-$_SESSION["nombre_usuario"] = $usuario["nombre_usuario"];
-$_SESSION["nombre"] = $usuario["nombre"];
-$_SESSION["apellido"] = $usuario["apellido"];
-$_SESSION["identificacion"] = $usuario["identificacion"];
-$_SESSION["fk_rol"] = $usuario["fk_rol"];
-$_SESSION["nombre_rol"] = $usuario["nombre_rol"];
+// Guarda la sesion en el namespace correspondiente al rol (Multitenancy)
+$claveRol = iniciarSesionRol($usuario);
 
 // redirige segun el rol del usuario
-switch ($usuario["fk_rol"]) {
-    case 1: header("Location: ../views/admin/dashboard.php");
-    break;
+switch ((int) $usuario["fk_rol"]) {
+    case 1:
+        header("Location: ../views/admin/dashboard.php");
+        break;
 
-    case 2: header("Location: ../views/instructor/dashboard.php");
-    break;
+    case 2:
+        header("Location: ../views/instructor/dashboard.php");
+        break;
 
-    case 3: header("Location: ../views/aprendiz/dashboard.php");
-    break;
+    case 3:
+        header("Location: ../views/aprendiz/dashboard.php");
+        break;
 
-    default: session_destroy();
-    header("Location: ../views/auth/login.php?error=El usuario no tiene un rol valido");
-    break;
+    default:
+        // En caso de rol no valido, limpiar solo el rol no valido
+        unset($_SESSION[$claveRol]);
+        header("Location: ../views/auth/login.php?error=El usuario no tiene un rol valido");
+        break;
 }
 exit;

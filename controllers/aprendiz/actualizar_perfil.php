@@ -284,13 +284,18 @@ try {
 
     $conexion->commit();
 
-    // 9. Actualizar datos de sesión en memoria
-    $_SESSION['nombre'] = $nombre;
-    $_SESSION['apellido'] = $apellido;
-    $nombreCompleto = trim($nombre . ' ' . $apellido);
-    $_SESSION['nombre_completo'] = $nombreCompleto;
-    if ($docModificado || isset($_SESSION['identificacion'])) {
-        $_SESSION['identificacion'] = $identificacion;
+    // 9. Actualizar datos de sesión en memoria (namespace aprendiz)
+    if (isset($_SESSION['aprendiz']) && is_array($_SESSION['aprendiz'])) {
+        $_SESSION['aprendiz']['nombre'] = $nombre;
+        $_SESSION['aprendiz']['apellido'] = $apellido;
+        $nombreCompleto = trim($nombre . ' ' . $apellido);
+        $_SESSION['aprendiz']['nombre_completo'] = $nombreCompleto;
+        if ($docModificado || isset($_SESSION['aprendiz']['identificacion'])) {
+            $_SESSION['aprendiz']['identificacion'] = $identificacion;
+        }
+        if (isset($_SESSION['aprendiz']['telefono'])) {
+            $_SESSION['aprendiz']['telefono'] = $telefono !== '' ? $telefono : null;
+        }
     }
 
     // 10. Mensaje de respuesta según si el documento cambió

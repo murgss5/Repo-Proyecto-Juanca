@@ -21,7 +21,7 @@ $colaRfid = $_SESSION['rfid_importacion_pendiente'] ?? null;
 if (!$colaRfid ||
     !isset($colaRfid['aprendices']) ||
     count($colaRfid['aprendices']) === 0 ||
-    $colaRfid['id_instructor'] !== (int)$_SESSION['id_usuario'] ||
+    $colaRfid['id_instructor'] !== (int)($_SESSION['instructor']['id_usuario'] ?? 0) ||
     $colaRfid['expires_at'] < time()
 ) {
     unset($_SESSION['rfid_importacion_pendiente']);

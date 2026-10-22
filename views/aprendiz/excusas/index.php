@@ -24,7 +24,7 @@ $consultaExcusas = $conexion->prepare(
      WHERE ap.fk_usuario = :id_usuario
      ORDER BY e.fecha_subida DESC, a.fecha_asistencia DESC"
 );
-$consultaExcusas->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaExcusas->bindValue(':id_usuario', $_SESSION['aprendiz']['id_usuario'], PDO::PARAM_INT);
 $consultaExcusas->execute();
 $excusas = $consultaExcusas->fetchAll();
 

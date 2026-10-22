@@ -12,7 +12,8 @@ require_once __DIR__ . '/../includes/autenticacion.php';
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
-if (($_SESSION['fk_rol'] ?? null) != 2) {
+$usuarioInstructor = usuarioActual(2);
+if (!$usuarioInstructor) {
     http_response_code(403);
     setFlash('error', 'Acceso denegado: se requiere rol Instructor');
     header('Location: ' . $_SERVER['HTTP_REFERER'] ?? '../views/instructor/dashboard.php');
@@ -53,7 +54,7 @@ if (!$fichaId || !$horarioId) {
 // Configurar zona horaria
 date_default_timezone_set('America/Bogota');
 
-$instructorId = $_SESSION['id_usuario'];
+$instructorId = $usuarioInstructor['id_usuario'];
 $fechaHoy = date('Y-m-d');
 $diaSemana = date('l'); // Lunes, Martes, etc en ingles
 $diasMap = [

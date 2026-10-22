@@ -35,6 +35,7 @@ if ($usuarioActual === null) {
 
 // Variables derivadas de la sesion real
 $rolActualId = $usuarioActual['fk_rol'];
+$rolClaveActual = rolClave($rolActualId) ?? 'admin';
 $nombreRolActual = $usuarioActual['nombre_rol'];
 $nombreUsuarioActual = $usuarioActual['nombre_completo'];
 $fotoUsuario = RUTA_BASE . 'assets/img/sena.svg';

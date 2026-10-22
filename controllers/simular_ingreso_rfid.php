@@ -38,7 +38,7 @@ if (!defined('MODO_PRUEBAS_RFID') || !MODO_PRUEBAS_RFID) {
 }
 
 // 3. Validar sesion y rol Instructor (rol 2)
-if (($_SESSION['fk_rol'] ?? null) != 2 || empty($_SESSION['id_usuario'])) {
+if (empty($_SESSION['instructor']['id_usuario'])) {
     http_response_code(403);
     header('Content-Type: application/json');
     echo json_encode([
@@ -70,7 +70,7 @@ if (!$fichaId) {
     exit;
 }
 
-$instructorId = (int)$_SESSION['id_usuario'];
+$instructorId = (int)$_SESSION['instructor']['id_usuario'];
 $fechaHoy = date('Y-m-d');
 
 $conexion = (new Conexion())->conectar();

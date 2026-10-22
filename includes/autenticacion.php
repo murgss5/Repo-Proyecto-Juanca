@@ -2,9 +2,17 @@
 /**
  * funciones compartidas de autenticacion y autorizacion
  *
- * las vistas protegidas indican los roles que pueden acceder a ellas
- * los identificadores coinciden con la tabla rol:
- * 1 = administrador, 2 = instructor, 3 = aprendiz
+ * Arquitectura Multitenancy de Roles:
+ * Permite la sesion simultanea en el mismo navegador para Admin, Instructor y Aprendiz
+ * almacenando la informacion de cada rol en su propio namespace dentro de $_SESSION:
+ *   - $_SESSION['admin']
+ *   - $_SESSION['instructor']
+ *   - $_SESSION['aprendiz']
+ *
+ * Mapeo de roles (tabla rol):
+ * 1 = administrador (admin)
+ * 2 = instructor
+ * 3 = aprendiz
  */
 
 // cabeceras anti cache para evitar cache de paginas protegidas
@@ -13,6 +21,48 @@ if (!headers_sent()) {
     header("Cache-Control: post-check=0, pre-check=0", false);
     header("Pragma: no-cache");
     header("Expires: 0");
+}
+
+/**
+ * Mapea un identificador de rol o clave a su clave canonica de sesion ('admin', 'instructor', 'aprendiz')
+ * @param int|string|null $rol
+ * @return string|null
+ */
+function rolClave(int|string|null $rol): ?string
+{
+    if ($rol === null) {
+        return null;
+    }
+    $r = is_numeric($rol) ? (int)$rol : strtolower(trim((string)$rol));
+    return match ($r) {
+        1, 'admin', 'administrador' => 'admin',
+        2, 'instructor' => 'instructor',
+        3, 'aprendiz' => 'aprendiz',
+        default => null,
+    };
+}
+
+/**
+ * Mapea una clave de rol o identificador al ID numerico correspondiente (1, 2, 3)
+ * @param int|string|null $rol
+ * @return int|null
+ */
+function rolId(int|string|null $rol = null): ?int
+{
+    if ($rol === null) {
+        $usuario = usuarioActual();
+        return $usuario['fk_rol'] ?? detectarRolContexto() ?? 1;
+    }
+    if (is_numeric($rol)) {
+        $id = (int)$rol;
+        return in_array($id, [1, 2, 3], true) ? $id : null;
+    }
+    return match (strtolower(trim((string)$rol))) {
+        'admin', 'administrador' => 1,
+        'instructor' => 2,
+        'aprendiz' => 3,
+        default => null,
+    };
 }
 
 /**
@@ -38,6 +88,30 @@ function asegurarSesionIniciada(): void
     if (empty($_SESSION['token_csrf']) || !is_string($_SESSION['token_csrf'])) {
         $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
     }
+}
+
+/**
+ * Detecta el rol contextual actual segun la variable global o la ruta del script en ejecucion
+ * @return int|null ID de rol (1, 2, 3) o null
+ */
+function detectarRolContexto(): ?int
+{
+    if (isset($GLOBALS['ROL_CONTEXTO_ACTUAL']) && is_int($GLOBALS['ROL_CONTEXTO_ACTUAL'])) {
+        return $GLOBALS['ROL_CONTEXTO_ACTUAL'];
+    }
+
+    $script = $_SERVER['SCRIPT_NAME'] ?? '';
+    if (strpos($script, '/views/admin/') !== false || strpos($script, '/admin/') !== false) {
+        return 1;
+    }
+    if (strpos($script, '/views/instructor/') !== false || strpos($script, '/instructor/') !== false) {
+        return 2;
+    }
+    if (strpos($script, '/views/aprendiz/') !== false || strpos($script, '/aprendiz/') !== false) {
+        return 3;
+    }
+
+    return null;
 }
 
 /**
@@ -68,26 +142,51 @@ function redirigirAlLogin(): void
 }
 
 /**
- * verifica que la sesion este activa y que el usuario tenga uno de los roles permitidos
- * si no hay sesion o el rol no coincide, redirige al login
+ * verifica que la sesion este activa y que el usuario tenga uno de los roles permitidos en su namespace
+ * si no hay sesion activa para ninguno de los roles solicitados, redirige al login
  * @param int ...$rolesPermitidos Roles que pueden acceder (1=Admin, 2=Instructor, 3=Aprendiz)
  */
 function exigirRol(int ...$rolesPermitidos): void
 {
     asegurarSesionIniciada();
 
-    // obtiene el rol del usuario de la sesion
-    $rolActual = $_SESSION['fk_rol'] ?? null;
+    $rolEncontrado = null;
+    foreach ($rolesPermitidos as $rolReq) {
+        $clave = rolClave($rolReq);
+        if ($clave && isset($_SESSION[$clave]) && is_array($_SESSION[$clave]) && !empty($_SESSION[$clave]['id_usuario'])) {
+            $rolEncontrado = (int)$rolReq;
+            break;
+        }
+    }
 
-    // verifica que el rol sea un numero valido
-    if (!is_int($rolActual) && !ctype_digit((string) $rolActual)) {
+    // Compatibilidad transicional: si aun existe la sesion plana previa y coincide con los permitidos
+    if ($rolEncontrado === null && isset($_SESSION['id_usuario'], $_SESSION['fk_rol'])) {
+        $rolPlano = (int)$_SESSION['fk_rol'];
+        if (in_array($rolPlano, $rolesPermitidos, true)) {
+            $rolEncontrado = $rolPlano;
+            $clavePlana = rolClave($rolPlano);
+            if ($clavePlana && !isset($_SESSION[$clavePlana])) {
+                $_SESSION[$clavePlana] = [
+                    'id_usuario'     => (int)$_SESSION['id_usuario'],
+                    'nombre_usuario' => $_SESSION['nombre_usuario'] ?? '',
+                    'nombre'         => $_SESSION['nombre'] ?? '',
+                    'apellido'       => $_SESSION['apellido'] ?? '',
+                    'nombre_completo'=> trim(($_SESSION['nombre'] ?? '') . ' ' . ($_SESSION['apellido'] ?? '')) ?: 'Usuario',
+                    'identificacion' => $_SESSION['identificacion'] ?? '',
+                    'fk_rol'         => $rolPlano,
+                    'nombre_rol'     => $_SESSION['nombre_rol'] ?? ucfirst($clavePlana),
+                ];
+            }
+        }
+    }
+
+    // Si no se encontro ningun rol autorizado en la sesion activa
+    if ($rolEncontrado === null) {
         redirigirAlLogin();
     }
 
-    // verifica que el rol este en la lista de permitidos
-    if (!in_array((int) $rolActual, $rolesPermitidos, true)) {
-        redirigirAlLogin();
-    }
+    // Establecer el contexto del rol actual para la ejecucion de la peticion
+    $GLOBALS['ROL_CONTEXTO_ACTUAL'] = $rolEncontrado;
 
     // Cabeceras anti-cache estrictas justo despues de validar la sesion
     if (!headers_sent()) {
@@ -128,30 +227,155 @@ function getFlash(): ?array
 }
 
 /**
- * obtiene el usuario actual desde la sesion
- * @return array|null array con datos del usuario o null si no hay sesion valida
+ * Registra o actualiza la sesion de un usuario dentro del namespace de su rol
+ * @param array $usuario Datos del usuario obtenidos de la base de datos
+ * @return string Clave de sesion utilizada ('admin', 'instructor', 'aprendiz')
  */
-function usuarioActual(): ?array
+function iniciarSesionRol(array $usuario): string
 {
     asegurarSesionIniciada();
 
-    // valida que exista id_usuario en sesion
-    if (!isset($_SESSION['id_usuario']) || $_SESSION['id_usuario'] === '') {
+    $fkRol = (int)($usuario['fk_rol'] ?? 0);
+    $clave = rolClave($fkRol);
+    if (!$clave) {
+        throw new InvalidArgumentException("El rol proporcionado no es valido para iniciar sesion.");
+    }
+
+    $nombre = $usuario['nombre'] ?? '';
+    $apellido = $usuario['apellido'] ?? '';
+    $nombreCompleto = trim($nombre . ' ' . $apellido);
+    if ($nombreCompleto === '') {
+        $nombreCompleto = $usuario['nombre_usuario'] ?? 'Usuario';
+    }
+
+    $_SESSION[$clave] = [
+        'id_usuario'     => (int)$usuario['id_usuario'],
+        'nombre_usuario' => $usuario['nombre_usuario'] ?? '',
+        'nombre'         => $nombre,
+        'apellido'       => $apellido,
+        'nombre_completo'=> $nombreCompleto,
+        'identificacion' => $usuario['identificacion'] ?? '',
+        'fk_rol'         => $fkRol,
+        'nombre_rol'     => $usuario['nombre_rol'] ?? ucfirst($clave),
+        'telefono'       => $usuario['telefono'] ?? null,
+    ];
+
+    // Limpiar variables planas obsoletas para no provocar colisiones
+    unset($_SESSION['id_usuario'], $_SESSION['nombre_usuario'], $_SESSION['nombre'], $_SESSION['apellido'], $_SESSION['identificacion'], $_SESSION['fk_rol'], $_SESSION['nombre_rol']);
+
+    return $clave;
+}
+
+/**
+ * Cierra la sesion de un rol especifico. Si no quedan otros roles activos, destruye la sesion por completo.
+ * @param int|string|null $rol Rol a cerrar. Si es null, intenta detectarlo del contexto o cierra todo si no se detecta.
+ * @return bool Retorna true si quedan otros roles activos, o false si la sesion fue totalmente destruida.
+ */
+function cerrarSesionRol(int|string|null $rol = null): bool
+{
+    asegurarSesionIniciada();
+
+    $clave = rolClave($rol) ?? rolClave(detectarRolContexto());
+
+    if ($clave && isset($_SESSION[$clave])) {
+        unset($_SESSION[$clave]);
+        if ($clave === 'admin') {
+            unset($_SESSION['import_preview'], $_SESSION['import_resultado']);
+        } elseif ($clave === 'instructor') {
+            unset($_SESSION['import_preview_instructor'], $_SESSION['rfid_importacion_pendiente']);
+        }
+    } else {
+        // Si no se especifico rol o no coincide, remover todos los roles
+        unset($_SESSION['admin'], $_SESSION['instructor'], $_SESSION['aprendiz']);
+    }
+
+    // Verificar si queda al menos un rol autenticado
+    $quedanRoles = (!empty($_SESSION['admin']['id_usuario']) ||
+                    !empty($_SESSION['instructor']['id_usuario']) ||
+                    !empty($_SESSION['aprendiz']['id_usuario']));
+
+    if (!$quedanRoles) {
+        $_SESSION = [];
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            $esHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? null) == 443;
+            setcookie(
+                session_name(),
+                '',
+                [
+                    'expires'  => time() - 42000,
+                    'path'     => $params['path'] ?? '/',
+                    'domain'   => $params['domain'] ?? '',
+                    'secure'   => $esHttps,
+                    'httponly' => true,
+                    'samesite' => 'Lax'
+                ]
+            );
+        }
+        session_destroy();
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * obtiene el usuario actual desde el namespace correspondiente en la sesion
+ * @param int|string|null $rol Opcional: rol especifico a consultar (1/'admin', 2/'instructor', 3/'aprendiz')
+ * @return array|null array con datos del usuario o null si no hay sesion valida
+ */
+function usuarioActual(int|string|null $rol = null): ?array
+{
+    asegurarSesionIniciada();
+
+    $clave = null;
+    if ($rol !== null) {
+        $clave = rolClave($rol);
+    } else {
+        $contexto = detectarRolContexto();
+        if ($contexto !== null) {
+            $clave = rolClave($contexto);
+        }
+    }
+
+    // Si aun no hay clave, buscar si hay una unica sesion activa en los tres roles
+    if ($clave === null) {
+        $rolesActivos = [];
+        foreach (['admin', 'instructor', 'aprendiz'] as $r) {
+            if (isset($_SESSION[$r]) && is_array($_SESSION[$r]) && !empty($_SESSION[$r]['id_usuario'])) {
+                $rolesActivos[] = $r;
+            }
+        }
+        if (count($rolesActivos) === 1) {
+            $clave = $rolesActivos[0];
+        }
+    }
+
+    // Si no hay datos para la clave encontrada, verificar compatibilidad transicional con sesion plana
+    if ($clave === null || empty($_SESSION[$clave]) || !is_array($_SESSION[$clave]) || empty($_SESSION[$clave]['id_usuario'])) {
+        if (isset($_SESSION['id_usuario'], $_SESSION['fk_rol']) && $_SESSION['id_usuario'] !== '') {
+            $nombre = $_SESSION['nombre'] ?? '';
+            $apellido = $_SESSION['apellido'] ?? '';
+            $nombreCompleto = trim($nombre . ' ' . $apellido);
+            if ($nombreCompleto === '') {
+                $nombreCompleto = $_SESSION['nombre_usuario'] ?? 'Usuario';
+            }
+            return [
+                'id_usuario'     => (int)$_SESSION['id_usuario'],
+                'nombre_usuario' => $_SESSION['nombre_usuario'] ?? '',
+                'nombre'         => $nombre,
+                'apellido'       => $apellido,
+                'nombre_completo'=> $nombreCompleto,
+                'identificacion' => $_SESSION['identificacion'] ?? '',
+                'fk_rol'         => (int)$_SESSION['fk_rol'],
+                'nombre_rol'     => $_SESSION['nombre_rol'] ?? '',
+                'telefono'       => $_SESSION['telefono'] ?? null,
+            ];
+        }
         return null;
     }
 
-    // valida fk_rol: entero o cadena numerica
-    $fkRol = $_SESSION['fk_rol'] ?? null;
-    if ($fkRol === null || (!is_int($fkRol) && !ctype_digit((string) $fkRol))) {
-        return null;
-    }
-
-    $fkRolInt = (int) $fkRol;
-
-    // acepta solamente roles 1, 2 y 3
-    if (!in_array($fkRolInt, [1, 2, 3], true)) {
-        return null;
-    }
+    $datos = $_SESSION[$clave];
 
     // Cabeceras anti-cache estrictas justo despues de validar la sesion
     if (!headers_sent()) {
@@ -160,25 +384,22 @@ function usuarioActual(): ?array
         header("Pragma: no-cache");
     }
 
-    // construye nombre_completo
-    $nombre = $_SESSION['nombre'] ?? '';
-    $apellido = $_SESSION['apellido'] ?? '';
-    $nombreCompleto = trim($nombre . ' ' . $apellido);
+    $nombre = $datos['nombre'] ?? '';
+    $apellido = $datos['apellido'] ?? '';
+    $nombreCompleto = $datos['nombre_completo'] ?? trim($nombre . ' ' . $apellido);
     if ($nombreCompleto === '') {
-        $nombreCompleto = $_SESSION['nombre_usuario'] ?? '';
-    }
-    if ($nombreCompleto === '') {
-        $nombreCompleto = 'Usuario';
+        $nombreCompleto = $datos['nombre_usuario'] ?? 'Usuario';
     }
 
-    // retorna arreglo seguro con datos del usuario
     return [
-        'id_usuario' => (int) $_SESSION['id_usuario'],
-        'nombre_usuario' => $_SESSION['nombre_usuario'] ?? '',
-        'nombre' => $_SESSION['nombre'] ?? '',
-        'apellido' => $_SESSION['apellido'] ?? '',
-        'nombre_completo' => $nombreCompleto,
-        'fk_rol' => (int) $_SESSION['fk_rol'],
-        'nombre_rol' => $_SESSION['nombre_rol'] ?? '',
+        'id_usuario'     => (int)$datos['id_usuario'],
+        'nombre_usuario' => $datos['nombre_usuario'] ?? '',
+        'nombre'         => $nombre,
+        'apellido'       => $apellido,
+        'nombre_completo'=> $nombreCompleto,
+        'identificacion' => $datos['identificacion'] ?? '',
+        'fk_rol'         => (int)($datos['fk_rol'] ?? rolId($clave)),
+        'nombre_rol'     => $datos['nombre_rol'] ?? ucfirst($clave),
+        'telefono'       => $datos['telefono'] ?? null,
     ];
 }

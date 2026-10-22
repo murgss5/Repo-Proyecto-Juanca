@@ -68,8 +68,9 @@ if ($rolActualId === 1) {
           <small class="float-right text-muted"><?= htmlspecialchars($nombreRolActual) ?></small>
         </a>
         <div class="dropdown-divider"></div>
-        <form action="<?= RUTA_BASE ?>controllers/logout.php" method="post" class="m-0 p-0" id="formLogoutNavbar">
+        <form action="<?= RUTA_BASE ?>controllers/logout.php?rol=<?= urlencode($rolClaveActual ?? '') ?>" method="post" class="m-0 p-0" id="formLogoutNavbar">
           <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf'] ?? '') ?>">
+          <input type="hidden" name="rol" value="<?= htmlspecialchars($rolClaveActual ?? '') ?>">
           <button type="submit" class="dropdown-item text-danger border-0 bg-transparent text-left w-100" style="cursor: pointer;">
             <i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesión
           </button>

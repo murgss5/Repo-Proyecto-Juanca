@@ -28,7 +28,7 @@ $miga = [
 ];
 
 $conexion = (new Conexion())->conectar();
-$idUsuario = (int)$_SESSION['id_usuario'];
+$idUsuario = (int)($_SESSION['aprendiz']['id_usuario'] ?? 0);
 
 // 1. Consulta información académica básica del aprendiz (programa y ficha)
 $consultaDatosAprendiz = $conexion->prepare(
@@ -119,9 +119,9 @@ $anioActual   = (int)date('Y');
 $nombreMesActual = ucfirst($nombresMeses[$mesActualNum] ?? date('F')) . ' ' . $anioActual;
 
 // Nombre para el saludo
-$nombreSaludo = trim($_SESSION['nombre'] ?? '');
+$nombreSaludo = trim($_SESSION['aprendiz']['nombre'] ?? '');
 if ($nombreSaludo === '') {
-    $nombreSaludo = $_SESSION['nombre_usuario'] ?? 'Aprendiz';
+    $nombreSaludo = $_SESSION['aprendiz']['nombre_usuario'] ?? 'Aprendiz';
 }
 
 ob_start();

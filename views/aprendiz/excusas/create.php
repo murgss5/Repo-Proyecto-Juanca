@@ -26,7 +26,7 @@ $consultaInasistencias = $conexion->prepare(
      AND e.id_excusa IS NULL
      ORDER BY a.fecha_asistencia DESC"
 );
-$consultaInasistencias->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaInasistencias->bindValue(':id_usuario', $_SESSION['aprendiz']['id_usuario'], PDO::PARAM_INT);
 $consultaInasistencias->execute();
 $inasistenciasDisponibles = $consultaInasistencias->fetchAll();
 

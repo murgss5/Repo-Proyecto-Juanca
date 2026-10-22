@@ -15,7 +15,8 @@ require_once __DIR__ . '/../includes/autenticacion.php';
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
-if (($_SESSION['fk_rol'] ?? null) != 3) {
+$usuarioAprendiz = usuarioActual(3);
+if (!$usuarioAprendiz) {
     header('Location: ../views/auth/login.php');
     exit;
 }
@@ -59,7 +60,7 @@ try {
     );
     $consultaValidar->execute([
         ':id_asistencia' => $idAsistencia,
-        ':id_usuario' => $_SESSION['id_usuario'],
+        ':id_usuario' => $usuarioAprendiz['id_usuario'],
     ]);
 
     if (!$consultaValidar->fetchColumn()) {

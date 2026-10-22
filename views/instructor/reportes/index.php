@@ -67,7 +67,7 @@ $conexion = (new Conexion())->conectar();
 
 // Obtiene las fichas del instructor para el filtro
 $consultaFichas = $conexion->prepare('SELECT id_ficha FROM ficha WHERE fk_usuario = :id_instructor ORDER BY id_ficha');
-$consultaFichas->execute([':id_instructor' => $_SESSION['id_usuario']]);
+$consultaFichas->execute([':id_instructor' => $_SESSION['instructor']['id_usuario']]);
 $fichasInstructor = $consultaFichas->fetchAll();
 
 // Construye la consulta SQL base
@@ -98,7 +98,7 @@ if ($fichaSeleccionada !== '') {
 $sqlReporte .= ' ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC';
 
 $consultaReporte = $conexion->prepare($sqlReporte);
-$consultaReporte->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaReporte->bindValue(':id_instructor', $_SESSION['instructor']['id_usuario'], PDO::PARAM_INT);
 if ($fechaDesde !== '') {
     $consultaReporte->bindValue(':fecha_desde', $fechaDesde, PDO::PARAM_STR);
 }

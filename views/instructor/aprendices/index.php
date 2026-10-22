@@ -30,7 +30,7 @@ $consultaFichas = $conexion->prepare(
      WHERE fk_usuario = :id_instructor
      ORDER BY id_ficha'
 );
-$consultaFichas->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaFichas->bindValue(':id_instructor', $_SESSION['instructor']['id_usuario'], PDO::PARAM_INT);
 $consultaFichas->execute();
 $fichasInstructor = $consultaFichas->fetchAll();
 
@@ -53,7 +53,7 @@ $consultaAprendices = $conexion->prepare(
      WHERE ficha.fk_usuario = :id_instructor
      ORDER BY usuario.apellido, usuario.nombre'
 );
-$consultaAprendices->bindValue(':id_instructor', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaAprendices->bindValue(':id_instructor', $_SESSION['instructor']['id_usuario'], PDO::PARAM_INT);
 $consultaAprendices->execute();
 $aprendicesInstructor = $consultaAprendices->fetchAll();
 

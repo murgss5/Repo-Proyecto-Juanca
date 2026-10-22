@@ -40,7 +40,7 @@ $sql = "SELECT a.fecha_asistencia, CONCAT(u.nombre, ' ', u.apellido) AS aprendiz
     INNER JOIN usuario u ON u.id_usuario = ap.fk_usuario
     INNER JOIN ficha f ON f.id_ficha = ap.fk_ficha
     WHERE f.fk_usuario = :id_instructor";
-$parametros = [':id_instructor' => $_SESSION['id_usuario']];
+$parametros = [':id_instructor' => $_SESSION['instructor']['id_usuario']];
 if ($fechaDesde !== '') { $sql .= ' AND a.fecha_asistencia >= :fecha_desde'; $parametros[':fecha_desde'] = $fechaDesde; }
 if ($fechaHasta !== '') { $sql .= ' AND a.fecha_asistencia <= :fecha_hasta'; $parametros[':fecha_hasta'] = $fechaHasta; }
 if ($fichaSeleccionada !== '') { $sql .= ' AND f.id_ficha = :id_ficha'; $parametros[':id_ficha'] = $fichaSeleccionada; }

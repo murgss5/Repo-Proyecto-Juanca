@@ -41,7 +41,7 @@ $consultaPerfil = $conexion->prepare(
      WHERE usuario.id_usuario = :id_usuario
      LIMIT 1'
 );
-$consultaPerfil->bindValue(':id_usuario', $_SESSION['id_usuario'], PDO::PARAM_INT);
+$consultaPerfil->bindValue(':id_usuario', $_SESSION['aprendiz']['id_usuario'], PDO::PARAM_INT);
 $consultaPerfil->execute();
 $perfilAprendiz = $consultaPerfil->fetch(PDO::FETCH_ASSOC);
 

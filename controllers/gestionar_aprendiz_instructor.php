@@ -32,7 +32,7 @@ if (!hash_equals($_SESSION['token_csrf'] ?? '', $_POST['token_csrf'] ?? '')) {
     exit;
 }
 
-$idInstructor = (int)$_SESSION['id_usuario'];
+$idInstructor = (int)($_SESSION['instructor']['id_usuario'] ?? 0);
 $accion = $_POST['accion'] ?? '';
 
 // ============================================================
