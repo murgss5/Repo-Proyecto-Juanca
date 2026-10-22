@@ -19,11 +19,11 @@ if (empty($_SESSION['token_csrf'])) {
 $conexion = (new Conexion())->conectar();
 
 // Parámetros de vista y filtros
-$vista = filter_input(INPUT_GET, 'vista', FILTER_DEFAULT) ?: 'calendario';
-$idFichaFiltro = filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: null;
-$idInstructorFiltro = filter_input(INPUT_GET, 'instructor', FILTER_VALIDATE_INT) ?: null;
+$vista = $_GET['vista'] ?? (filter_input(INPUT_GET, 'vista', FILTER_DEFAULT) ?: 'calendario');
+$idFichaFiltro = !empty($_GET['ficha']) ? (int)$_GET['ficha'] : (filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: null);
+$idInstructorFiltro = !empty($_GET['instructor']) ? (int)$_GET['instructor'] : (filter_input(INPUT_GET, 'instructor', FILTER_VALIDATE_INT) ?: null);
 
-$fechaConsulta = filter_input(INPUT_GET, 'fecha', FILTER_DEFAULT);
+$fechaConsulta = $_GET['fecha'] ?? filter_input(INPUT_GET, 'fecha', FILTER_DEFAULT);
 if (!$fechaConsulta || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaConsulta)) {
     $fechaConsulta = date('Y-m-d');
 }
@@ -36,12 +36,18 @@ $fichasLista = $conexion->query('SELECT id_ficha, nombre_programa FROM ficha ORD
 $instructoresLista = $conexion->query('SELECT id_usuario, nombre, apellido FROM usuario WHERE fk_rol = 2 ORDER BY nombre, apellido ASC')->fetchAll();
 
 // Consulta de horarios con datos completos
-$horarios = HorarioModel::obtenerHorariosAdmin(
-    $idFichaFiltro,
-    $idInstructorFiltro,
-    $estructuraSemana['fecha_inicio_semana'],
-    $estructuraSemana['fecha_fin_semana']
-);
+if ($vista === 'tabla') {
+    // Modo tabla: traer todos los horarios pertenecientes a la ficha/instructor sin restringir por semana
+    $horarios = HorarioModel::obtenerHorariosTablaAdmin($idFichaFiltro, $idInstructorFiltro);
+} else {
+    // Modo calendario visual: consultar franja semanal activa
+    $horarios = HorarioModel::obtenerHorariosAdmin(
+        $idFichaFiltro,
+        $idInstructorFiltro,
+        $estructuraSemana['fecha_inicio_semana'],
+        $estructuraSemana['fecha_fin_semana']
+    );
+}
 
 // Procesar para la cuadrícula visual
 $cuadricula = HorarioModel::procesarEventosParaCuadricula($horarios, $estructuraSemana['dias']);
@@ -135,16 +141,16 @@ ob_start();
     <!-- Vista 1: Calendario Semanal Visual (idéntico a la referencia visual) -->
     <?php include dirname(__DIR__, 2) . '/components/calendario_semanal.php'; ?>
 <?php else: ?>
-    <!-- Vista 2: Tabla de gestión -->
-    <div class="card shadow-sm">
+    <!-- Vista 2: Tabla de gestión corporativa Enterprise -->
+    <div class="card card-outline card-success shadow-sm">
         <div class="card-header bg-white">
             <h3 class="card-title font-weight-bold text-dark">
-                <i class="fas fa-table mr-1 text-sena"></i> Listado de Horarios
+                <i class="fas fa-table mr-2 text-success"></i> Listado de Horarios
             </h3>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover table-bordered tabla-datos mb-0">
+                <table class="table table-hover table-striped align-middle tabla-datos mb-0" data-empty-message="No hay horarios registrados con los filtros seleccionados.">
                     <thead class="thead-light">
                         <tr>
                             <th>Ficha</th>
@@ -158,25 +164,24 @@ ob_start();
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($horarios)): ?>
-                            <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
-                                    No hay horarios registrados con los filtros seleccionados.
-                                </td>
-                            </tr>
-                        <?php else: ?>
+                        <?php if (!empty($horarios)): ?>
                             <?php foreach ($horarios as $h): ?>
                             <tr>
-                                <td><span class="badge badge-info">#<?= htmlspecialchars($h['id_ficha']) ?></span></td>
+                                <td><span class="badge badge-info px-2 py-1">#<?= htmlspecialchars($h['id_ficha']) ?></span></td>
                                 <td>
                                     <strong><?= htmlspecialchars($h['nombre_programa']) ?></strong>
                                     <?php if (!empty($h['competencia'])): ?>
-                                        <br><small class="text-muted"><i class="fas fa-bookmark text-sena mr-1"></i><?= htmlspecialchars($h['competencia']) ?></small>
+                                        <br><small class="text-muted"><i class="fas fa-bookmark text-success mr-1"></i><?= htmlspecialchars($h['competencia']) ?></small>
                                     <?php endif; ?>
                                 </td>
-                                <td><strong><?= htmlspecialchars($h['dia_semana']) ?></strong></td>
                                 <td>
-                                    <span class="badge badge-light border">
+                                    <strong><?= htmlspecialchars($h['dia_semana']) ?></strong>
+                                    <?php if (!empty($h['fecha_inicio'])): ?>
+                                        <br><small class="text-muted"><i class="far fa-calendar-alt mr-1"></i><?= date('d/m/Y', strtotime($h['fecha_inicio'])) ?><?php if (!empty($h['fecha_fin']) && $h['fecha_fin'] !== $h['fecha_inicio']): ?> - <?= date('d/m/Y', strtotime($h['fecha_fin'])) ?><?php endif; ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="badge badge-light border px-2 py-1">
                                         <?= htmlspecialchars(substr($h['entrada'], 0, 5)) ?> &ndash; <?= htmlspecialchars(substr($h['salida'], 0, 5)) ?>
                                     </span>
                                 </td>
@@ -187,22 +192,26 @@ ob_start();
                                 </td>
                                 <td>
                                     <?php if (($h['estado'] ?? 'Activo') === 'Activo'): ?>
-                                        <span class="badge badge-success">Activo</span>
+                                        <span class="badge badge-success px-2 py-1">Activo</span>
                                     <?php else: ?>
-                                        <span class="badge badge-secondary">Inactivo</span>
+                                        <span class="badge badge-secondary px-2 py-1">Inactivo</span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
-                                    <a class="btn btn-warning btn-sm" href="<?= RUTA_BASE ?>views/admin/horarios/edit.php?id=<?= $h['id_horario'] ?>" title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form class="d-inline" method="post" action="<?= RUTA_BASE ?>controllers/gestionar_academico.php" onsubmit="return confirm('¿Eliminar este horario?');">
-                                        <input type="hidden" name="entidad" value="horario">
-                                        <input type="hidden" name="accion" value="eliminar">
-                                        <input type="hidden" name="id_horario" value="<?= $h['id_horario'] ?>">
-                                        <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
-                                        <button class="btn btn-danger btn-sm" title="Eliminar"><i class="fas fa-trash"></i></button>
-                                    </form>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a class="btn btn-warning" href="<?= RUTA_BASE ?>views/admin/horarios/edit.php?id=<?= $h['id_horario'] ?>" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form class="d-inline" method="post" action="<?= RUTA_BASE ?>controllers/gestionar_academico.php" onsubmit="return confirm('¿Eliminar este horario?');">
+                                            <input type="hidden" name="entidad" value="horario">
+                                            <input type="hidden" name="accion" value="eliminar">
+                                            <input type="hidden" name="id_horario" value="<?= $h['id_horario'] ?>">
+                                            <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
+                                            <button type="submit" class="btn btn-danger" title="Eliminar" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

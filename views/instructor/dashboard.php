@@ -5,6 +5,7 @@ require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(2);
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
+require_once dirname(__DIR__) . '/../models/HorarioModel.php';
 
 
 // --- Variables del layout ---
@@ -84,9 +85,8 @@ $diasMapAlt = [
 $diaSemanaEs = $diasMap[$diaSemana] ?? $diaSemana;
 $diaSemanaAlt = $diasMapAlt[$diaSemana] ?? $diaSemana;
 $fechaHoy = date('Y-m-d');
-$consulta = $conexion->prepare("SELECT f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida, COUNT(a.id_aprendiz) AS total_aprendices FROM ficha f INNER JOIN horario h ON h.fk_ficha = f.id_ficha LEFT JOIN aprendiz a ON a.fk_ficha = f.id_ficha WHERE COALESCE(h.instructor_id, f.fk_usuario) = :id_instructor AND (h.dia_semana = :dia_semana OR h.dia_semana = :dia_semana_alt) AND (h.estado = 'Activo' OR h.estado IS NULL) GROUP BY f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida ORDER BY h.entrada ASC");
-$consulta->execute([':id_instructor' => $idInstructor, ':dia_semana' => $diaSemanaEs, ':dia_semana_alt' => $diaSemanaAlt]);
-$fichasConHorarioHoy = $consulta->fetchAll();
+// Carga estricta por fecha exacta de hoy para evitar la duplicación de históricos
+$fichasConHorarioHoy = HorarioModel::obtenerHorariosHoyInstructor($idInstructor, $fechaHoy);
 
 // Jornadas de hoy
 $consulta = $conexion->prepare("SELECT id_sesion, ficha_id, horario_id, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado FROM sesiones_jornada WHERE instructor_id = :id_instructor AND fecha = CURDATE() AND estado IN ('abierta', 'cerrada_manual') ORDER BY hora_apertura_real DESC");
@@ -221,7 +221,7 @@ ob_start();
                 <?php if (empty($fichasConHorarioHoy)): ?>
                     <div class="text-center text-muted py-4">
                         <i class="fas fa-calendar-times fa-2x mb-2"></i>
-                        <p class="mb-0">No tienes fichas con horario para hoy (<?= $diaSemanaEs ?>, <?= $fechaHoy ?>).</p>
+                        <p class="mb-0">No tienes jornadas asignadas para el día de hoy (<?= $diaSemanaEs ?>, <?= $fechaHoy ?>).</p>
                     </div>
                 <?php else: ?>
                     <div class="row">

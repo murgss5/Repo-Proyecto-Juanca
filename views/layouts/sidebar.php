@@ -114,9 +114,6 @@ if (!function_exists('menuActivo')) {
   <div class="sidebar">
     <!-- Usuario autenticado -->
     <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-      <div class="image">
-        <img src="<?= $fotoUsuario ?>" class="img-circle elevation-2" alt="Foto de usuario">
-      </div>
       <div class="info">
         <a href="#" class="d-block"><?= htmlspecialchars($nombreUsuarioActual) ?></a>
         <span class="text-sm text-muted"><i class="fas <?= $iconoRol ?>"></i> <?= htmlspecialchars($nombreRolActual) ?></span>

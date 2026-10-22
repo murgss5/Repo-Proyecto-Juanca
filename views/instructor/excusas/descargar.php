@@ -1,6 +1,6 @@
 <?php
 /**
- * Descarga segura de una excusa para el instructor asignado a su ficha.
+ * Descarga o visualización segura de una excusa para el instructor asignado a su ficha.
  */
 
 require_once __DIR__ . '/../../../includes/autenticacion.php';
@@ -33,7 +33,7 @@ $excusa = $consultaExcusa->fetch();
 
 if (!$excusa) {
     http_response_code(404);
-    exit('Excusa no encontrada o no tiene permiso para descargarla.');
+    exit('Excusa no encontrada o no tiene permiso para verla/descargarla.');
 }
 
 $nombreArchivo = basename($excusa['archivo']);
@@ -50,9 +50,11 @@ $finfo = finfo_open(FILEINFO_MIME_TYPE);
 $tipoMime = finfo_file($finfo, $rutaArchivo);
 finfo_close($finfo);
 
+$disposicion = (isset($_GET['inline']) && (string)$_GET['inline'] === '1') ? 'inline' : 'attachment';
+
 header('Content-Type: ' . $tipoMime);
 header('Content-Length: ' . filesize($rutaArchivo));
-header('Content-Disposition: attachment; filename="' . $nombreArchivo . '"');
+header('Content-Disposition: ' . $disposicion . '; filename="' . $nombreArchivo . '"');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');

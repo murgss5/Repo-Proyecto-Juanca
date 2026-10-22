@@ -59,12 +59,18 @@ $aprendicesInstructor = $consultaAprendices->fetchAll();
 
 ob_start();
 ?>
-<div class="card">
+<style>
+.table.align-middle td, .table.align-middle th {
+  vertical-align: middle;
+}
+</style>
+
+<div class="card card-outline card-success shadow-sm">
   <div class="card-header">
-    <h3 class="card-title"><i class="fas fa-users text-sena"></i> Aprendices a cargo</h3>
+    <h3 class="card-title font-weight-bold"><i class="fas fa-users mr-2 text-sena"></i> Aprendices a cargo</h3>
     <div class="card-tools">
-      <button type="button" class="btn btn-success btn-sm" id="btnRfidGlobal">
-        <i class="fas fa-rss"></i> Registrar RFID pendientes
+      <button type="button" class="btn btn-success btn-sm shadow-sm" id="btnRfidGlobal">
+        <i class="fas fa-rss mr-1"></i> Registrar RFID pendientes
       </button>
     </div>
   </div>
@@ -90,8 +96,8 @@ ob_start();
     </div>
 
     <div class="table-responsive">
-      <table class="table table-hover table-bordered tabla-datos">
-        <thead>
+      <table class="table table-hover table-striped align-middle tabla-datos">
+        <thead class="thead-light">
           <tr>
             <th>Documento</th>
             <th>Nombre completo</th>
@@ -116,7 +122,7 @@ ob_start();
                   <code><?= htmlspecialchars((string)$aprendiz['codigo_rfid'], ENT_QUOTES, 'UTF-8') ?></code>
                 <?php endif; ?>
               </td>
-              <td><span class="badge badge-info">Ficha #<?= htmlspecialchars((string)$aprendiz['id_ficha'], ENT_QUOTES, 'UTF-8') ?></span></td>
+              <td><span class="badge badge-success px-2 py-1">Ficha #<?= htmlspecialchars((string)$aprendiz['id_ficha'], ENT_QUOTES, 'UTF-8') ?></span></td>
               <td class="text-center">
                 <div class="btn-group btn-group-sm" role="group">
                   <?php if ($esTemporal): ?>
@@ -128,7 +134,7 @@ ob_start();
                             data-ficha="<?= htmlspecialchars((string)$aprendiz['id_ficha'], ENT_QUOTES, 'UTF-8') ?>"
                             data-programa="<?= htmlspecialchars((string)$aprendiz['nombre_programa'], ENT_QUOTES, 'UTF-8') ?>"
                             data-rfid="<?= htmlspecialchars((string)$aprendiz['codigo_rfid'], ENT_QUOTES, 'UTF-8') ?>"
-                            title="Registrar RFID"><i class="fas fa-rss"></i> Registrar RFID</button>
+                            title="Registrar RFID"><i class="fas fa-rss mr-1"></i>Registrar RFID</button>
                   <?php endif; ?>
                   
                   <button type="button" class="btn btn-info" data-toggle="modal"
@@ -155,7 +161,7 @@ ob_start();
                           data-target="#modalEliminarAprendiz"
                           data-id-aprendiz="<?= htmlspecialchars((string)$aprendiz['id_aprendiz'], ENT_QUOTES, 'UTF-8') ?>"
                           data-nombre="<?= htmlspecialchars((string)$aprendiz['nombre'], ENT_QUOTES, 'UTF-8') ?>"
-                          title="Borrar"><i class="fas fa-trash"></i></button>
+                          title="Eliminar"><i class="fas fa-trash"></i></button>
                 </div>
               </td>
             </tr>
@@ -166,7 +172,7 @@ ob_start();
   </div>
 </div>
 
-// este es el modal para ver los detalles del aprendiz 
+<!-- Modal para ver los detalles del aprendiz --> 
 <div class="modal fade" id="modalVer" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">

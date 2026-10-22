@@ -3,7 +3,8 @@
  * ============================================================
  * VISTA: REGISTRAR RFID (INSTRUCTOR) - FLUJO POST-IMPORTACIÓN
  * Sistema de Control de Ingreso de Aprendices - SENA
- * ============================================================
+ * =====
+ * =======================================================
  */
 
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';

@@ -84,33 +84,31 @@ try {
     // Iniciar transaccion
     $conexion->beginTransaction();
 
-    // Validar que la ficha pertenezca al instructor
+    // Validar que el horario y la ficha pertenezcan al instructor y correspondan estrictamente a la fecha de hoy
     $q = $conexion->prepare(
-        "SELECT id_ficha FROM ficha WHERE id_ficha = :ficha_id AND fk_usuario = :instructor_id"
+        "SELECT h.id_horario, h.entrada, h.salida 
+         FROM horario h
+         INNER JOIN ficha f ON h.fk_ficha = f.id_ficha
+         WHERE h.id_horario = :horario_id 
+           AND h.fk_ficha = :ficha_id 
+           AND (h.instructor_id = :instructor_id OR (h.instructor_id IS NULL AND f.fk_usuario = :instructor_id))
+           AND (h.dia_semana = :dia_semana OR h.dia_semana = :dia_semana_alt)
+           AND (h.fecha_inicio = :fecha_hoy OR (:fecha_hoy_range BETWEEN h.fecha_inicio AND h.fecha_fin))
+           AND (h.estado = 'Activo' OR h.estado IS NULL)
+         LIMIT 1"
     );
     $q->execute([
-        ':ficha_id' => $fichaId,
-        ':instructor_id' => $instructorId
-    ]);
-    if (!$q->fetch()) {
-        throw new Exception('La ficha no pertenece al instructor');
-    }
-
-    // Validar que el horario pertenezca a la ficha y sea para el dia actual (con o sin tilde)
-    $q = $conexion->prepare(
-        "SELECT id_horario, entrada, salida FROM horario 
-         WHERE id_horario = :horario_id AND fk_ficha = :ficha_id 
-           AND (dia_semana = :dia_semana OR dia_semana = :dia_semana_alt)"
-    );
-    $q->execute([
-        ':horario_id' => $horarioId,
-        ':ficha_id' => $fichaId,
-        ':dia_semana' => $diaSemanaEs,
-        ':dia_semana_alt' => $diaSemanaAlt
+        ':horario_id'        => $horarioId,
+        ':ficha_id'          => $fichaId,
+        ':instructor_id'     => $instructorId,
+        ':dia_semana'        => $diaSemanaEs,
+        ':dia_semana_alt'    => $diaSemanaAlt,
+        ':fecha_hoy'         => $fechaHoy,
+        ':fecha_hoy_range'   => $fechaHoy
     ]);
     $horario = $q->fetch();
     if (!$horario) {
-        throw new Exception('El horario no pertenece a la ficha o no es para hoy');
+        throw new Exception('El horario no pertenece a la ficha o no está programado para la fecha de hoy');
     }
 
     // Apertura flexible sin restriccion de hora maxima:

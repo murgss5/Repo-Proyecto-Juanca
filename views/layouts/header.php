@@ -77,6 +77,28 @@ $menuActivo   = $menuActivo ?? '';
 
   <!-- Estilos del calendario semanal visual -->
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/css/calendario.css">
+  <style>
+    /* Desplazamiento natural */
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Scrollbar personalizada corporativa */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #f8f9fa; 
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #d1d5db; 
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #39A900; /* Verde SENA */
+    }
+  </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed" data-base="<?= RUTA_BASE ?>">
 <div id="pageTransitionBar" class="page-transition-bar"></div>

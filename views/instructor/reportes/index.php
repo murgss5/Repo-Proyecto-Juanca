@@ -137,50 +137,123 @@ $miga = [
 
 ob_start();
 ?>
-<div class="card no-print">
-  <div class="card-header"><h3 class="card-title"><i class="fas fa-chart-bar text-sena"></i> Reporte de asistencias</h3></div>
+<style>
+.table.align-middle td, .table.align-middle th {
+  vertical-align: middle;
+}
+</style>
+
+<div class="card card-outline card-success shadow-sm mb-4 no-print">
+  <div class="card-header">
+    <h3 class="card-title font-weight-bold"><i class="fas fa-chart-bar mr-2 text-sena"></i> Reporte de asistencias</h3>
+  </div>
   <div class="card-body">
     <form method="get" class="row">
-      <div class="col-md-3 col-sm-6 mb-2"><label class="small text-muted">Fecha inicial</label><input type="date" name="desde" class="form-control" value="<?= htmlspecialchars($fechaDesde) ?>"></div>
-      <div class="col-md-3 col-sm-6 mb-2"><label class="small text-muted">Fecha final</label><input type="date" name="hasta" class="form-control" value="<?= htmlspecialchars($fechaHasta) ?>"></div>
       <div class="col-md-3 col-sm-6 mb-2">
-        <label class="small text-muted">Ficha</label>
-        <select name="ficha" class="form-control"><option value="">Todas mis fichas</option>
+        <label class="small text-muted font-weight-bold">Fecha inicial</label>
+        <input type="date" name="desde" class="form-control form-control-sm" value="<?= htmlspecialchars($fechaDesde) ?>">
+      </div>
+      <div class="col-md-3 col-sm-6 mb-2">
+        <label class="small text-muted font-weight-bold">Fecha final</label>
+        <input type="date" name="hasta" class="form-control form-control-sm" value="<?= htmlspecialchars($fechaHasta) ?>">
+      </div>
+      <div class="col-md-3 col-sm-6 mb-2">
+        <label class="small text-muted font-weight-bold">Ficha</label>
+        <select name="ficha" class="form-control form-control-sm">
+          <option value="">Todas mis fichas</option>
           <?php foreach ($fichasInstructor as $ficha): ?>
             <option value="<?= htmlspecialchars($ficha['id_ficha']) ?>" <?= (string) $fichaSeleccionada === (string) $ficha['id_ficha'] ? 'selected' : '' ?>>Ficha #<?= htmlspecialchars($ficha['id_ficha']) ?></option>
           <?php endforeach; ?>
         </select>
       </div>
-      <div class="col-md-3 col-sm-6 mb-2 d-flex align-items-end"><button type="submit" class="btn btn-primary btn-block"><i class="fas fa-play"></i> Generar reporte</button></div>
-            <div class="col-12 mt-2">
-                <button type="submit" name="filtro_semana" value="1" class="btn btn-info btn-block"><i class="fas fa-calendar-week"></i> Esta semana</button>
-            </div>
+      <div class="col-md-3 col-sm-6 mb-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-success btn-sm shadow-sm mr-2 flex-fill">
+          <i class="fas fa-play mr-1"></i> Generar reporte
+        </button>
+        <button type="submit" name="filtro_semana" value="1" class="btn btn-info btn-sm shadow-sm text-nowrap" title="Filtrar por la semana actual">
+          <i class="fas fa-calendar-week mr-1"></i> Esta semana
+        </button>
+      </div>
     </form>
   </div>
 </div>
 
-<div class="mb-3 no-print text-right">
-  <a href="<?= RUTA_BASE ?>views/instructor/reportes/exportar_csv.php?<?= http_build_query($_GET) ?>" class="btn btn-outline-success"><i class="fas fa-file-excel"></i> Exportar CSV</a>
-  <button type="button" class="btn btn-outline-danger" onclick="window.print()"><i class="fas fa-file-pdf"></i> Imprimir / Guardar como PDF</button>
-</div>
-
-<div class="row">
-  <div class="col-lg-4 col-md-6 mb-3"><div class="info-box info-box-amarillo"><span class="info-box-icon"><i class="fas fa-clock"></i></span><div class="info-box-content"><span class="info-box-text">Total de retardos</span><span class="info-box-number"><?= $totales['retardos'] ?></span></div></div></div>
-  <div class="col-lg-4 col-md-6 mb-3"><div class="info-box info-box-rojo"><span class="info-box-icon"><i class="fas fa-user-slash"></i></span><div class="info-box-content"><span class="info-box-text">Total de inasistencias</span><span class="info-box-number"><?= $totales['inasistencias'] ?></span></div></div></div>
-  <div class="col-lg-4 col-md-6 mb-3"><div class="info-box info-box-azul"><span class="info-box-icon"><i class="fas fa-sign-out-alt"></i></span><div class="info-box-content"><span class="info-box-text">Salidas tempranas</span><span class="info-box-number"><?= $totales['salidas_tempranas'] ?></span></div></div></div>
-</div>
-
-<div class="card">
-  <div class="card-header"><h3 class="card-title"><i class="fas fa-table text-sena"></i> Resultados</h3></div>
-  <div class="card-body"><div class="table-responsive">
-    <table class="table table-hover table-bordered tabla-datos"><thead><tr><th>Fecha</th><th>Aprendiz</th><th>Ficha</th><th>Entrada</th><th>Salida</th><th>Estado</th><th>Min. retardo</th></tr></thead><tbody>
-      <?php foreach ($registrosReporte as $registro): ?>
-        <tr><td><?= htmlspecialchars($registro['fecha_asistencia']) ?></td><td><?= htmlspecialchars($registro['aprendiz']) ?></td><td><span class="badge badge-info">Ficha #<?= htmlspecialchars($registro['id_ficha']) ?></span></td><td><?= htmlspecialchars($registro['entrada'] ?? '--') ?></td><td><?= htmlspecialchars($registro['salida'] ?? '--') ?></td><td><span class="badge badge-estado <?= claseEstadoReporte($registro['estado']) ?>"><?= htmlspecialchars($registro['estado']) ?></span></td><td><?= $registro['minutos_retardo'] > 0 ? htmlspecialchars($registro['minutos_retardo']) . ' min' : '0' ?></td></tr>
-      <?php endforeach; ?>
-    </tbody></table>
+<div class="row mb-1">
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="info-box info-box-amarillo shadow-sm mb-0">
+      <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Total de retardos</span>
+        <span class="info-box-number"><?= $totales['retardos'] ?></span>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="info-box info-box-rojo shadow-sm mb-0">
+      <span class="info-box-icon"><i class="fas fa-user-slash"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Total de inasistencias</span>
+        <span class="info-box-number"><?= $totales['inasistencias'] ?></span>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="info-box info-box-azul shadow-sm mb-0">
+      <span class="info-box-icon"><i class="fas fa-sign-out-alt"></i></span>
+      <div class="info-box-content">
+        <span class="info-box-text">Salidas tempranas</span>
+        <span class="info-box-number"><?= $totales['salidas_tempranas'] ?></span>
+      </div>
+    </div>
   </div>
 </div>
+
+<div class="card card-outline card-success shadow-sm">
+  <div class="card-header">
+    <h3 class="card-title font-weight-bold"><i class="fas fa-table mr-2 text-sena"></i> Resultados</h3>
+    <div class="card-tools no-print">
+      <div class="btn-group btn-group-sm" role="group">
+        <a href="<?= RUTA_BASE ?>views/instructor/reportes/exportar_csv.php?<?= http_build_query($_GET) ?>" class="btn btn-success shadow-sm">
+          <i class="fas fa-file-excel mr-1"></i> Exportar CSV
+        </a>
+        <button type="button" class="btn btn-danger shadow-sm" onclick="window.print()">
+          <i class="fas fa-file-pdf mr-1"></i> Imprimir / PDF
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover table-striped align-middle tabla-datos">
+        <thead class="thead-light">
+          <tr>
+            <th>Fecha</th>
+            <th>Aprendiz</th>
+            <th>Ficha</th>
+            <th>Entrada</th>
+            <th>Salida</th>
+            <th>Estado</th>
+            <th>Min. retardo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($registrosReporte as $registro): ?>
+            <tr>
+              <td><?= htmlspecialchars($registro['fecha_asistencia']) ?></td>
+              <td><?= htmlspecialchars($registro['aprendiz']) ?></td>
+              <td><span class="badge badge-success px-2 py-1">Ficha #<?= htmlspecialchars((string)$registro['id_ficha']) ?></span></td>
+              <td><?= htmlspecialchars($registro['entrada'] ?? '--') ?></td>
+              <td><?= htmlspecialchars($registro['salida'] ?? '--') ?></td>
+              <td><span class="badge badge-estado <?= claseEstadoReporte($registro['estado']) ?> px-2 py-1"><?= htmlspecialchars($registro['estado']) ?></span></td>
+              <td><?= $registro['minutos_retardo'] > 0 ? htmlspecialchars((string)$registro['minutos_retardo']) . ' min' : '0' ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
+
 <style media="print">
   .no-print, .main-header, .main-sidebar, .content-header, .main-footer { display: none !important; }
   .content-wrapper { margin-left: 0 !important; }

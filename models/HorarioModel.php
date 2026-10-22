@@ -127,10 +127,9 @@ class HorarioModel
         }
 
         if ($fechaInicioSemana && $fechaFinSemana) {
-            $sql .= " AND (h.fecha_inicio IS NULL OR h.fecha_inicio <= :fin_semana)";
-            $sql .= " AND (h.fecha_fin IS NULL OR h.fecha_fin >= :inicio_semana)";
-            $params[':inicio_semana'] = $fechaInicioSemana;
-            $params[':fin_semana'] = $fechaFinSemana;
+            $sql .= " AND (h.fecha_inicio BETWEEN :fecha_inicio AND :fecha_fin)";
+            $params[':fecha_inicio'] = $fechaInicioSemana;
+            $params[':fecha_fin'] = $fechaFinSemana;
         }
 
         $sql .= " ORDER BY FIELD(h.dia_semana, 'Lunes', 'Martes', 'Miércoles', 'Miercoles', 'Jueves', 'Viernes', 'Sábado', 'Sabado', 'Domingo'), h.entrada ASC";
@@ -184,10 +183,9 @@ class HorarioModel
         $params = [':id_ficha' => $idFicha];
 
         if ($fechaInicioSemana && $fechaFinSemana) {
-            $sql .= " AND (h.fecha_inicio IS NULL OR h.fecha_inicio <= :fin_semana)";
-            $sql .= " AND (h.fecha_fin IS NULL OR h.fecha_fin >= :inicio_semana)";
-            $params[':inicio_semana'] = $fechaInicioSemana;
-            $params[':fin_semana'] = $fechaFinSemana;
+            $sql .= " AND (h.fecha_inicio BETWEEN :fecha_inicio AND :fecha_fin)";
+            $params[':fecha_inicio'] = $fechaInicioSemana;
+            $params[':fecha_fin'] = $fechaFinSemana;
         }
 
         $sql .= " ORDER BY FIELD(h.dia_semana, 'Lunes', 'Martes', 'Miércoles', 'Miercoles', 'Jueves', 'Viernes', 'Sábado', 'Sabado', 'Domingo'), h.entrada ASC";
@@ -246,10 +244,9 @@ class HorarioModel
         }
 
         if ($fechaInicioSemana && $fechaFinSemana) {
-            $sql .= " AND (h.fecha_inicio IS NULL OR h.fecha_inicio <= :fin_semana)";
-            $sql .= " AND (h.fecha_fin IS NULL OR h.fecha_fin >= :inicio_semana)";
-            $params[':inicio_semana'] = $fechaInicioSemana;
-            $params[':fin_semana'] = $fechaFinSemana;
+            $sql .= " AND (h.fecha_inicio BETWEEN :fecha_inicio AND :fecha_fin)";
+            $params[':fecha_inicio'] = $fechaInicioSemana;
+            $params[':fecha_fin'] = $fechaFinSemana;
         }
 
         $sql .= " ORDER BY FIELD(h.dia_semana, 'Lunes', 'Martes', 'Miércoles', 'Miercoles', 'Jueves', 'Viernes', 'Sábado', 'Sabado', 'Domingo'), h.entrada ASC";
@@ -265,6 +262,174 @@ class HorarioModel
     /**
      * Obtiene un registro de horario por su ID con todos sus datos asociados
      */
+    /**
+     * Consulta todos los horarios para la vista de tabla administrativa.
+     * Si se selecciona una ficha, no restringe por semana para permitir ver todo
+     * el histórico y programación importada, ordenado cronológicamente.
+     */
+    public static function obtenerHorariosTablaAdmin(
+        ?int $idFicha = null,
+        ?int $idInstructor = null
+    ): array {
+        $conexion = (new Conexion())->conectar();
+
+        $sql = "SELECT h.id_horario, h.dia_semana, h.entrada, h.salida,
+                       h.competencia, h.tipo_bloque,
+                       COALESCE(NULLIF(h.ambiente, ''), f.ambiente_principal, 'Por definir') AS ambiente,
+                       h.estado, h.observaciones, h.fecha_inicio, h.fecha_fin,
+                       f.id_ficha, f.nombre_programa, f.jornada,
+                       COALESCE(
+                           CONCAT(u_esp.nombre, ' ', u_esp.apellido),
+                           CONCAT(u_lider.nombre, ' ', u_lider.apellido),
+                           'Instructor no asignado'
+                       ) AS instructor_nombre,
+                       COALESCE(u_esp.id_usuario, u_lider.id_usuario) AS instructor_id
+                FROM horario h
+                INNER JOIN ficha f ON h.fk_ficha = f.id_ficha
+                LEFT JOIN usuario u_esp ON h.instructor_id = u_esp.id_usuario
+                LEFT JOIN usuario u_lider ON f.fk_usuario = u_lider.id_usuario
+                WHERE (h.estado = 'Activo' OR h.estado IS NULL)";
+
+        $params = [];
+
+        if ($idFicha !== null && $idFicha > 0) {
+            $sql .= " AND f.id_ficha = :id_ficha";
+            $params[':id_ficha'] = $idFicha;
+        }
+
+        if ($idInstructor !== null && $idInstructor > 0) {
+            $sql .= " AND (h.instructor_id = :id_instructor OR (h.instructor_id IS NULL AND f.fk_usuario = :id_instructor))";
+            $params[':id_instructor'] = $idInstructor;
+        }
+
+        $sql .= " ORDER BY COALESCE(h.fecha_inicio, '9999-12-31') ASC,
+                           FIELD(h.dia_semana, 'Lunes', 'Martes', 'Miércoles', 'Miercoles', 'Jueves', 'Viernes', 'Sábado', 'Sabado', 'Domingo'),
+                           h.entrada ASC";
+
+        $stmt = $conexion->prepare($sql);
+        foreach ($params as $clave => $valor) {
+            $stmt->bindValue($clave, $valor);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtiene los horarios/jornadas asignados a un instructor estrictamente para el día de hoy.
+     * Filtra por la fecha exacta de hoy para evitar la duplicación de tarjetas por históricos importados.
+     */
+    public static function obtenerHorariosHoyInstructor(int $idInstructor, ?string $fechaHoy = null): array
+    {
+        $conexion = (new Conexion())->conectar();
+        if (!$fechaHoy) {
+            $fechaHoy = date('Y-m-d');
+        }
+
+        $diaSemana = date('l', strtotime($fechaHoy));
+        $diasMap = [
+            'Monday'    => 'Lunes',
+            'Tuesday'   => 'Martes',
+            'Wednesday' => 'Miércoles',
+            'Thursday'  => 'Jueves',
+            'Friday'    => 'Viernes',
+            'Saturday'  => 'Sábado',
+            'Sunday'    => 'Domingo'
+        ];
+        $diasMapAlt = [
+            'Monday'    => 'Lunes',
+            'Tuesday'   => 'Martes',
+            'Wednesday' => 'Miercoles',
+            'Thursday'  => 'Jueves',
+            'Friday'    => 'Viernes',
+            'Saturday'  => 'Sabado',
+            'Sunday'    => 'Domingo'
+        ];
+        $diaSemanaEs = $diasMap[$diaSemana] ?? $diaSemana;
+        $diaSemanaAlt = $diasMapAlt[$diaSemana] ?? $diaSemana;
+
+        $sql = "SELECT f.id_ficha, f.nombre_programa, f.jornada, 
+                       h.id_horario, h.entrada, h.salida, h.fecha_inicio, h.fecha_fin,
+                       COALESCE(NULLIF(h.ambiente, ''), f.ambiente_principal, 'Por definir') AS ambiente,
+                       COUNT(a.id_aprendiz) AS total_aprendices 
+                FROM ficha f 
+                INNER JOIN horario h ON h.fk_ficha = f.id_ficha 
+                LEFT JOIN aprendiz a ON a.fk_ficha = f.id_ficha 
+                WHERE (h.instructor_id = :id_instructor OR (h.instructor_id IS NULL AND f.fk_usuario = :id_instructor))
+                  AND (h.dia_semana = :dia_semana OR h.dia_semana = :dia_semana_alt) 
+                  AND (h.estado = 'Activo' OR h.estado IS NULL)
+                  AND (h.fecha_inicio = :fecha_hoy OR (:fecha_hoy_range BETWEEN h.fecha_inicio AND h.fecha_fin))
+                GROUP BY f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida, h.fecha_inicio, h.fecha_fin, h.ambiente
+                ORDER BY h.entrada ASC";
+
+        $stmt = $conexion->prepare($sql);
+        $stmt->execute([
+            ':id_instructor'   => $idInstructor,
+            ':dia_semana'      => $diaSemanaEs,
+            ':dia_semana_alt'  => $diaSemanaAlt,
+            ':fecha_hoy'       => $fechaHoy,
+            ':fecha_hoy_range' => $fechaHoy
+        ]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Obtiene los horarios/jornadas de hoy para todas las fichas (vista Administrador / Métricas rápidas).
+     * Filtra estrictamente por la fecha exacta de hoy.
+     */
+    public static function obtenerHorariosHoyAdmin(?string $fechaHoy = null): array
+    {
+        $conexion = (new Conexion())->conectar();
+        if (!$fechaHoy) {
+            $fechaHoy = date('Y-m-d');
+        }
+
+        $diaSemana = date('l', strtotime($fechaHoy));
+        $diasMap = [
+            'Monday'    => 'Lunes',
+            'Tuesday'   => 'Martes',
+            'Wednesday' => 'Miércoles',
+            'Thursday'  => 'Jueves',
+            'Friday'    => 'Viernes',
+            'Saturday'  => 'Sábado',
+            'Sunday'    => 'Domingo'
+        ];
+        $diasMapAlt = [
+            'Monday'    => 'Lunes',
+            'Tuesday'   => 'Martes',
+            'Wednesday' => 'Miercoles',
+            'Thursday'  => 'Jueves',
+            'Friday'    => 'Viernes',
+            'Saturday'  => 'Sabado',
+            'Sunday'    => 'Domingo'
+        ];
+        $diaSemanaEs = $diasMap[$diaSemana] ?? $diaSemana;
+        $diaSemanaAlt = $diasMapAlt[$diaSemana] ?? $diaSemana;
+
+        $sql = "SELECT f.id_ficha, f.nombre_programa, f.jornada, 
+                       h.id_horario, h.entrada, h.salida, h.fecha_inicio, h.fecha_fin,
+                       COALESCE(NULLIF(h.ambiente, ''), f.ambiente_principal, 'Por definir') AS ambiente,
+                       COALESCE(CONCAT(u.nombre, ' ', u.apellido), 'Por asignar') AS instructor_nombre,
+                       COUNT(a.id_aprendiz) AS total_aprendices 
+                FROM ficha f 
+                INNER JOIN horario h ON h.fk_ficha = f.id_ficha 
+                LEFT JOIN usuario u ON COALESCE(h.instructor_id, f.fk_usuario) = u.id_usuario
+                LEFT JOIN aprendiz a ON a.fk_ficha = f.id_ficha 
+                WHERE (h.dia_semana = :dia_semana OR h.dia_semana = :dia_semana_alt) 
+                  AND (h.estado = 'Activo' OR h.estado IS NULL)
+                  AND (h.fecha_inicio = :fecha_hoy OR (:fecha_hoy_range BETWEEN h.fecha_inicio AND h.fecha_fin))
+                GROUP BY f.id_ficha, f.nombre_programa, f.jornada, h.id_horario, h.entrada, h.salida, h.fecha_inicio, h.fecha_fin, h.ambiente, u.nombre, u.apellido
+                ORDER BY h.entrada ASC";
+
+        $stmt = $conexion->prepare($sql);
+        $stmt->execute([
+            ':dia_semana'      => $diaSemanaEs,
+            ':dia_semana_alt'  => $diaSemanaAlt,
+            ':fecha_hoy'       => $fechaHoy,
+            ':fecha_hoy_range' => $fechaHoy
+        ]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public static function obtenerHorarioPorId(int $idHorario): ?array
     {
         $conexion = (new Conexion())->conectar();
