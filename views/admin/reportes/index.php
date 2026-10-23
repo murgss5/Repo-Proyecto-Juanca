@@ -179,7 +179,7 @@ $detalleAsistencias = $consultaDetalle->fetchAll();
 function badgeEstado($estado) {
     switch ($estado) {
         case 'PUNTUAL': return 'badge-success';
-        case 'RETARDO': return 'badge-warning';
+        case 'RETARDO': return 'badge-warning text-white';
         case 'INASISTENCIA': return 'badge-danger';
         default: return 'badge-secondary';
     }
@@ -204,177 +204,199 @@ $miga = [
 
 ob_start();
 ?>
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-chart-bar text-sena"></i> Generador de reportes de asistencia</h3>
+
+<!-- 1. Sección de Filtros (Generador Enterprise) -->
+<div class="card card-outline card-success shadow-sm mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold text-dark m-0">
+            <i class="fas fa-filter text-success mr-2"></i> Generador de reportes de asistencia
+        </h3>
+        <span class="badge badge-light border text-muted px-2 py-1 small">
+            <i class="far fa-calendar-alt mr-1"></i> Período: <?= htmlspecialchars($filtroFechaIni) ?> al <?= htmlspecialchars($filtroFechaFin) ?>
+        </span>
     </div>
     <div class="card-body">
-        <form method="get" class="row">
-            <div class="col-md-3 col-sm-6 mb-2">
-                <label class="small text-muted">Fecha inicial</label>
-                <input type="date" name="fecha_inicio" class="form-control" value="<?= htmlspecialchars($filtroFechaIni) ?>">
+        <form method="get" id="formFiltroReportes">
+            <!-- Fila 1: Fechas, Ficha y Aprendiz -->
+            <div class="row">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <label class="small font-weight-bold text-muted mb-1">
+                        <i class="far fa-calendar mr-1 text-success"></i> Fecha inicial
+                    </label>
+                    <input type="date" name="fecha_inicio" class="form-control form-control-sm" value="<?= htmlspecialchars($filtroFechaIni) ?>">
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <label class="small font-weight-bold text-muted mb-1">
+                        <i class="far fa-calendar mr-1 text-success"></i> Fecha final
+                    </label>
+                    <input type="date" name="fecha_fin" class="form-control form-control-sm" value="<?= htmlspecialchars($filtroFechaFin) ?>">
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <label class="small font-weight-bold text-muted mb-1">
+                        <i class="fas fa-layer-group mr-1 text-success"></i> Ficha de formación
+                    </label>
+                    <select name="ficha" class="form-control form-control-sm custom-select custom-select-sm">
+                        <option value="">Todas las fichas</option>
+                        <?php foreach ($fichas as $ficha): ?>
+                            <option value="<?= htmlspecialchars($ficha['id_ficha']) ?>" <?= $filtroFicha == $ficha['id_ficha'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($ficha['id_ficha'] . ' - ' . $ficha['nombre_programa']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <label class="small font-weight-bold text-muted mb-1">
+                        <i class="fas fa-user mr-1 text-success"></i> Aprendiz
+                    </label>
+                    <input type="text" name="aprendiz" class="form-control form-control-sm" placeholder="Nombre o identificación..." value="<?= htmlspecialchars($filtroAprendiz ?? '') ?>">
+                </div>
             </div>
-            <div class="col-md-3 col-sm-6 mb-2">
-                <label class="small text-muted">Fecha final</label>
-                <input type="date" name="fecha_fin" class="form-control" value="<?= htmlspecialchars($filtroFechaFin) ?>">
-            </div>
-            <div class="col-md-3 col-sm-6 mb-2">
-                <label class="small text-muted">Ficha</label>
-                <select name="ficha" class="form-control">
-                    <option value="">Todas las fichas</option>
-                    <?php foreach ($fichas as $ficha): ?>
-                        <option value="<?= htmlspecialchars($ficha['id_ficha']) ?>" <?= $filtroFicha == $ficha['id_ficha'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($ficha['id_ficha'] . ' - ' . $ficha['nombre_programa']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-2">
-                <label class="small text-muted">Aprendiz</label>
-                <input type="text" name="aprendiz" class="form-control" placeholder="Nombre o identificación..." value="<?= htmlspecialchars($filtroAprendiz ?? '') ?>">
-            </div>
-            <div class="col-md-3 col-sm-6 mb-2">
-                <label class="small text-muted">Estado entrada</label>
-                <select name="estado_entrada" class="form-control">
-                    <option value="">Todos</option>
-                    <option value="PUNTUAL" <?= $filtroEntrada === 'PUNTUAL' ? 'selected' : '' ?>>Puntual</option>
-                    <option value="RETARDO" <?= $filtroEntrada === 'RETARDO' ? 'selected' : '' ?>>Retardo</option>
-                    <option value="INASISTENCIA" <?= $filtroEntrada === 'INASISTENCIA' ? 'selected' : '' ?>>Inasistencia</option>
-                </select>
-            </div>
-            <div class="col-md-3 col-sm-6 mb-2">
-                <label class="small text-muted">Estado salida</label>
-                <select name="estado_salida" class="form-control">
-                    <option value="">Todos</option>
-                    <option value="SALIDA_NORMAL" <?= $filtroSalida === 'SALIDA_NORMAL' ? 'selected' : '' ?>>Normal</option>
-                    <option value="SALIDA_ANTICIPADA" <?= $filtroSalida === 'SALIDA_ANTICIPADA' ? 'selected' : '' ?>>Anticipada</option>
-                    <option value="SIN_SALIDA" <?= $filtroSalida === 'SIN_SALIDA' ? 'selected' : '' ?>>Sin salida</option>
-                </select>
-            </div>
-            <div class="col-12 mt-2">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-play"></i> Generar reporte</button>
-                <a href="<?= RUTA_BASE ?>views/admin/reportes/exportar_csv.php?<?= http_build_query($_GET) ?>" class="btn btn-outline-success"><i class="fas fa-file-excel"></i> Exportar CSV</a>
-                <button type="button" class="btn btn-outline-danger" onclick="window.print()"><i class="fas fa-file-pdf"></i> Imprimir / Guardar como PDF</button>
-                <a href="<?= RUTA_BASE ?>views/admin/reportes/index.php" class="btn btn-secondary"><i class="fas fa-times"></i> Limpiar</a>
-            </div>
-            <div class="col-12 mt-2">
-                <button type="submit" name="filtro_semana" value="1" class="btn btn-info"><i class="fas fa-calendar-week"></i> Esta semana</button>
+
+            <!-- Fila 2: Estados y Grupo de acciones -->
+            <div class="row align-items-end">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <label class="small font-weight-bold text-muted mb-1">
+                        <i class="fas fa-sign-in-alt mr-1 text-success"></i> Estado entrada
+                    </label>
+                    <select name="estado_entrada" class="form-control form-control-sm custom-select custom-select-sm">
+                        <option value="">Todos los estados</option>
+                        <option value="PUNTUAL" <?= $filtroEntrada === 'PUNTUAL' ? 'selected' : '' ?>>Puntual</option>
+                        <option value="RETARDO" <?= $filtroEntrada === 'RETARDO' ? 'selected' : '' ?>>Retardo</option>
+                        <option value="INASISTENCIA" <?= $filtroEntrada === 'INASISTENCIA' ? 'selected' : '' ?>>Inasistencia</option>
+                    </select>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <label class="small font-weight-bold text-muted mb-1">
+                        <i class="fas fa-sign-out-alt mr-1 text-success"></i> Estado salida
+                    </label>
+                    <select name="estado_salida" class="form-control form-control-sm custom-select custom-select-sm">
+                        <option value="">Todos los estados</option>
+                        <option value="SALIDA_NORMAL" <?= $filtroSalida === 'SALIDA_NORMAL' ? 'selected' : '' ?>>Normal</option>
+                        <option value="SALIDA_ANTICIPADA" <?= $filtroSalida === 'SALIDA_ANTICIPADA' ? 'selected' : '' ?>>Anticipada</option>
+                        <option value="SIN_SALIDA" <?= $filtroSalida === 'SIN_SALIDA' ? 'selected' : '' ?>>Sin salida</option>
+                    </select>
+                </div>
+                <div class="col-md-6 col-12 mb-3">
+                    <div class="d-flex flex-wrap justify-content-md-end align-items-center" style="gap: 8px;">
+                        <button type="submit" class="btn btn-sm btn-primary font-weight-bold shadow-sm">
+                            <i class="fas fa-play mr-1"></i> Generar reporte
+                        </button>
+                        <button type="submit" name="filtro_semana" value="1" class="btn btn-sm btn-outline-info font-weight-bold shadow-sm" title="Filtrar automáticamente esta semana">
+                            <i class="fas fa-calendar-week mr-1"></i> Esta semana
+                        </button>
+                        <a href="<?= RUTA_BASE ?>views/admin/reportes/exportar_csv.php?<?= http_build_query($_GET) ?>" class="btn btn-sm btn-outline-success font-weight-bold shadow-sm" title="Exportar a archivo CSV">
+                            <i class="fas fa-file-excel mr-1"></i> Exportar CSV
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold shadow-sm" onclick="window.print()" title="Imprimir reporte o guardar como PDF">
+                            <i class="fas fa-file-pdf mr-1"></i> Guardar PDF
+                        </button>
+                        <a href="<?= RUTA_BASE ?>views/admin/reportes/index.php" class="btn btn-sm btn-outline-secondary shadow-sm" title="Restablecer filtros">
+                            <i class="fas fa-times mr-1"></i> Limpiar
+                        </a>
+                    </div>
+                </div>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Tarjetas de totales -->
-<div class="row mb-3">
-    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="info-box info-box-sena">
-            <span class="info-box-icon"><i class="fas fa-users"></i></span>
+<!-- 2. Sección de KPIs: Métricas consolidadas (AdminLTE info-box Enterprise) -->
+<div class="row justify-content-center mb-4">
+    <!-- Aprendices -->
+    <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
+        <div class="info-box shadow-sm h-100 mb-0">
+            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-users"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Aprendices</span>
-                <span class="info-box-number"><?= $totales['total_aprendices'] ?></span>
+                <span class="info-box-text text-truncate font-weight-bold text-muted small" title="Aprendices evaluados">Aprendices</span>
+                <span class="info-box-number text-dark font-weight-bold" style="font-size: 1.35rem;"><?= number_format($totales['total_aprendices']) ?></span>
             </div>
         </div>
     </div>
-    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="info-box info-box-amarillo">
-            <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+
+    <!-- Retardos -->
+    <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
+        <div class="info-box shadow-sm h-100 mb-0">
+            <span class="info-box-icon bg-warning text-white elevation-1"><i class="fas fa-clock"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Retardos</span>
-                <span class="info-box-number"><?= $totales['total_retardos'] ?></span>
+                <span class="info-box-text text-truncate font-weight-bold text-muted small" title="Retardos registrados">Retardos</span>
+                <span class="info-box-number text-dark font-weight-bold" style="font-size: 1.35rem;"><?= number_format($totales['total_retardos']) ?></span>
             </div>
         </div>
     </div>
-    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="info-box info-box-amarillo">
-            <span class="info-box-icon"><i class="fas fa-stopwatch"></i></span>
+
+    <!-- Inasistencias injustificadas -->
+    <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
+        <div class="info-box shadow-sm h-100 mb-0">
+            <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-user-times"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Min. retardo</span>
-                <span class="info-box-number"><?= $totales['total_min_retardo'] ?></span>
+                <span class="info-box-text text-truncate font-weight-bold text-muted small" title="Inasistencias injustificadas">Inasist. injustificadas</span>
+                <span class="info-box-number text-dark font-weight-bold" style="font-size: 1.35rem;"><?= number_format($totales['total_inasistencias_no_justificadas']) ?></span>
             </div>
         </div>
     </div>
-    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="info-box info-box-rojo">
-            <span class="info-box-icon"><i class="fas fa-user-slash"></i></span>
+
+    <!-- Inasistencias justificadas -->
+    <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
+        <div class="info-box shadow-sm h-100 mb-0">
+            <span class="info-box-icon bg-info elevation-1"><i class="fas fa-check-circle"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Inasistencias (no justif.)</span>
-                <span class="info-box-number"><?= $totales['total_inasistencias_no_justificadas'] ?></span>
+                <span class="info-box-text text-truncate font-weight-bold text-muted small" title="Inasistencias justificadas con excusa aprobada">Inasist. justificadas</span>
+                <span class="info-box-number text-dark font-weight-bold" style="font-size: 1.35rem;"><?= number_format($totales['total_inasistencias_justificadas']) ?></span>
             </div>
         </div>
     </div>
-    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="info-box info-box-azul">
-            <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
+
+    <!-- Excusas pendientes -->
+    <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
+        <div class="info-box shadow-sm h-100 mb-0">
+            <span class="info-box-icon bg-secondary elevation-1"><i class="fas fa-hourglass-half"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">Inasistencias justificadas</span>
-                <span class="info-box-number"><?= $totales['total_inasistencias_justificadas'] ?></span>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="info-box info-box-azul">
-            <span class="info-box-icon"><i class="fas fa-sign-out-alt"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Salidas anticipadas</span>
-                <span class="info-box-number"><?= $totales['total_salidas_anticipadas'] ?></span>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
-        <div class="info-box info-box-gris">
-            <span class="info-box-icon"><i class="fas fa-hourglass-half"></i></span>
-            <div class="info-box-content">
-                <span class="info-box-text">Excusas pendientes</span>
-                <span class="info-box-number"><?= $totales['total_excusas_pendientes'] ?></span>
+                <span class="info-box-text text-truncate font-weight-bold text-muted small" title="Excusas pendientes por revisar">Excusas pendientes</span>
+                <span class="info-box-number text-dark font-weight-bold" style="font-size: 1.35rem;"><?= number_format($totales['total_excusas_pendientes']) ?></span>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Resumen por aprendiz -->
-<div class="card mb-3">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-table text-sena"></i> Resumen por aprendiz (<?= count($resumenAprendices) ?>)</h3>
+<!-- 3. Sección de Tablas: Resumen consolidado por aprendiz -->
+<div class="card card-outline card-primary shadow-sm mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold text-dark m-0">
+            <i class="fas fa-user-check text-primary mr-2"></i> Resumen por aprendiz
+        </h3>
+        <span class="badge badge-primary px-3 py-1 font-weight-normal">
+            <?= count($resumenAprendices) ?> aprendices
+        </span>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         <div class="table-responsive">
-            <table id="tablaReportes" class="table table-hover table-bordered tabla-datos">
-                <thead>
+            <table id="tablaReportes" class="table table-hover table-striped align-middle table-sm tabla-datos mb-0">
+                <thead class="bg-light">
                     <tr>
-                        <th>Aprendiz</th>
-                        <th>Identificación</th>
-                        <th>Programa</th>
-                        <th>Jornada</th>
-                        <th>Ficha</th>
-                        <th class="text-center">Puntuales</th>
-                        <th class="text-center">Retardos</th>
-                        <th class="text-center">Min. retardo</th>
-                        <th class="text-center">Inasistencias</th>
-                        <th class="text-center">Inasist. justif.</th>
-                        <th class="text-center">Salidas anticip.</th>
-                        <th class="text-center">Min. salida ant.</th>
-                        <th class="text-center">Exc. aprobadas</th>
-                        <th class="text-center">Exc. pendientes</th>
-                        <th class="text-center">Exc. rechazadas</th>
+                        <th class="border-top-0">Aprendiz</th>
+                        <th class="border-top-0">Identificación</th>
+                        <th class="border-top-0">Programa</th>
+                        <th class="border-top-0">Jornada</th>
+                        <th class="border-top-0">Ficha</th>
+                        <th class="text-center border-top-0">Puntuales</th>
+                        <th class="text-center border-top-0">Retardos</th>
+                        <th class="text-center border-top-0">Exc. aprobadas</th>
+                        <th class="text-center border-top-0">Exc. pendientes</th>
+                        <th class="text-center border-top-0">Exc. rechazadas</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($resumenAprendices as $row): ?>
                         <tr>
-                            <td><?= htmlspecialchars($row['aprendiz']) ?></td>
+                            <td class="font-weight-bold"><?= htmlspecialchars($row['aprendiz']) ?></td>
                             <td><?= htmlspecialchars($row['identificacion']) ?></td>
-                            <td><?= htmlspecialchars($row['nombre_programa']) ?></td>
+                            <td><span class="text-truncate d-inline-block" style="max-width: 200px;" title="<?= htmlspecialchars($row['nombre_programa']) ?>"><?= htmlspecialchars($row['nombre_programa']) ?></span></td>
                             <td><?= htmlspecialchars($row['jornada']) ?></td>
                             <td><span class="badge badge-info">#<?= htmlspecialchars($row['id_ficha']) ?></span></td>
                             <td class="text-center"><?= (int)$row['puntuales'] ?></td>
-                            <td class="text-center"><span class="badge badge-warning"><?= (int)$row['retardos'] ?></span></td>
-                            <td class="text-center"><?= (int)$row['total_min_retardo'] ?> min</td>
-                            <td class="text-center"><span class="badge badge-danger"><?= (int)$row['inasistencias'] ?></span></td>
-                            <td class="text-center"><span class="badge badge-info"><?= (int)$row['inasistencias_justificadas'] ?></span></td>
-                            <td class="text-center"><span class="badge badge-info"><?= (int)$row['salidas_anticipadas'] ?></span></td>
-                            <td class="text-center"><?= (int)$row['total_min_salida_anticipada'] ?> min</td>
+                            <td class="text-center"><span class="badge badge-warning text-white"><?= (int)$row['retardos'] ?></span></td>
                             <td class="text-center"><span class="badge badge-success"><?= (int)$row['excusas_aprobadas'] ?></span></td>
-                            <td class="text-center"><span class="badge badge-warning"><?= (int)$row['excusas_pendientes'] ?></span></td>
+                            <td class="text-center"><span class="badge badge-warning text-white"><?= (int)$row['excusas_pendientes'] ?></span></td>
                             <td class="text-center"><span class="badge badge-danger"><?= (int)$row['excusas_rechazadas'] ?></span></td>
                         </tr>
                     <?php endforeach; ?>
@@ -384,79 +406,6 @@ ob_start();
         <?php if (empty($resumenAprendices)): ?>
             <p class="text-center text-muted py-4"><i class="fas fa-chart-bar fa-2x text-muted mb-2"></i><br>No hay datos con los filtros actuales.</p>
         <?php endif; ?>
-    </div>
-</div>
-
-<!-- Detalle de asistencias -->
-<div class="card">
-    <div class="card-header">
-        <h3 class="card-title"><i class="fas fa-list text-sena"></i> Detalle de asistencias (<?= count($detalleAsistencias) ?> registros)</h3>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table id="tablaDetalleAsistencias" class="table table-hover table-bordered tabla-datos">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Aprendiz</th>
-                        <th>Identificación</th>
-                        <th>Ficha</th>
-                        <th>Hora entrada</th>
-                        <th>Hora salida</th>
-                        <th>Estado entrada</th>
-                        <th>Estado salida</th>
-                        <th class="text-center">Min. retardo</th>
-                        <th class="text-center">Min. salida ant.</th>
-                        <th>Estado excusa</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($detalleAsistencias as $row): ?>
-                        <tr>
-                            <td><?= htmlspecialchars(date('d/m/Y', strtotime($row['fecha_asistencia']))) ?></td>
-                            <td><?= htmlspecialchars($row['aprendiz']) ?></td>
-                            <td><?= htmlspecialchars($row['identificacion']) ?></td>
-                            <td><span class="badge badge-info">#<?= htmlspecialchars($row['id_ficha']) ?></span></td>
-                            <td><?= $row['entrada'] ? htmlspecialchars(date('H:i', strtotime($row['entrada']))) : '<span class="text-muted">--</span>' ?></td>
-                            <td><?= $row['salida'] ? htmlspecialchars(date('H:i', strtotime($row['salida']))) : '<span class="text-muted">--</span>' ?></td>
-                            <td><span class="badge badge-estado <?= badgeEstado($row['estado_entrada']) ?>"><?= htmlspecialchars($row['estado_entrada']) ?></span></td>
-                            <td><span class="badge badge-estado <?= badgeEstadoSalida($row['estado_salida']) ?>"><?= htmlspecialchars($row['estado_salida']) ?></span></td>
-                            <td class="text-center">
-                                <?php if ((int)$row['minutos_retardo'] > 0): ?>
-                                    <span class="badge badge-warning"><?= (int)$row['minutos_retardo'] ?> min</span>
-                                <?php else: ?>
-                                    <span class="text-muted">0</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-center">
-                                <?php if ((int)$row['minutos_salida_anticipada'] > 0): ?>
-                                    <span class="badge badge-info"><?= (int)$row['minutos_salida_anticipada'] ?> min</span>
-                                <?php else: ?>
-                                    <span class="text-muted">0</span>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <?php if ($row['estado_excusa']): ?>
-                                    <?php
-                                        $claseExcusa = 'badge-secondary';
-                                        if ($row['estado_excusa'] === 'PENDIENTE') $claseExcusa = 'badge-warning';
-                                        if ($row['estado_excusa'] === 'APROBADA') $claseExcusa = 'badge-success';
-                                        if ($row['estado_excusa'] === 'RECHAZADA') $claseExcusa = 'badge-danger';
-                                    ?>
-                                    <span class="badge badge-estado <?= $claseExcusa ?>"><?= htmlspecialchars(ucfirst(strtolower($row['estado_excusa']))) ?></span>
-                                <?php else: ?>
-                                    <span class="text-muted">&mdash;</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-        <?php if (empty($detalleAsistencias)): ?>
-            <p class="text-center text-muted py-4"><i class="fas fa-calendar-alt fa-2x text-muted mb-2"></i><br>No hay registros de asistencia con los filtros actuales.</p>
-        <?php endif; ?>
-        <p class="text-muted small mb-0"><i class="fas fa-info-circle"></i> Los datos provienen de la base de datos. Las inasistencias con excusa APROBADA no se cuentan como inasistencias en el total principal (columna "Inasist. justif.").</p>
     </div>
 </div>
 
