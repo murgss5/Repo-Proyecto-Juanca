@@ -288,7 +288,7 @@ class HorarioModel
                 INNER JOIN ficha f ON h.fk_ficha = f.id_ficha
                 LEFT JOIN usuario u_esp ON h.instructor_id = u_esp.id_usuario
                 LEFT JOIN usuario u_lider ON f.fk_usuario = u_lider.id_usuario
-                WHERE (h.estado = 'Activo' OR h.estado IS NULL)";
+                WHERE 1=1";
 
         $params = [];
 

@@ -199,12 +199,13 @@ ob_start();
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
-                                        <a class="btn btn-warning" href="<?= RUTA_BASE ?>views/admin/horarios/edit.php?id=<?= $h['id_horario'] ?>" title="Editar">
+                                        <a class="btn btn-warning" href="<?= RUTA_BASE ?>views/admin/horarios/edit.php?id=<?= $h['id_horario'] ?>&vista=tabla" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <form class="d-inline" method="post" action="<?= RUTA_BASE ?>controllers/gestionar_academico.php" onsubmit="return confirm('¿Eliminar este horario?');">
                                             <input type="hidden" name="entidad" value="horario">
                                             <input type="hidden" name="accion" value="eliminar">
+                                            <input type="hidden" name="vista" value="tabla">
                                             <input type="hidden" name="id_horario" value="<?= $h['id_horario'] ?>">
                                             <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
                                             <button type="submit" class="btn btn-danger" title="Eliminar" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">

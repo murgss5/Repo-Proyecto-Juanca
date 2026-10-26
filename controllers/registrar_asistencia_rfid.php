@@ -36,8 +36,11 @@ if ($codigoRfid === '') {
     exit;
 }
 
+// Extraer ficha_id opcional si la peticion especifica un contexto de ficha/lector
+$fichaContexto = !empty($input['ficha_id']) ? (int)$input['ficha_id'] : null;
+
 // Procesar con el servicio centralizado
-$resultado = AsistenciaModel::registrarPorRfid($codigoRfid, $tipoRegistro);
+$resultado = AsistenciaModel::registrarPorRfid($codigoRfid, $tipoRegistro, null, $fichaContexto);
 
 $codigoHttp = $resultado['http_code'] ?? 200;
 unset($resultado['http_code']);

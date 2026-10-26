@@ -14,9 +14,10 @@ require_once __DIR__ . '/../config/conexion.php';
  * @param string $tipo Tipo de mensaje: 'mensaje' o 'error'
  * @param string $texto Texto del mensaje
  */
-function volverAcademico(string $modulo, string $tipo, string $texto): void
+function volverAcademico(string $modulo, string $tipo, string $texto, string $vista = ''): void
 {
-    header('Location: ../views/admin/' . $modulo . '/index.php?' . $tipo . '=' . urlencode($texto));
+    $extra = $vista !== '' ? '&vista=' . urlencode($vista) : '';
+    header('Location: ../views/admin/' . $modulo . '/index.php?' . $tipo . '=' . urlencode($texto) . $extra);
     exit;
 }
 
@@ -104,14 +105,36 @@ try {
 
     // GESTION DE HORARIOS
     $id = filter_input(INPUT_POST, 'id_horario', FILTER_VALIDATE_INT);
+    $vista = in_array($_POST['vista'] ?? '', ['tabla', 'calendario'], true) ? $_POST['vista'] : 'tabla';
 
     // ELIMINAR HORARIO
     if ($accion === 'eliminar') {
-        if (!$id) volverAcademico($modulo, 'error', 'Horario no valido.');
-        $q = $conexion->prepare('DELETE FROM horario WHERE id_horario=?');
-        $q->execute([$id]);
-        if (!$q->rowCount()) volverAcademico($modulo, 'error', 'El horario no existe.');
-        volverAcademico($modulo, 'mensaje', 'Horario eliminado correctamente.');
+        if (!$id) volverAcademico($modulo, 'error', 'Horario no válido.', $vista);
+
+        // Verificar integridad referencial antes de eliminar
+        $chkAst = $conexion->prepare('SELECT COUNT(*) FROM asistencia WHERE fk_horario = ?');
+        $chkAst->execute([$id]);
+        $cantAst = (int)$chkAst->fetchColumn();
+
+        $chkSes = $conexion->prepare('SELECT COUNT(*) FROM sesiones_jornada WHERE horario_id = ?');
+        $chkSes->execute([$id]);
+        $cantSes = (int)$chkSes->fetchColumn();
+
+        if ($cantAst > 0 || $cantSes > 0) {
+            $detalles = [];
+            if ($cantAst > 0) $detalles[] = "$cantAst registro(s) de asistencia";
+            if ($cantSes > 0) $detalles[] = "$cantSes sesión(es) de jornada";
+            volverAcademico($modulo, 'error', 'No se puede eliminar el horario porque tiene ' . implode(' y ', $detalles) . ' asociados. Puede cambiar su estado a Inactivo.', $vista);
+        }
+
+        try {
+            $q = $conexion->prepare('DELETE FROM horario WHERE id_horario=?');
+            $q->execute([$id]);
+            if (!$q->rowCount()) volverAcademico($modulo, 'error', 'El horario no existe.', $vista);
+            volverAcademico($modulo, 'mensaje', 'Horario eliminado correctamente.', $vista);
+        } catch (PDOException $e) {
+            volverAcademico($modulo, 'error', 'No se puede eliminar el horario debido a restricciones de integridad referencial. Puede cambiar su estado a Inactivo.', $vista);
+        }
     }
 
     // CREAR O EDITAR HORARIO
@@ -127,6 +150,40 @@ try {
     $observaciones = trim($_POST['observaciones'] ?? '');
     $fechaInicio = !empty($_POST['fecha_inicio']) ? trim($_POST['fecha_inicio']) : null;
     $fechaFin = !empty($_POST['fecha_fin']) ? trim($_POST['fecha_fin']) : null;
+
+    $horarioActual = null;
+    $tieneHistorial = false;
+    $mensajeAvisoFicha = '';
+
+    // En edición, validar existencia del horario y detectar historial para protección de ficha
+    if ($accion === 'editar') {
+        if (!$id) {
+            volverAcademico($modulo, 'error', 'Horario no válido.', $vista);
+        }
+        $qHor = $conexion->prepare('SELECT * FROM horario WHERE id_horario = ?');
+        $qHor->execute([$id]);
+        $horarioActual = $qHor->fetch();
+        if (!$horarioActual) {
+            volverAcademico($modulo, 'error', 'El horario seleccionado no existe.', $vista);
+        }
+
+        // Comprobar sesiones de jornada o asistencias vinculadas
+        $chkSes = $conexion->prepare('SELECT COUNT(*) FROM sesiones_jornada WHERE horario_id = ?');
+        $chkSes->execute([$id]);
+        $cantSesHist = (int)$chkSes->fetchColumn();
+
+        $chkAst = $conexion->prepare('SELECT COUNT(*) FROM asistencia WHERE fk_horario = ?');
+        $chkAst->execute([$id]);
+        $cantAstHist = (int)$chkAst->fetchColumn();
+
+        $tieneHistorial = ($cantSesHist > 0 || $cantAstHist > 0);
+
+        // Si existen sesiones o asistencias y se intentó cambiar la ficha, preservar la ficha original
+        if ($tieneHistorial && (int)$ficha !== (int)$horarioActual['fk_ficha']) {
+            $ficha = (int)$horarioActual['fk_ficha'];
+            $mensajeAvisoFicha = ' (Aviso: La ficha no puede modificarse directamente porque este horario tiene sesiones o asistencias históricas vinculadas; los demás datos se actualizaron correctamente)';
+        }
+    }
 
     $mapaDias = [
         'lunes'     => 'Lunes',
@@ -145,7 +202,7 @@ try {
     $regexHora = '/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/';
     // Valida datos obligatorios y formato
     if (!$ficha || !$diaNormalizado || !preg_match($regexHora, $entrada) || !preg_match($regexHora, $salida)) {
-        volverAcademico($modulo, 'error', 'Revise la ficha, el día y el intervalo de horas.');
+        volverAcademico($modulo, 'error', 'Revise la ficha, el día y el intervalo de horas.', $vista);
     }
 
     // Normalizar a formato HH:MM:00
@@ -153,73 +210,58 @@ try {
     if (strlen($salida) === 5) $salida .= ':00';
 
     if ($salida <= $entrada) {
-        volverAcademico($modulo, 'error', 'La hora de salida debe ser posterior a la hora de entrada en el mismo día.');
+        volverAcademico($modulo, 'error', 'La hora de salida debe ser posterior a la hora de entrada en el mismo día.', $vista);
+    }
+
+    // Validar formato y coherencia de fechas si fueron ingresadas
+    if ($fechaInicio !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaInicio)) {
+        volverAcademico($modulo, 'error', 'La fecha de inicio de vigencia no tiene un formato válido (YYYY-MM-DD).', $vista);
+    }
+    if ($fechaFin !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaFin)) {
+        volverAcademico($modulo, 'error', 'La fecha de finalización de vigencia no tiene un formato válido (YYYY-MM-DD).', $vista);
+    }
+    if ($fechaInicio !== null && $fechaFin !== null && $fechaFin < $fechaInicio) {
+        volverAcademico($modulo, 'error', 'La fecha de finalización no puede ser anterior a la fecha de inicio.', $vista);
     }
 
     // Verifica que la ficha exista
     $q = $conexion->prepare('SELECT id_ficha, fk_usuario, ambiente_principal FROM ficha WHERE id_ficha=?');
     $q->execute([$ficha]);
     $fichaData = $q->fetch();
-    if (!$fichaData) volverAcademico($modulo, 'error', 'La ficha seleccionada no existe.');
+    if (!$fichaData) volverAcademico($modulo, 'error', 'La ficha seleccionada no existe.', $vista);
 
-    // Si se asignó instructor específico, validar que exista y tenga rol 2
-    if ($instructorId) {
+    // Si se asignó instructor específico, validar que exista y tenga rol 2 (Instructor)
+    if ($instructorId !== null) {
         $qInstr = $conexion->prepare('SELECT id_usuario FROM usuario WHERE id_usuario=? AND fk_rol=2');
         $qInstr->execute([$instructorId]);
-        if (!$qInstr->fetch()) volverAcademico($modulo, 'error', 'El instructor seleccionado no es válido.');
+        if (!$qInstr->fetch()) volverAcademico($modulo, 'error', 'El instructor seleccionado no es válido o no tiene el rol de instructor.', $vista);
     }
 
     $mapaAlt = ['Miércoles' => 'Miercoles', 'Sábado' => 'Sabado'];
     $diaAlt = $mapaAlt[$diaNormalizado] ?? $diaNormalizado;
     $idExcluir = $id ?: 0;
 
-    // Validación 1: Conflicto de horario en la misma ficha (no solaparse en el mismo día)
+    // Validación: Conflicto de horario en la misma ficha (mismo día y horas solapadas dentro del mismo rango de fechas de vigencia)
     $qConfFicha = $conexion->prepare("
         SELECT id_horario, entrada, salida FROM horario
         WHERE fk_ficha = ? AND (dia_semana = ? OR dia_semana = ?)
           AND id_horario <> ? AND (estado = 'Activo' OR estado IS NULL)
           AND entrada < ? AND salida > ?
+          AND (
+              (? IS NULL OR fecha_fin IS NULL OR ? <= fecha_fin)
+              AND
+              (? IS NULL OR fecha_inicio IS NULL OR ? >= fecha_inicio)
+          )
         LIMIT 1
     ");
-    $qConfFicha->execute([$ficha, $diaNormalizado, $diaAlt, $idExcluir, $salida, $entrada]);
+    $qConfFicha->execute([
+        $ficha, $diaNormalizado, $diaAlt, $idExcluir,
+        $salida, $entrada,
+        $fechaInicio, $fechaInicio,
+        $fechaFin, $fechaFin
+    ]);
     if ($cruce = $qConfFicha->fetch()) {
-        volverAcademico($modulo, 'error', "La ficha ya tiene una clase programada el {$diaNormalizado} de " . substr($cruce['entrada'], 0, 5) . " a " . substr($cruce['salida'], 0, 5) . ".");
-    }
-
-    // Validación 2: Conflicto de instructor (el mismo instructor no puede estar en dos fichas distintas a la misma hora)
-    $instructorEfectivo = $instructorId ?: (int)$fichaData['fk_usuario'];
-    $qConfInstr = $conexion->prepare("
-        SELECT h.id_horario, h.fk_ficha, h.entrada, h.salida FROM horario h
-        INNER JOIN ficha f ON h.fk_ficha = f.id_ficha
-        WHERE COALESCE(h.instructor_id, f.fk_usuario) = ?
-          AND h.fk_ficha <> ?
-          AND (h.dia_semana = ? OR h.dia_semana = ?)
-          AND h.id_horario <> ? AND (h.estado = 'Activo' OR h.estado IS NULL)
-          AND h.entrada < ? AND h.salida > ?
-        LIMIT 1
-    ");
-    $qConfInstr->execute([$instructorEfectivo, $ficha, $diaNormalizado, $diaAlt, $idExcluir, $salida, $entrada]);
-    if ($cruce = $qConfInstr->fetch()) {
-        volverAcademico($modulo, 'error', "El instructor ya tiene clase programada en la ficha #{$cruce['fk_ficha']} el {$diaNormalizado} de " . substr($cruce['entrada'], 0, 5) . " a " . substr($cruce['salida'], 0, 5) . ".");
-    }
-
-    // Validación 3: Conflicto de ambiente (el mismo ambiente no puede tener dos fichas distintas a la misma hora)
-    $ambienteEfectivo = $ambiente !== '' ? $ambiente : ($fichaData['ambiente_principal'] ?? '');
-    if ($ambienteEfectivo !== '') {
-        $qConfAmb = $conexion->prepare("
-            SELECT h.id_horario, h.fk_ficha, h.entrada, h.salida FROM horario h
-            INNER JOIN ficha f ON h.fk_ficha = f.id_ficha
-            WHERE COALESCE(NULLIF(h.ambiente, ''), f.ambiente_principal) = ?
-              AND h.fk_ficha <> ?
-              AND (h.dia_semana = ? OR h.dia_semana = ?)
-              AND h.id_horario <> ? AND (h.estado = 'Activo' OR h.estado IS NULL)
-              AND h.entrada < ? AND h.salida > ?
-            LIMIT 1
-        ");
-        $qConfAmb->execute([$ambienteEfectivo, $ficha, $diaNormalizado, $diaAlt, $idExcluir, $salida, $entrada]);
-        if ($cruce = $qConfAmb->fetch()) {
-            volverAcademico($modulo, 'error', "El ambiente '{$ambienteEfectivo}' ya está ocupado por la ficha #{$cruce['fk_ficha']} el {$diaNormalizado} de " . substr($cruce['entrada'], 0, 5) . " a " . substr($cruce['salida'], 0, 5) . ".");
-        }
+        volverAcademico($modulo, 'error', "La ficha ya tiene una clase programada el {$diaNormalizado} de " . substr($cruce['entrada'], 0, 5) . " a " . substr($cruce['salida'], 0, 5) . ".", $vista);
     }
 
     if ($accion === 'crear') {
@@ -237,11 +279,10 @@ try {
             $fechaInicio, $fechaFin,
             $ficha, $instructorId
         ]);
-        volverAcademico($modulo, 'mensaje', 'Horario de clase programado correctamente.');
+        volverAcademico($modulo, 'mensaje', 'Horario de clase programado correctamente.', $vista);
     }
 
-    if (!$id) volverAcademico($modulo, 'error', 'Horario no válido.');
-
+    // Actualización de horario existente
     $stmt = $conexion->prepare("
         UPDATE horario
         SET dia_semana = ?, entrada = ?, salida = ?, competencia = ?, tipo_bloque = ?, ambiente = ?, estado = ?, observaciones = ?, fecha_inicio = ?, fecha_fin = ?, fk_ficha = ?, instructor_id = ?
@@ -258,8 +299,8 @@ try {
         $ficha, $instructorId,
         $id
     ]);
-    volverAcademico($modulo, 'mensaje', 'Horario actualizado correctamente.');
+    volverAcademico($modulo, 'mensaje', 'Horario actualizado correctamente.' . $mensajeAvisoFicha, $vista);
 
 } catch (Throwable $e) {
-    volverAcademico($modulo, 'error', 'No fue posible guardar los datos.');
+    volverAcademico($modulo ?? 'horarios', 'error', 'No fue posible guardar los datos: ' . $e->getMessage(), $vista ?? 'tabla');
 }

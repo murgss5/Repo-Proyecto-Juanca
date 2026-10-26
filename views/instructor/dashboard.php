@@ -93,9 +93,13 @@ $consulta = $conexion->prepare("SELECT id_sesion, ficha_id, horario_id, hora_ape
 $consulta->execute([':id_instructor' => $idInstructor]);
 $jornadas = $consulta->fetchAll();
 
-// Indexar jornadas por ficha
+// Indexar jornadas por ficha y por horario
 $jornadasPorFicha = [];
+$jornadasPorHorario = [];
 foreach ($jornadas as $j) {
+    if (!empty($j['horario_id'])) {
+        $jornadasPorHorario[$j['horario_id']] = $j;
+    }
     $jornadasPorFicha[$j['ficha_id']] = $j;
 }
 
@@ -227,7 +231,8 @@ ob_start();
                     <div class="row">
                         <?php foreach ($fichasConHorarioHoy as $ficha): 
                             $fichaId = $ficha['id_ficha'];
-                            $jornada = $jornadasPorFicha[$fichaId] ?? null;
+                            $horarioIdFicha = $ficha['id_horario'] ?? null;
+                            $jornada = ($horarioIdFicha && isset($jornadasPorHorario[$horarioIdFicha])) ? $jornadasPorHorario[$horarioIdFicha] : ($jornadasPorFicha[$fichaId] ?? null);
                             $estado = $jornada ? $jornada['estado'] : 'sin_iniciar';
                             $puedeAbrir = $estado === 'sin_iniciar';
                             $puedeCerrar = $estado === 'abierta';
@@ -300,6 +305,8 @@ ob_start();
                                         </form>
                                         <form method="post" action="<?= RUTA_BASE ?>controllers/cerrar_jornada.php" class="flex-fill">
                                             <input type="hidden" name="ficha_id" value="<?= htmlspecialchars($fichaId) ?>">
+                                            <input type="hidden" name="horario_id" value="<?= htmlspecialchars($ficha['id_horario']) ?>">
+                                            <input type="hidden" name="sesion_id" value="<?= htmlspecialchars($jornada['id_sesion'] ?? '') ?>">
                                             <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf'] ?? '') ?>">
                                             <button type="submit" 
                                                     class="btn btn-danger btn-sm flex-fill" 
@@ -316,7 +323,8 @@ ob_start();
                                         </div>
                                         <button type="button" 
                                                 class="btn btn-warning btn-sm btn-block btn-simular-ingreso font-weight-bold" 
-                                                data-ficha-id="<?= htmlspecialchars($fichaId) ?>">
+                                                data-ficha-id="<?= htmlspecialchars($fichaId) ?>"
+                                                data-horario-id="<?= htmlspecialchars($ficha['id_horario']) ?>">
                                             <i class="fas fa-id-card mr-1"></i> Simular ingreso del siguiente aprendiz
                                         </button>
                                         <div class="simulador-resultado mt-2" style="display: none;"></div>
@@ -336,6 +344,7 @@ ob_start();
 <script>
     // pasar datos de jornadas a JavaScript
     window.jornadasPorFicha = <?= json_encode($jornadasPorFicha ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+    window.jornadasPorHorario = <?= json_encode($jornadasPorHorario ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     window.rutaBase = '<?= RUTA_BASE ?>';
     window.tokenCsrf = '<?= $_SESSION['token_csrf'] ?? '' ?>';
 </script>
@@ -509,8 +518,12 @@ ob_start();
                 resultadoDiv.innerHTML = '';
             }
 
+            var horarioId = btn.getAttribute('data-horario-id');
             var formData = new FormData();
             formData.append('ficha_id', fichaId);
+            if (horarioId) {
+                formData.append('horario_id', horarioId);
+            }
             formData.append('token_csrf', tokenCsrf);
 
             fetch(rutaBase + 'controllers/simular_ingreso_rfid.php', {

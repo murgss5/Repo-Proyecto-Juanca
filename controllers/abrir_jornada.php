@@ -115,24 +115,24 @@ try {
     // Se eliminan las restricciones de ventana para permitir aperturas tardias.
     // La jornada podra abrirse en cualquier momento del dia programado mientras este 'sin_iniciar'.
 
-    // Verificar si ya existe una sesion abierta o cerrada para esta ficha/fecha
+    // Verificar si ya existe una sesion abierta o cerrada para esta ficha, horario y fecha
     $q = $conexion->prepare(
         "SELECT id_sesion FROM sesiones_jornada
-         WHERE instructor_id = :instructor_id
-           AND ficha_id = :ficha_id
+         WHERE ficha_id = :ficha_id
+           AND horario_id = :horario_id
            AND fecha = :fecha
            AND estado IN ('abierta', 'cerrada_manual')
          FOR UPDATE"
     );
     $q->execute([
-        ':instructor_id' => $instructorId,
-        ':ficha_id' => $fichaId,
-        ':fecha' => $fechaHoy
+        ':ficha_id'    => $fichaId,
+        ':horario_id'  => $horarioId,
+        ':fecha'       => $fechaHoy
     ]);
     $sesionExistente = $q->fetch();
 
     if ($sesionExistente) {
-        throw new Exception('Ya existe una jornada (abierta o cerrada) para esta ficha hoy');
+        throw new Exception('Ya existe una jornada (abierta o cerrada) para este horario hoy');
     }
 
     // Obtener hora actual exacta del servidor (hora real de apertura)

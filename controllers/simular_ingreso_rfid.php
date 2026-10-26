@@ -95,18 +95,27 @@ try {
     }
 
     // 7. Validar que la jornada este actualmente abierta hoy
-    $q = $conexion->prepare(
-        "SELECT id_sesion, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado
-         FROM sesiones_jornada
-         WHERE ficha_id = :ficha_id
-           AND fecha = :fecha
-           AND estado = 'abierta'
-         LIMIT 1"
-    );
-    $q->execute([
+    $horarioIdFiltro = filter_input(INPUT_POST, 'horario_id', FILTER_VALIDATE_INT) ?: null;
+    $sqlSesion = "SELECT id_sesion, horario_id, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado
+                  FROM sesiones_jornada
+                  WHERE ficha_id = :ficha_id
+                    AND fecha = :fecha
+                    AND estado = 'abierta'";
+    $paramsSesion = [
         ':ficha_id' => $fichaId,
         ':fecha'    => $fechaHoy
-    ]);
+    ];
+    if ($horarioIdFiltro) {
+        $sqlSesion .= " AND (horario_id = :horario_id OR horario_id IS NULL)
+                        ORDER BY (CASE WHEN horario_id = :horario_id THEN 0 ELSE 1 END) ASC, id_sesion DESC";
+        $paramsSesion[':horario_id'] = $horarioIdFiltro;
+    } else {
+        $sqlSesion .= " ORDER BY id_sesion DESC";
+    }
+    $sqlSesion .= " LIMIT 1";
+
+    $q = $conexion->prepare($sqlSesion);
+    $q->execute($paramsSesion);
     $sesion = $q->fetch();
 
     if (!$sesion || $sesion['hora_cierre_real'] !== null) {
@@ -120,6 +129,7 @@ try {
     }
 
     $sesionId = (int)$sesion['id_sesion'];
+    $horarioIdSesion = !empty($sesion['horario_id']) ? (int)$sesion['horario_id'] : $horarioIdFiltro;
 
     // 8. Verificar si la ficha tiene aprendices con RFID registrado
     $q = $conexion->prepare(
@@ -142,7 +152,7 @@ try {
         exit;
     }
 
-    // 9. Buscar aprendices de la ficha con RFID que NO hayan registrado ingreso en esta sesion
+    // 9. Buscar aprendices de la ficha con RFID que NO hayan registrado ingreso en esta sesion/horario
     $q = $conexion->prepare(
         "SELECT a.id_aprendiz, a.codigo_rfid, u.nombre, u.apellido
          FROM aprendiz a
@@ -153,14 +163,18 @@ try {
            AND NOT EXISTS (
                SELECT 1 FROM asistencia ast 
                WHERE ast.fk_aprendiz = a.id_aprendiz 
-                 AND (ast.fk_sesion_jornada = :sesion_id OR ast.fecha_asistencia = :fecha)
+                 AND (
+                     ast.fk_sesion_jornada = :sesion_id
+                     OR (ast.fecha_asistencia = :fecha AND :horario_id IS NOT NULL AND ast.fk_horario = :horario_id)
+                 )
            )
          ORDER BY a.id_aprendiz ASC"
     );
     $q->execute([
-        ':ficha_id'  => $fichaId,
-        ':sesion_id' => $sesionId,
-        ':fecha'     => $fechaHoy
+        ':ficha_id'   => $fichaId,
+        ':sesion_id'  => $sesionId,
+        ':fecha'      => $fechaHoy,
+        ':horario_id' => $horarioIdSesion
     ]);
     $pendientes = $q->fetchAll();
 
@@ -180,7 +194,7 @@ try {
     $pendientesRestantes = count($pendientes) - 1;
 
     // 11. Procesar entrada utilizando la logica real compartida (estrictamente 'entrada')
-    $resultado = AsistenciaModel::registrarPorRfid($siguiente['codigo_rfid'], 'entrada', $conexion);
+    $resultado = AsistenciaModel::registrarPorRfid($siguiente['codigo_rfid'], 'entrada', $conexion, $fichaId);
 
     if (!$resultado['success']) {
         http_response_code($resultado['http_code'] ?? 400);

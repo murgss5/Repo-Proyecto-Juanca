@@ -65,38 +65,34 @@ try {
     // Iniciar transaccion
     $conexion->beginTransaction();
 
-    // Buscar sesion abierta para la ficha especificada
-    if ($rolUsuario === 1) {
-        // Admin: puede cerrar cualquier sesion abierta de esa ficha hoy
-        $q = $conexion->prepare(
-            "SELECT id_sesion, ficha_id, instructor_id, hora_apertura_real
-             FROM sesiones_jornada
-             WHERE ficha_id = :ficha_id
-               AND fecha = :fecha
-               AND estado = 'abierta'
-             FOR UPDATE"
-        );
-        $q->execute([
-            ':ficha_id' => $fichaId,
-            ':fecha' => $fechaHoy
-        ]);
-    } else {
-        // Instructor: solo su propia sesion de esa ficha
-        $q = $conexion->prepare(
-            "SELECT id_sesion, ficha_id, instructor_id, hora_apertura_real
-             FROM sesiones_jornada
-             WHERE instructor_id = :instructor_id
-               AND ficha_id = :ficha_id
-               AND fecha = :fecha
-               AND estado = 'abierta'
-             FOR UPDATE"
-        );
-        $q->execute([
-            ':instructor_id' => $usuarioId,
-            ':ficha_id' => $fichaId,
-            ':fecha' => $fechaHoy
-        ]);
+    $horarioIdFiltro = filter_input(INPUT_POST, 'horario_id', FILTER_VALIDATE_INT) ?: null;
+    $sesionIdFiltro = filter_input(INPUT_POST, 'sesion_id', FILTER_VALIDATE_INT) ?: null;
+
+    $sqlSesion = "SELECT id_sesion, ficha_id, horario_id, instructor_id, hora_apertura_real
+                  FROM sesiones_jornada
+                  WHERE ficha_id = :ficha_id
+                    AND fecha = :fecha
+                    AND estado = 'abierta'";
+    $paramsSesion = [
+        ':ficha_id' => $fichaId,
+        ':fecha'    => $fechaHoy
+    ];
+
+    if ($rolUsuario !== 1) {
+        $sqlSesion .= " AND instructor_id = :instructor_id";
+        $paramsSesion[':instructor_id'] = $usuarioId;
     }
+    if ($sesionIdFiltro) {
+        $sqlSesion .= " AND id_sesion = :sesion_id";
+        $paramsSesion[':sesion_id'] = $sesionIdFiltro;
+    } elseif ($horarioIdFiltro) {
+        $sqlSesion .= " AND horario_id = :horario_id";
+        $paramsSesion[':horario_id'] = $horarioIdFiltro;
+    }
+    $sqlSesion .= " ORDER BY id_sesion DESC LIMIT 1 FOR UPDATE";
+
+    $q = $conexion->prepare($sqlSesion);
+    $q->execute($paramsSesion);
     $sesion = $q->fetch();
 
     if (!$sesion) {
@@ -105,6 +101,7 @@ try {
 
     $sesionId = (int)$sesion['id_sesion'];
     $fichaId = (int)$sesion['ficha_id'];
+    $horarioId = (int)$sesion['horario_id'];
     $instructorIdSesion = (int)$sesion['instructor_id'];
 
     // Obtener hora actual del servidor
@@ -139,24 +136,69 @@ try {
     if (!empty($aprendices)) {
         // Preparar consulta para insertar inasistencia si no existe
         $insertInasistencia = $conexion->prepare(
-            "INSERT INTO asistencia (fecha_asistencia, entrada, salida, estado_entrada, estado_salida, minutos_retardo, minutos_salida_anticipada, fk_aprendiz, fk_sesion_jornada)
-             SELECT :fecha, NULL, NULL, 'INASISTENCIA', NULL, 0, 0, a.id_aprendiz, :sesion_id
+            "INSERT INTO asistencia (
+                fecha_asistencia, entrada, salida, estado_entrada, estado_salida, 
+                minutos_retardo, minutos_salida_anticipada, fk_aprendiz, fk_sesion_jornada, fk_horario
+             )
+             SELECT :fecha, NULL, NULL, 'INASISTENCIA', NULL, 0, 0, a.id_aprendiz, :sesion_id, :horario_id
              FROM aprendiz a
              WHERE a.id_aprendiz = :aprendiz_id
                AND NOT EXISTS (
                    SELECT 1 FROM asistencia 
                    WHERE fk_aprendiz = a.id_aprendiz 
+                     AND fk_horario = :horario_id
                      AND fecha_asistencia = :fecha
                )"
         );
 
         foreach ($aprendices as $aprendizId) {
-            $insertInasistencia->execute([
-                ':fecha' => $fechaHoy,
-                ':sesion_id' => $sesionId,
-                ':aprendiz_id' => $aprendizId
-            ]);
-            $inasistenciasGeneradas += $insertInasistencia->rowCount();
+            try {
+                $insertInasistencia->execute([
+                    ':fecha'       => $fechaHoy,
+                    ':sesion_id'   => $sesionId,
+                    ':horario_id'  => $horarioId,
+                    ':aprendiz_id' => $aprendizId
+                ]);
+                $inasistenciasGeneradas += $insertInasistencia->rowCount();
+            } catch (PDOException $e) {
+                // Manejo de condición de carrera: distinguir exclusivamente error 1062
+                $codigoErrorDriver = (int)($e->errorInfo[1] ?? 0);
+                if ($codigoErrorDriver === 1062) {
+                    // Verificar que exista registro para este aprendiz, horario y fecha
+                    $qVerif = $conexion->prepare(
+                        "SELECT id_asistencia, fk_sesion_jornada 
+                         FROM asistencia 
+                         WHERE fk_aprendiz = :aprendiz_id 
+                           AND fk_horario = :horario_id 
+                           AND fecha_asistencia = :fecha 
+                         LIMIT 1"
+                    );
+                    $qVerif->execute([
+                        ':aprendiz_id' => $aprendizId,
+                        ':horario_id'  => $horarioId,
+                        ':fecha'       => $fechaHoy
+                    ]);
+                    $regExist = $qVerif->fetch(PDO::FETCH_ASSOC);
+
+                    if ($regExist) {
+                        // Si ya existe y tenía sesión nula, vincular a esta sesión
+                        if ($regExist['fk_sesion_jornada'] === null) {
+                            $qVinc = $conexion->prepare(
+                                "UPDATE asistencia 
+                                 SET fk_sesion_jornada = :sesion_id 
+                                 WHERE id_asistencia = :id_asistencia"
+                            );
+                            $qVinc->execute([
+                                ':sesion_id'     => $sesionId,
+                                ':id_asistencia' => $regExist['id_asistencia']
+                            ]);
+                        }
+                        continue;
+                    }
+                }
+                // Si es otro error (FK 1452, desconexión, etc.), relanzar
+                throw $e;
+            }
         }
     }
 

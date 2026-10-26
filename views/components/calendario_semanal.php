@@ -305,7 +305,7 @@ function mostrarDetalleClase(elemento) {
 
         const btnEditar = document.getElementById('modalBtnEditarHorario');
         if (btnEditar) {
-            btnEditar.href = '<?= RUTA_BASE ?>views/admin/horarios/edit.php?id=' + ev.id_horario;
+            btnEditar.href = '<?= RUTA_BASE ?>views/admin/horarios/edit.php?id=' + ev.id_horario + '&vista=calendario';
         }
 
         $('#modalDetalleClase').modal('show');

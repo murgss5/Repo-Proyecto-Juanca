@@ -307,12 +307,14 @@ try {
         }
 
         // insertar horario
-        $stmt = $conexion->prepare("INSERT INTO horario (dia_semana, entrada, salida, fk_ficha) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$dia, $horaIni . ':00', $horaFin . ':00', $ficha['id_ficha']]);
+        $stmt = $conexion->prepare("INSERT INTO horario (dia_semana, entrada, salida, fk_ficha, instructor_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$dia, $horaIni . ':00', $horaFin . ':00', $ficha['id_ficha'], $instructor['id_usuario']]);
 
         if ($stmt->rowCount() > 0) {
+            $nuevoIdHorario = (int)$conexion->lastInsertId();
             $resultados[] = [
                 'fila' => $f['fila'],
+                'id_horario' => $nuevoIdHorario,
                 'instructor' => $f['instructor_nombre'],
                 'ficha' => '#' . $ficha['id_ficha'] . ' - ' . $ficha['nombre_programa'],
                 'dia' => $dia,

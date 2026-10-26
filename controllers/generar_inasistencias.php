@@ -22,8 +22,8 @@ if (php_sapi_name() !== 'cli') {
 try {
     $conexion = (new Conexion())->conectar();
 
-    // Ejecuta el procedimiento almacenado
-    $consulta = $conexion->prepare('CALL generar_inasistencias()');
+    // Ejecuta el procedimiento almacenado v2 adaptado para multi-horario
+    $consulta = $conexion->prepare('CALL generar_inasistencias_v2()');
     $consulta->execute();
 
     // Consume todos los result sets para evitar "pending result sets"

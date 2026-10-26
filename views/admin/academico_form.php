@@ -41,6 +41,22 @@ if ($edicion) {
     }
 }
 
+// Verifica historial de sesiones y asistencias para proteger la ficha si existen registros previos
+$tieneHistorial = false;
+$totalSesionesHist = 0;
+$totalAsistenciasHist = 0;
+if ($edicion && $entidad === 'horario' && !empty($datos['id_horario'])) {
+    $qHistS = $conexion->prepare('SELECT COUNT(*) FROM sesiones_jornada WHERE horario_id = ?');
+    $qHistS->execute([$datos['id_horario']]);
+    $totalSesionesHist = (int)$qHistS->fetchColumn();
+
+    $qHistA = $conexion->prepare('SELECT COUNT(*) FROM asistencia WHERE fk_horario = ?');
+    $qHistA->execute([$datos['id_horario']]);
+    $totalAsistenciasHist = (int)$qHistA->fetchColumn();
+
+    $tieneHistorial = ($totalSesionesHist > 0 || $totalAsistenciasHist > 0);
+}
+
 // obtiene instructores activos para fichas y horarios
 $instructores = $conexion->query('SELECT id_usuario, nombre, apellido FROM usuario WHERE fk_rol = 2 ORDER BY nombre, apellido')->fetchAll();
 
@@ -69,6 +85,7 @@ ob_start();
         <div class="card-body">
             <input type="hidden" name="entidad" value="<?= $entidad ?>">
             <input type="hidden" name="accion" value="<?= $edicion ? 'editar' : 'crear' ?>">
+            <input type="hidden" name="vista" value="<?= htmlspecialchars($_GET['vista'] ?? 'tabla') ?>">
             <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
 
             <?php if ($entidad === 'ficha'): ?>
@@ -115,17 +132,41 @@ ob_start();
             <?php else: ?>
                 <input type="hidden" name="id_horario" value="<?= $datos['id_horario'] ?>">
 
+                <?php if ($tieneHistorial): ?>
+                    <div class="alert alert-info py-2 mb-3">
+                        <i class="fas fa-shield-alt mr-1"></i>
+                        <strong>Aviso de integridad:</strong> Este horario cuenta con historial registrado (<strong><?= $totalSesionesHist ?></strong> sesión(es) de jornada y <strong><?= $totalAsistenciasHist ?></strong> asistencia(s)). Por seguridad y coherencia histórica con los aprendices matriculados, la <strong>ficha</strong> está protegida y no puede ser modificada. Puede actualizar libremente el instructor asignado, día, horas, ambiente y demás datos.
+                    </div>
+                <?php endif; ?>
+
                 <div class="row">
                     <div class="col-md-6 form-group">
-                        <label>Ficha *</label>
-                        <select class="form-control" name="id_ficha" required>
-                            <option value="">Seleccione una ficha...</option>
-                            <?php foreach ($fichas as $f): ?>
-                                <option value="<?= $f['id_ficha'] ?>" <?= strval($datos['fk_ficha']) === strval($f['id_ficha']) ? 'selected' : '' ?>>
-                                    Ficha #<?= $f['id_ficha'] ?> — <?= htmlspecialchars($f['nombre_programa']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                        <label>
+                            Ficha *
+                            <?php if ($tieneHistorial): ?>
+                                <span class="badge badge-warning ml-1" title="Protegida por historial"><i class="fas fa-lock"></i> Bloqueada por historial</span>
+                            <?php endif; ?>
+                        </label>
+                        <?php if ($tieneHistorial): ?>
+                            <select class="form-control" disabled>
+                                <?php foreach ($fichas as $f): ?>
+                                    <option value="<?= $f['id_ficha'] ?>" <?= strval($datos['fk_ficha']) === strval($f['id_ficha']) ? 'selected' : '' ?>>
+                                        Ficha #<?= $f['id_ficha'] ?> — <?= htmlspecialchars($f['nombre_programa']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="hidden" name="id_ficha" value="<?= htmlspecialchars($datos['fk_ficha']) ?>">
+                            <small class="form-text text-muted">La ficha se mantiene para preservar la integridad de las asistencias pasadas.</small>
+                        <?php else: ?>
+                            <select class="form-control" name="id_ficha" required>
+                                <option value="">Seleccione una ficha...</option>
+                                <?php foreach ($fichas as $f): ?>
+                                    <option value="<?= $f['id_ficha'] ?>" <?= strval($datos['fk_ficha']) === strval($f['id_ficha']) ? 'selected' : '' ?>>
+                                        Ficha #<?= $f['id_ficha'] ?> — <?= htmlspecialchars($f['nombre_programa']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        <?php endif; ?>
                     </div>
 
                     <div class="col-md-6 form-group">
@@ -138,7 +179,7 @@ ob_start();
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <small class="form-text text-muted">Permite asignar instructores diferentes a clases específicas de la misma ficha.</small>
+                        <small class="form-text text-muted">Permite asignar instructores diferentes a clases específicas o corregir asignaciones intercambiadas.</small>
                     </div>
                 </div>
 
@@ -222,8 +263,8 @@ ob_start();
             <?php endif; ?>
         </div>
         <div class="card-footer text-right">
-            <a class="btn btn-secondary" href="<?= RUTA_BASE ?>views/admin/<?= $modulo ?>/index.php">Cancelar</a>
-            <button class="btn btn-primary" type="submit">Guardar</button>
+            <a class="btn btn-secondary" href="<?= RUTA_BASE ?>views/admin/<?= $modulo ?>/index.php<?= !empty($_GET['vista']) ? '?vista=' . urlencode($_GET['vista']) : '?vista=tabla' ?>">Cancelar</a>
+            <button class="btn btn-primary" type="submit"><i class="fas fa-save mr-1"></i> Guardar cambios</button>
         </div>
     </form>
 </div>

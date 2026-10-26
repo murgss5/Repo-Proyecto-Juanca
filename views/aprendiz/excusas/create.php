@@ -17,14 +17,18 @@ $conexion = (new Conexion())->conectar();
 $consultaInasistencias = $conexion->prepare(
     "SELECT
         a.id_asistencia,
-        a.fecha_asistencia
+        a.fecha_asistencia,
+        h.entrada,
+        h.salida,
+        h.competencia
      FROM asistencia a
      INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
+     LEFT JOIN horario h ON h.id_horario = a.fk_horario
      LEFT JOIN excusa e ON e.fk_asistencia = a.id_asistencia
      WHERE ap.fk_usuario = :id_usuario
      AND a.estado_entrada = 'INASISTENCIA'
      AND e.id_excusa IS NULL
-     ORDER BY a.fecha_asistencia DESC"
+     ORDER BY a.fecha_asistencia DESC, h.entrada ASC"
 );
 $consultaInasistencias->bindValue(':id_usuario', $_SESSION['aprendiz']['id_usuario'], PDO::PARAM_INT);
 $consultaInasistencias->execute();
@@ -107,9 +111,14 @@ ob_start();
                                 </div>
                                 <select id="id_asistencia" name="id_asistencia" class="form-control" required>
                                     <option value="">-- Seleccione una inasistencia --</option>
-                                    <?php foreach ($inasistenciasDisponibles as $inasistencia): ?>
+                                    <?php foreach ($inasistenciasDisponibles as $inasistencia): 
+                                        $infoClase = '';
+                                        if (!empty($inasistencia['entrada']) && !empty($inasistencia['salida'])) {
+                                            $infoClase = ' (' . substr($inasistencia['entrada'], 0, 5) . ' - ' . substr($inasistencia['salida'], 0, 5) . (!empty($inasistencia['competencia']) ? ' &middot; ' . $inasistencia['competencia'] : '') . ')';
+                                        }
+                                    ?>
                                         <option value="<?= htmlspecialchars($inasistencia['id_asistencia']) ?>">
-                                            <?= htmlspecialchars(date('d/m/Y', strtotime($inasistencia['fecha_asistencia']))) ?> &middot; Inasistencia registrada
+                                            <?= htmlspecialchars(date('d/m/Y', strtotime($inasistencia['fecha_asistencia']))) ?><?= $infoClase ?> &middot; Inasistencia registrada
                                         </option>
                                     <?php endforeach; ?>
                                 </select>

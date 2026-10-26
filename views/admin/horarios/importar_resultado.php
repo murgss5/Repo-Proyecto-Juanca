@@ -106,6 +106,7 @@ ob_start();
                     <th>Fin</th>
                     <th style="width: 130px;">Resultado</th>
                     <th>Detalle</th>
+                    <th style="width: 90px;" class="text-center">Acción</th>
                 </tr>
             </thead>
             <tbody>
@@ -125,13 +126,22 @@ ob_start();
                     <td class="small text-muted">
                         <?= htmlspecialchars($d['detalle']) ?>
                     </td>
+                    <td class="text-center">
+                        <?php if (!empty($d['id_horario'])): ?>
+                            <a href="<?= RUTA_BASE ?>views/admin/horarios/edit.php?id=<?= (int)$d['id_horario'] ?>&vista=tabla" class="btn btn-warning btn-xs" title="Editar este horario importado">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                        <?php else: ?>
+                            <span class="text-muted">—</span>
+                        <?php endif; ?>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
     </div>
     <div class="card-footer">
-        <a href="<?= RUTA_BASE ?>views/admin/horarios/index.php" class="btn btn-primary">
+        <a href="<?= RUTA_BASE ?>views/admin/horarios/index.php?vista=tabla" class="btn btn-primary">
             <i class="fas fa-list"></i> Volver al listado de horarios
         </a>
         <a href="<?= RUTA_BASE ?>views/admin/horarios/importar.php" class="btn btn-info ml-2">
