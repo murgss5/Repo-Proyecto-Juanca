@@ -47,12 +47,17 @@ $totalSesionesHist = 0;
 $totalAsistenciasHist = 0;
 if ($edicion && $entidad === 'horario' && !empty($datos['id_horario'])) {
     $qHistS = $conexion->prepare('SELECT COUNT(*) FROM sesiones_jornada WHERE horario_id = ?');
-    $qHistS->execute([$datos['id_horario']]);
+    $qHistS->execute([(int)$datos['id_horario']]);
     $totalSesionesHist = (int)$qHistS->fetchColumn();
 
-    $qHistA = $conexion->prepare('SELECT COUNT(*) FROM asistencia WHERE fk_horario = ?');
-    $qHistA->execute([$datos['id_horario']]);
-    $totalAsistenciasHist = (int)$qHistA->fetchColumn();
+    try {
+        $qHistA = $conexion->prepare('SELECT COUNT(*) FROM asistencia a INNER JOIN sesiones_jornada s ON a.fk_sesion_jornada = s.id_sesion WHERE s.horario_id = ?');
+        $qHistA->execute([(int)$datos['id_horario']]);
+        $totalAsistenciasHist = (int)$qHistA->fetchColumn();
+    } catch (PDOException $e) {
+        $totalAsistenciasHist = 0;
+        error_log('Error al consultar historial de asistencias del horario ' . (int)$datos['id_horario'] . ': ' . $e->getMessage());
+    }
 
     $tieneHistorial = ($totalSesionesHist > 0 || $totalAsistenciasHist > 0);
 }

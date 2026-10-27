@@ -1,1 +1,4 @@
-<?php $entidadAcademica='horario'; $edicionAcademica=true; require __DIR__.'/../academico_form.php';
+<?php
+$entidadAcademica = 'horario';
+$edicionAcademica = true;
+require __DIR__ . '/../academico_form.php';
