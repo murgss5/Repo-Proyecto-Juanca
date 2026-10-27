@@ -89,7 +89,7 @@ try {
     }
 
     // Validación de contraseña (solo si se proporciona, ya sea en crear o editar)
-    if ($clave !== '') {
+    if ($clave !== '' && $rol !== 3 && !($rol === 2 && $accion === 'crear')) {
         if (strlen($clave) < 8) {
             volver('error', 'La contraseña debe tener al menos 8 caracteres.', $rol, $id ?: null);
         }

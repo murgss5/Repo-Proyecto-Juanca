@@ -19,7 +19,7 @@
 
 // Garantiza que las constantes existan
 if (!defined('RUTA_BASE')) {
-    require_once dirname(__DIR__) . '/includes/constantes.php';
+    require_once __DIR__ . '/../../includes/constantes.php';
 }
 
 // Cargar autenticacion para acceder a usuarioActual()

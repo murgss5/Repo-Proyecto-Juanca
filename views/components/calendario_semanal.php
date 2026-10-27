@@ -38,7 +38,7 @@ $linkSemanaSiguiente = $urlBaseModulo . '?fecha=' . urlencode($estructuraSemana[
 <div class="calendario-componente">
     <!-- Barra superior de navegación y controles -->
     <div class="calendario-toolbar">
-        <div class="calendario-nav-grupo">
+        <div class="calendario-nav-grupo d-inline-flex align-items-center flex-wrap">
             <a href="<?= $linkSemanaAnterior ?>" class="calendario-btn-nav" title="Semana anterior">
                 <i class="fas fa-chevron-left"></i> Anterior
             </a>
@@ -48,6 +48,8 @@ $linkSemanaSiguiente = $urlBaseModulo . '?fecha=' . urlencode($estructuraSemana[
             <a href="<?= $linkSemanaSiguiente ?>" class="calendario-btn-nav" title="Semana siguiente">
                 Siguiente <i class="fas fa-chevron-right"></i>
             </a>
+            <!-- Selector de fecha nativo para navegación directa -->
+            <input type="date" id="selectorFechaRapida" class="form-control form-control-sm d-inline-block w-auto ml-2 shadow-sm" title="Elegir fecha exacta" value="<?= htmlspecialchars($fechaConsulta ?? $estructuraSemana['fecha_referencia'] ?? date('Y-m-d')) ?>">
         </div>
 
         <div class="calendario-titulo-rango">
@@ -92,12 +94,12 @@ $linkSemanaSiguiente = $urlBaseModulo . '?fecha=' . urlencode($estructuraSemana[
     <?php endif; ?>
 
     <!-- Cuadrícula semanal visual -->
-    <div class="calendario-scroll-wrapper">
-        <div class="calendario-grid-contenedor" style="--col-count: <?= $totalColumnasDias ?>; --cal-row-height: <?= (int)$cuadricula['row_height_px'] ?>px;">
+    <div class="calendario-scroll-wrapper" style="-webkit-overflow-scrolling: touch;">
+        <div class="calendario-grid-contenedor calendario-tabla" style="--col-count: <?= $totalColumnasDias ?>; --cal-row-height: <?= (int)$cuadricula['row_height_px'] ?>px;">
             
             <!-- Fila de encabezado con días y números -->
             <div class="calendario-fila-encabezado">
-                <div class="calendario-header-hora">HORARIO</div>
+                <div class="calendario-header-hora hora-col">HORARIO</div>
                 <?php foreach ($estructuraSemana['dias'] as $dia): ?>
                     <div class="calendario-header-dia <?= $dia['es_hoy'] ? 'es-hoy' : '' ?>">
                         <span class="dia-abrev"><?= htmlspecialchars($dia['abrev']) ?></span>
@@ -109,7 +111,7 @@ $linkSemanaSiguiente = $urlBaseModulo . '?fecha=' . urlencode($estructuraSemana[
             <!-- Cuerpo de la cuadrícula: horas a la izquierda y columnas por cada día -->
             <div class="calendario-cuerpo-grid">
                 <!-- Columna vertical de horas -->
-                <div class="calendario-columna-horas">
+                <div class="calendario-columna-horas hora-col">
                     <?php foreach ($cuadricula['horas_grid'] as $hGrid): ?>
                         <div class="calendario-celda-hora-label">
                             <?= htmlspecialchars($hGrid['hora_12']) ?>
@@ -126,7 +128,7 @@ $linkSemanaSiguiente = $urlBaseModulo . '?fecha=' . urlencode($estructuraSemana[
                                 $esCorto = ($ev['duracion_min'] <= 60);
                                 $jsonEvento = htmlspecialchars(json_encode($ev, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8');
                             ?>
-                            <div class="calendario-bloque-clase <?= $esCorto ? 'bloque-corto' : '' ?>"
+                            <div class="calendario-bloque-clase evento-bloque <?= $esCorto ? 'bloque-corto' : '' ?>"
                                  style="top: <?= (float)$ev['top_px'] ?>px; height: <?= max(28, (float)$ev['height_px'] - 3) ?>px; width: calc(<?= (float)$ev['width_percent'] ?>% - 6px); left: calc(<?= (float)$ev['left_percent'] ?>% + 3px);"
                                  data-evento="<?= $jsonEvento ?>"
                                  onclick="mostrarDetalleClase(this)"
@@ -279,6 +281,32 @@ $linkSemanaSiguiente = $urlBaseModulo . '?fecha=' . urlencode($estructuraSemana[
 </div>
 
 <script>
+window.fechaActualCalendario = '<?= htmlspecialchars($estructuraSemana['fecha_referencia'] ?? date('Y-m-d')) ?>';
+
+function cargarHorario(fecha) {
+    window.fechaActualCalendario = fecha;
+    const url = new URL(window.location.href);
+    url.searchParams.set('fecha', fecha);
+    window.location.href = url.toString();
+}
+
+function renderizarCalendario(fecha) {
+    cargarHorario(fecha);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const selectorFecha = document.getElementById('selectorFechaRapida');
+    if (selectorFecha) {
+        selectorFecha.addEventListener('change', function() {
+            const fecha = this.value;
+            if (fecha) {
+                window.fechaActualCalendario = fecha;
+                cargarHorario(fecha);
+            }
+        });
+    }
+});
+
 function mostrarDetalleClase(elemento) {
     try {
         const raw = elemento.getAttribute('data-evento');
