@@ -41,7 +41,7 @@ if ($rolActualId === 1) {
   <!-- Botón para contraer el menú lateral -->
   <ul class="navbar-nav">
     <li class="nav-item">
-      <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+      <a class="nav-link" data-widget="pushmenu" href="#" role="button" aria-label="Alternar menú de navegación"><i class="fas fa-bars"></i></a>
     </li>
 
   </ul>
@@ -50,7 +50,7 @@ if ($rolActualId === 1) {
   <ul class="navbar-nav ml-auto">
     <?php foreach ($enlacesRapidos as $enlace): ?>
       <li class="nav-item d-none d-md-inline-block">
-        <a href="<?= $enlace['url'] ?>" class="nav-link" title="<?= htmlspecialchars($enlace['texto']) ?>">
+        <a href="<?= $enlace['url'] ?>" class="nav-link" title="<?= htmlspecialchars($enlace['texto']) ?>" aria-label="<?= htmlspecialchars($enlace['texto']) ?>">
           <i class="fas <?= $enlace['icono'] ?> text-sena"></i> <span class="d-none d-lg-inline"><?= htmlspecialchars($enlace['texto']) ?></span>
         </a>
       </li>
@@ -58,7 +58,7 @@ if ($rolActualId === 1) {
 
     <!-- Menú del usuario -->
     <li class="nav-item dropdown">
-      <a class="nav-link" data-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false">
+      <a class="nav-link" data-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false" aria-label="Menú de usuario">
         <img src="<?= $fotoUsuario ?>" class="img-circle elevation-2" alt="Foto de usuario" width="32" height="32">
         <span class="d-none d-md-inline ml-1"><?= htmlspecialchars($nombreUsuarioActual) ?></span>
       </a>
@@ -71,7 +71,7 @@ if ($rolActualId === 1) {
         <form action="<?= RUTA_BASE ?>controllers/logout.php?rol=<?= urlencode($rolClaveActual ?? '') ?>" method="post" class="m-0 p-0" id="formLogoutNavbar">
           <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf'] ?? '') ?>">
           <input type="hidden" name="rol" value="<?= htmlspecialchars($rolClaveActual ?? '') ?>">
-          <button type="submit" class="dropdown-item text-danger border-0 bg-transparent text-left w-100" style="cursor: pointer;">
+          <button type="submit" class="dropdown-item text-danger border-0 bg-transparent text-left w-100" style="cursor: pointer;" aria-label="Cerrar sesión">
             <i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesión
           </button>
         </form>

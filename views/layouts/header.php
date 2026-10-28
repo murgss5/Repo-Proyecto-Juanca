@@ -54,6 +54,10 @@ $menuActivo   = $menuActivo ?? '';
   <!-- Icono de la página -->
   <link rel="icon" href="<?= RUTA_BASE ?>assets/img/sena.svg">
 
+  <!-- Preconexión a Google Fonts para acelerar FCP / LCP (Lighthouse) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
   <!-- Fuente institucional (opcional; si no hay internet usa la fuente del sistema) -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=swap">
 
