@@ -52,7 +52,7 @@ ob_start();
   <div class="card-header">
     <h3 class="card-title"><i class="fas fa-users text-sena"></i> Listado de aprendices</h3>
     <div class="card-tools">
-      <a href="importar.php" class="btn btn-success btn-sm">
+      <a href="<?= RUTA_BASE ?>views/admin/aprendices/importar.php" class="btn btn-success btn-sm">
         <i class="fas fa-file-excel"></i> Importar
       </a>
       <a href="<?= RUTA_BASE ?>views/admin/aprendices/create.php" class="btn btn-primary btn-sm">

@@ -1,6 +1,34 @@
+# Credenciales y configuración privada
+/config/conexion.php
+
+# Archivos locales y temporales
+/backups/
+/scratch/
+
+# Archivos subidos por usuarios
+/uploads/
+
+# Dependencias instalables mediante Composer
 /vendor/
-/composer.phar
-/scratch_excel*.txt
-/test.php
-/uploads/excusas/*
-!/uploads/excusas/.htaccess
+
+# Copias de seguridad y datos privados
+/backups/
+*.bak
+*.log
+.env
+.env.*
+!.env.example
+
+# Archivos subidos por usuarios
+/uploads/
+
+# Dependencias de Composer
+/vendor/
+
+/config/mailer.php
+/backups/
+/scratch/
+/uploads/
+/vendor/
+.env
+.env.*

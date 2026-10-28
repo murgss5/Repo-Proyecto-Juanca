@@ -62,7 +62,6 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
 }
 
 .calendario-btn-nav {
@@ -175,14 +174,13 @@
 .calendario-scroll-wrapper {
   width: 100%;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   position: relative;
   background-color: var(--cal-bg-main);
 }
 
 /* ---------- Estructura del grid semanal ---------- */
 .calendario-grid-contenedor {
-  min-width: 1000px;
+  min-width: 960px;
   display: flex;
   flex-direction: column;
 }
@@ -200,25 +198,26 @@
 
 .calendario-header-hora {
   padding: 14px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--cal-text-muted);
   text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--cal-text-muted);
+  text-transform: uppercase;
   border-right: 1px solid var(--cal-border-grid);
-  letter-spacing: 0.5px;
-  background-color: var(--cal-bg-hours);
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .calendario-header-dia {
-  padding: 10px 8px;
+  padding: 12px 8px;
   text-align: center;
   border-right: 1px solid var(--cal-border-grid);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 2px;
-  transition: background-color 0.15s ease;
+  background-color: var(--cal-bg-header);
+  transition: background-color 0.2s ease;
+  user-select: none;
 }
 
 .calendario-header-dia:last-child {
@@ -226,66 +225,86 @@
 }
 
 .calendario-header-dia .dia-abrev {
-  font-size: 11px;
-  font-weight: 700;
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
   color: var(--cal-text-muted);
-  letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
 
 .calendario-header-dia .dia-numero {
-  font-size: 18px;
-  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 700;
   color: var(--cal-text-main);
-  line-height: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin: 0 auto;
+  transition: all 0.2s ease;
 }
 
+/* Resaltado del día actual (indicador sena verde suave y número destacado) */
 .calendario-header-dia.es-hoy {
-  background-color: var(--cal-sena-green-light);
+  background-color: rgba(57, 169, 0, 0.08);
 }
 
 .calendario-header-dia.es-hoy .dia-abrev {
   color: var(--cal-sena-green-dark);
+  font-weight: 800;
 }
 
 .calendario-header-dia.es-hoy .dia-numero {
-  color: var(--cal-sena-green-dark);
+  background-color: var(--cal-sena-green);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(57, 169, 0, 0.4);
 }
 
-/* Cuerpo del grid */
+/* ---------- Cuerpo de la cuadrícula ---------- */
 .calendario-cuerpo-grid {
   display: grid;
   grid-template-columns: 110px repeat(var(--col-count, 6), 1fr);
   position: relative;
   background-color: var(--cal-bg-main);
-  background-image: linear-gradient(to bottom, var(--cal-border-grid) 1px, transparent 1px);
-  background-size: 100% var(--cal-row-height);
 }
 
-/* Columna vertical de horas */
+/* Columna izquierda de horas */
 .calendario-columna-horas {
-  border-right: 1px solid var(--cal-border-grid);
   background-color: var(--cal-bg-hours);
-  z-index: 10;
+  border-right: 1px solid var(--cal-border-grid);
+  position: sticky;
+  left: 0;
+  z-index: 20;
 }
 
 .calendario-celda-hora-label {
   height: var(--cal-row-height);
-  padding: 6px 10px;
-  font-size: 11px;
+  padding: 6px 12px 0 6px;
+  text-align: right;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--cal-text-muted);
-  text-align: center;
   border-bottom: 1px solid var(--cal-border-grid);
   box-sizing: border-box;
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-end;
+  user-select: none;
 }
 
 /* Columnas de cada día */
 .calendario-columna-dia {
   position: relative;
   border-right: 1px solid var(--cal-border-grid);
+  background-color: var(--cal-bg-main);
+  /* Líneas horizontales de guía horaria suaves */
+  background-image: linear-gradient(to bottom, var(--cal-border-subtle) 1px, transparent 1px);
+  background-size: 100% var(--cal-row-height);
   box-sizing: border-box;
 }
 
@@ -294,7 +313,7 @@
 }
 
 .calendario-columna-dia.es-hoy {
-  background-color: rgba(57, 169, 0, 0.03);
+  background-color: rgba(57, 169, 0, 0.02);
 }
 
 /* ---------- Bloques verdes de clases (Cards de formación en tonos suaves con alto contraste) ---------- */
@@ -518,123 +537,5 @@
   .calendario-select-ficha {
     width: 100%;
     max-width: 100%;
-  }
-}
-
-
-/* ---------- Vista Móvil Ultra-Compacta (Anti-Scroll Horizontal) ---------- */
-@media (max-width: 768px) {
-  /* 1. Revertir min-width que forzaba el scroll horizontal */
-  .calendario-scroll-wrapper table,
-  .calendario-scroll-wrapper .calendario-grid-contenedor {
-    min-width: 100% !important;
-    width: 100% !important;
-    table-layout: fixed !important;
-  }
-
-  .calendario-scroll-wrapper {
-    overflow-x: hidden !important;
-  }
-
-  /* Cuadrícula CSS Grid: 35px para horas y 7 columnas fluidas */
-  .calendario-fila-encabezado,
-  .calendario-cuerpo-grid {
-    grid-template-columns: 35px repeat(var(--col-count, 6), 1fr) !important;
-  }
-
-  /* 2. Achicar drásticamente el tamaño de fuente y padding general */
-  .calendario-tabla th,
-  .calendario-tabla td,
-  .calendario-header-dia,
-  .calendario-celda-hora-label {
-    padding: 2px !important;
-    font-size: 0.65rem !important;
-  }
-
-  .hora-col,
-  .calendario-header-hora,
-  .calendario-columna-horas,
-  .calendario-celda-hora-label {
-    width: 35px !important; /* Columna de horas súper delgada */
-    min-width: 35px !important;
-    max-width: 35px !important;
-    font-size: 0.55rem !important;
-    padding: 2px 1px !important;
-    word-wrap: break-word;
-    box-sizing: border-box !important;
-    line-height: 1.1;
-  }
-
-  /* 3. Compactar cabeceras y círculos de fechas */
-  .calendario-tabla th h5,
-  .calendario-header-dia .dia-numero {
-    font-size: 0.7rem !important;
-    margin-bottom: 0 !important;
-    line-height: 1.1;
-  }
-
-  .calendario-tabla th .badge,
-  .calendario-header-dia .dia-abrev {
-    padding: 0.2em 0.4em !important;
-    font-size: 0.55rem !important;
-    line-height: 1;
-  }
-
-  /* 4. Minimalizar tarjetas de eventos simulando etiquetas truncadas */
-  .evento-bloque,
-  .calendario-bloque-clase {
-    padding: 2px 4px !important;
-    margin: 1px !important;
-    font-size: 0.55rem !important; /* Letra minúscula para móvil */
-    line-height: 1.1 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    border-radius: 4px !important;
-    border-left-width: 2px !important;
-  }
-
-  .evento-bloque .bloque-header,
-  .calendario-bloque-clase .bloque-header {
-    font-size: 0.55rem !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    margin-bottom: 0 !important;
-  }
-
-  .evento-bloque .bloque-titulo,
-  .calendario-bloque-clase .bloque-titulo {
-    font-size: 0.55rem !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    -webkit-line-clamp: 1 !important;
-    line-clamp: 1 !important;
-    margin-bottom: 0 !important;
-  }
-
-  .evento-bloque i,
-  .evento-bloque hr,
-  .evento-bloque .d-flex,
-  .calendario-bloque-clase i,
-  .calendario-bloque-clase .bloque-meta,
-  .calendario-bloque-clase .bloque-meta-extra {
-    display: none !important; /* Ocultar íconos, líneas y detalles extra en móvil para ahorrar espacio */
-  }
-
-  .calendario-toolbar {
-    padding: 8px 10px !important;
-  }
-
-  .calendario-btn-nav {
-    padding: 4px 8px !important;
-    font-size: 11px !important;
-  }
-
-  #selectorFechaRapida {
-    max-width: 130px !important;
-    font-size: 11px !important;
-    padding: 2px 5px !important;
   }
 }
