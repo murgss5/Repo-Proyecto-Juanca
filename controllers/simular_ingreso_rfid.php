@@ -221,12 +221,13 @@ try {
     ]);
     exit;
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
+    error_log("Error al simular ingreso RFID: " . $e->getMessage());
     http_response_code(500);
     header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
-        'message' => 'Error en el servidor al simular ingreso: ' . $e->getMessage()
+        'message' => 'No fue posible completar la simulación de ingreso. Inténtalo nuevamente.'
     ]);
     exit;
 }

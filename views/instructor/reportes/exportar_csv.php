@@ -55,21 +55,21 @@ header('Pragma: no-cache');
 header('Expires: 0');
 $salida = fopen('php://output', 'w');
 fwrite($salida, "\xEF\xBB\xBF");
-fputcsv($salida, ['REPORTE DE ASISTENCIAS - MIS FICHAS']);
-fputcsv($salida, ['Generado', date('d/m/Y H:i:s')]);
-fputcsv($salida, ['Fecha inicial', $fechaDesde ?: 'Sin filtro']);
-fputcsv($salida, ['Fecha final', $fechaHasta ?: 'Sin filtro']);
+fputcsv($salida, neutralizarFilaCsv(['REPORTE DE ASISTENCIAS - MIS FICHAS']));
+fputcsv($salida, neutralizarFilaCsv(['Generado', date('d/m/Y H:i:s')]));
+fputcsv($salida, neutralizarFilaCsv(['Fecha inicial', $fechaDesde ?: 'Sin filtro']));
+fputcsv($salida, neutralizarFilaCsv(['Fecha final', $fechaHasta ?: 'Sin filtro']));
 fputcsv($salida, []);
-fputcsv($salida, ['Fecha', 'Aprendiz', 'Identificación', 'Ficha', 'Programa', 'Entrada', 'Salida', 'Estado entrada', 'Estado salida', 'Minutos retardo', 'Minutos salida anticipada']);
+fputcsv($salida, neutralizarFilaCsv(['Fecha', 'Aprendiz', 'Identificación', 'Ficha', 'Programa', 'Entrada', 'Salida', 'Estado entrada', 'Estado salida', 'Minutos retardo', 'Minutos salida anticipada']));
 while ($fila = $consulta->fetch()) {
-    fputcsv($salida, [
+    fputcsv($salida, neutralizarFilaCsv([
         date('d/m/Y', strtotime($fila['fecha_asistencia'])), $fila['aprendiz'], $fila['identificacion'],
         $fila['id_ficha'], $fila['nombre_programa'],
         $fila['entrada'] ? date('H:i', strtotime($fila['entrada'])) : '',
         $fila['salida'] ? date('H:i', strtotime($fila['salida'])) : '',
         $fila['estado_entrada'], $fila['estado_salida'], (int) $fila['minutos_retardo'],
         (int) $fila['minutos_salida_anticipada'],
-    ]);
+    ]));
 }
 fclose($salida);
 exit;

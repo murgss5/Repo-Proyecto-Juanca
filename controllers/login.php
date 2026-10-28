@@ -9,6 +9,7 @@ session_start();
 // carga la clase de conexion a la base de datos
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../includes/autenticacion.php';
+require_once __DIR__ . '/../includes/RateLimiter.php';
 
 // verifica que el formulario fue enviado por POST
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -30,6 +31,21 @@ if ($identificador === "" || $contrasena === "") {
 $conexionBD = new Conexion();
 $conexion = $conexionBD->conectar();
 
+// Instancia el servicio de mitigacion de fuerza bruta y control de intentos
+$rateLimiter = new RateLimiter($conexion);
+$ipCliente = $rateLimiter->obtenerIpCliente();
+
+// Comprueba atómicamente si la cuenta o la IP han superado los límites o están en espera progresiva
+$estadoIntento = $rateLimiter->verificarIntento($identificador, $ipCliente);
+if (!$estadoIntento['permitido']) {
+    $motivo = $estadoIntento['motivo'];
+    $segundosRestantes = (int)($estadoIntento['segundos_restantes'] ?? 0);
+    error_log("Acceso rechazado por limitacion de intentos [IP: {$ipCliente}, Cuenta: {$identificador}, Motivo: {$motivo}, Espera: {$segundosRestantes}s]");
+    $_SESSION['login_bloqueo_segundos'] = $segundosRestantes;
+    header("Location: " . RUTA_BASE . "views/auth/login.php?error=limite");
+    exit;
+}
+
 // busca el usuario por nombre de usuario o numero de identificacion (cedula)
 $sql = "SELECT usuario.id_usuario, usuario.nombre_usuario,
     usuario.contrasena, usuario.nombre, usuario.apellido, usuario.identificacion,
@@ -47,6 +63,7 @@ $usuarios = $consulta->fetchAll();
 if (count($usuarios) > 1) {
     $correlacionId = bin2hex(random_bytes(8));
     error_log("Ambiguedad de autenticacion [Correlacion ID: {$correlacionId}]: multiples cuentas detectadas para la solicitud.");
+    $rateLimiter->registrarFallo($identificador, $ipCliente, 'AMBIGUEDAD_CUENTAS');
     header("Location: " . RUTA_BASE . "views/auth/login.php?error=credenciales");
     exit;
 }
@@ -71,12 +88,20 @@ if ($usuario) {
         // contrasena guardada en texto plano: comparacion segura
         $contrasenaValida = hash_equals($usuario["contrasena"], $contrasena);
     }
+} else {
+    // Si el usuario no existe, ejecuta calculo de hash simulado para mitigar ataques de temporizacion (timing attacks)
+    RateLimiter::mitigarEnumeracionTiempo($contrasena);
 }
 
 if (!$usuario || !$contrasenaValida) {
+    // Registra fallo atomico por cuenta e IP (sin almacenar credenciales)
+    $rateLimiter->registrarFallo($identificador, $ipCliente, $usuario ? 'CREDENCIALES_INVALIDAS' : 'USUARIO_INEXISTENTE');
     header("Location: " . RUTA_BASE . "views/auth/login.php?error=credenciales");
     exit;
 }
+
+// Autenticacion exitosa: restablece contadores de la cuenta
+$rateLimiter->registrarExito($identificador, $ipCliente);
 
 // migracion automatica: si la contrasena era texto plano, actualizar a hash
 if (!esHashContrasena($usuario["contrasena"])) {

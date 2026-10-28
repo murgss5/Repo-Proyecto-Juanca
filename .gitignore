@@ -29,6 +29,5 @@
 /backups/
 /scratch/
 /uploads/
-/vendor/
-.env
-.env.*
+# Archivos predeterminados de hosting
+default.php

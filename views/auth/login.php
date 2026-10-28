@@ -73,7 +73,15 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
         <!-- Muestra mensaje de error seguro como alternativa si JS esta desactivado -->
         <noscript>
           <div class="alert alert-danger" role="alert">
-            <?= htmlspecialchars($_GET['error']) ?>
+            <?php
+              if ($_GET['error'] === 'credenciales') {
+                  echo 'El usuario o la contraseña no son correctos.';
+              } elseif ($_GET['error'] === 'limite') {
+                  echo 'Acceso temporalmente restringido por demasiados intentos fallidos. Inténtelo más tarde.';
+              } else {
+                  echo htmlspecialchars($_GET['error']);
+              }
+            ?>
           </div>
         </noscript>
       <?php endif; ?>
@@ -139,6 +147,10 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
     if (errorRecibido === 'credenciales') {
       titleText = 'Credenciales inválidas';
       messageText = 'El usuario o la contraseña no son correctos.';
+    } else if (errorRecibido === 'limite' || errorRecibido === 'bloqueo' || errorMsgLower.includes('intentos')) {
+      iconType = 'warning';
+      titleText = 'Acceso temporalmente restringido';
+      messageText = 'Ha superado el límite de intentos fallidos o debe esperar antes de reintentar. Por motivos de seguridad, espere unos minutos antes de volver a intentarlo.';
     } else if (errorMsgLower.includes('obligatorio') || errorMsgLower.includes('incompleto') || errorMsgLower.includes('vacío')) {
       iconType = 'warning';
       titleText = 'Campos incompletos';

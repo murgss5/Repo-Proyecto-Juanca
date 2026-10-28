@@ -114,10 +114,11 @@ if (isset($_POST['crear_ficha_rapida'])) {
 
         echo json_encode(['success' => true]);
         exit;
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
+        error_log("Error al crear ficha en importar_horarios_excel: " . $e->getMessage());
         responderJson([
             'success' => false,
-            'error' => 'Error al crear la ficha en la base de datos: ' . $e->getMessage()
+            'error' => 'No fue posible crear la ficha. Inténtalo nuevamente.'
         ]);
     }
 }
@@ -871,12 +872,13 @@ try {
         }, $horariosAInsertar)
     ]);
 
-} catch (\Exception $e) {
+} catch (\Throwable $e) {
     if ($conexion->inTransaction()) {
         $conexion->rollBack();
     }
+    error_log("Error durante el guardado de horarios en importar_horarios_excel: " . $e->getMessage());
     responderJson([
         'success' => false,
-        'error' => 'Error durante el guardado de horarios en la base de datos: ' . $e->getMessage()
+        'error' => 'No fue posible completar el registro de horarios. Inténtalo nuevamente.'
     ]);
 }

@@ -408,3 +408,61 @@ function usuarioActual(int|string|null $rol = null): ?array
         'telefono'       => $datos['telefono'] ?? null,
     ];
 }
+
+/**
+ * Neutraliza valores susceptibles de inyección de fórmulas CSV (CWE-1236 / Formula Injection).
+ * Si la celda comienza con caracteres disparadores (=, +, -, @, \t, \r, |, %) tras ignorar
+ * espacios y caracteres de control iniciales, antepone un apóstrofo ASCII (') para forzar
+ * su interpretación como texto literal en Excel, LibreOffice y otras aplicaciones de hoja de cálculo.
+ * Los números legítimos (como 123456 o -5) y textos normales (como correos o nombres) se conservan intactos.
+ *
+ * @param mixed $valor Valor de la celda a evaluar
+ * @return mixed Valor seguro para exportación CSV
+ */
+function neutralizarCeldaCsv($valor)
+{
+    if ($valor === null || is_int($valor) || is_float($valor) || is_bool($valor)) {
+        return $valor;
+    }
+
+    $str = (string)$valor;
+    if ($str === '') {
+        return $str;
+    }
+
+    // Caracteres invisibles o de control iniciales que hojas de cálculo pueden ignorar antes de interpretar fórmulas
+    $trimmed = ltrim($str, " \t\r\n\0\x0B");
+    if ($trimmed === '') {
+        return $str;
+    }
+
+    $primerChar = $trimmed[0];
+
+    // Caracteres que disparan fórmulas o ejecución de comandos
+    $disparadores = ['=', '@', '|', '%', "\t", "\r"];
+    if (in_array($primerChar, $disparadores, true)) {
+        return "'" . $str;
+    }
+
+    // Si empieza por '+' o '-', neutralizar si NO es un número escalar puro
+    // (ej. -5 o +5.2 se preservan numéricamente, pero -1+2 o +SUM(...) se neutralizan)
+    if ($primerChar === '+' || $primerChar === '-') {
+        if (!preg_match('/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/', $trimmed)) {
+            return "'" . $str;
+        }
+    }
+
+    return $str;
+}
+
+/**
+ * Aplica neutralización de fórmulas a todas las celdas de una fila para exportación CSV.
+ *
+ * @param array $fila Array de valores que componen la fila del CSV
+ * @return array Fila con todas sus celdas neutralizadas de forma segura
+ */
+function neutralizarFilaCsv(array $fila): array
+{
+    return array_map('neutralizarCeldaCsv', $fila);
+}
+

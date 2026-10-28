@@ -149,14 +149,14 @@ $output = fopen('php://output', 'w');
 fwrite($output, "\xEF\xBB\xBF");
 
 // --- Hoja 1: Resumen por aprendiz ---
-fputcsv($output, ['REPORTE DE ASISTENCIA - RESUMEN POR APRENDIZ']);
-fputcsv($output, ['Fecha inicial', $filtroFechaIni]);
-fputcsv($output, ['Fecha final', $filtroFechaFin]);
-fputcsv($output, ['Generado', date('d/m/Y H:i:s')]);
+fputcsv($output, neutralizarFilaCsv(['REPORTE DE ASISTENCIA - RESUMEN POR APRENDIZ']));
+fputcsv($output, neutralizarFilaCsv(['Fecha inicial', $filtroFechaIni]));
+fputcsv($output, neutralizarFilaCsv(['Fecha final', $filtroFechaFin]));
+fputcsv($output, neutralizarFilaCsv(['Generado', date('d/m/Y H:i:s')]));
 fputcsv($output, []); // línea vacía
 
 // Encabezados del resumen
-fputcsv($output, [
+fputcsv($output, neutralizarFilaCsv([
     'Aprendiz',
     'Identificación',
     'Programa',
@@ -173,11 +173,11 @@ fputcsv($output, [
     'Excusas aprobadas',
     'Excusas pendientes',
     'Excusas rechazadas'
-]);
+]));
 
 foreach ($resumenAprendices as $row) {
     $inasistenciasNoJust = (int)$row['inasistencias'] - (int)$row['inasistencias_justificadas'];
-    fputcsv($output, [
+    fputcsv($output, neutralizarFilaCsv([
         $row['aprendiz'],
         $row['identificacion'],
         $row['nombre_programa'],
@@ -194,7 +194,7 @@ foreach ($resumenAprendices as $row) {
         (int)$row['excusas_aprobadas'],
         (int)$row['excusas_pendientes'],
         (int)$row['excusas_rechazadas']
-    ]);
+    ]));
 }
 
 // Totales
@@ -225,8 +225,8 @@ foreach ($resumenAprendices as $row) {
 $totales['total_inasistencias_no_justificadas'] = $totales['total_inasistencias'] - $totales['total_inasistencias_justificadas'];
 
 fputcsv($output, []);
-fputcsv($output, ['TOTALES']);
-fputcsv($output, [
+fputcsv($output, neutralizarFilaCsv(['TOTALES']));
+fputcsv($output, neutralizarFilaCsv([
     'TOTAL',
     '',
     '',
@@ -243,14 +243,14 @@ fputcsv($output, [
     $totales['total_excusas_aprobadas'],
     $totales['total_excusas_pendientes'],
     $totales['total_excusas_rechazadas']
-]);
+]));
 
 // --- Hoja 2: Detalle de asistencias ---
 fputcsv($output, []);
-fputcsv($output, ['DETALLE DE ASISTENCIAS']);
+fputcsv($output, neutralizarFilaCsv(['DETALLE DE ASISTENCIAS']));
 fputcsv($output, []);
 
-fputcsv($output, [
+fputcsv($output, neutralizarFilaCsv([
     'Fecha',
     'Aprendiz',
     'Identificación',
@@ -263,10 +263,10 @@ fputcsv($output, [
     'Minutos retardo',
     'Minutos salida anticipada',
     'Estado excusa'
-]);
+]));
 
 foreach ($detalleAsistencias as $row) {
-    fputcsv($output, [
+    fputcsv($output, neutralizarFilaCsv([
         date('d/m/Y', strtotime($row['fecha_asistencia'])),
         $row['aprendiz'],
         $row['identificacion'],
@@ -279,7 +279,7 @@ foreach ($detalleAsistencias as $row) {
         (int)$row['minutos_retardo'],
         (int)$row['minutos_salida_anticipada'],
         $row['estado_excusa'] ? ucfirst(strtolower($row['estado_excusa'])) : ''
-    ]);
+    ]));
 }
 
 fclose($output);

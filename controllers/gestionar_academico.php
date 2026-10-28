@@ -133,6 +133,7 @@ try {
             if (!$q->rowCount()) volverAcademico($modulo, 'error', 'El horario no existe.', $vista);
             volverAcademico($modulo, 'mensaje', 'Horario eliminado correctamente.', $vista);
         } catch (PDOException $e) {
+            error_log("Error al eliminar horario [ID: {$id}]: " . $e->getMessage());
             volverAcademico($modulo, 'error', 'No se puede eliminar el horario debido a restricciones de integridad referencial. Puede cambiar su estado a Inactivo.', $vista);
         }
     }
@@ -302,5 +303,6 @@ try {
     volverAcademico($modulo, 'mensaje', 'Horario actualizado correctamente.' . $mensajeAvisoFicha, $vista);
 
 } catch (Throwable $e) {
-    volverAcademico($modulo ?? 'horarios', 'error', 'No fue posible guardar los datos: ' . $e->getMessage(), $vista ?? 'tabla');
+    error_log("Error en gestionar_academico [modulo: " . ($modulo ?? 'desconocido') . ", accion: " . ($accion ?? 'desconocida') . "]: " . $e->getMessage());
+    volverAcademico($modulo ?? 'horarios', 'error', 'No fue posible completar la operación. Inténtalo nuevamente.', $vista ?? 'tabla');
 }

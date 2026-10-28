@@ -364,7 +364,8 @@ try {
     if ($conexion->inTransaction()) {
         $conexion->rollBack();
     }
-    $_SESSION['flash'] = ['tipo' => 'error', 'mensaje' => 'Error al importar: ' . $e->getMessage()];
+    error_log("Error en confirmar_importar_horarios: " . $e->getMessage());
+    $_SESSION['flash'] = ['tipo' => 'error', 'mensaje' => 'No fue posible completar la importación de horarios. Inténtalo nuevamente.'];
     header('Location: ../views/admin/horarios/importar_preview.php');
     exit;
 }
