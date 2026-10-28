@@ -149,9 +149,8 @@ ob_start();
             </h3>
         </div>
         <div class="card-body">
-            <!-- Contenedor table-responsive anti-aplastamiento móvil -->
-            <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                <table class="table table-hover table-striped align-middle tabla-datos mb-0" style="min-width: 1000px;" data-empty-message="No hay horarios registrados con los filtros seleccionados.">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle tabla-datos mb-0" data-empty-message="No hay horarios registrados con los filtros seleccionados.">
                     <thead class="thead-light">
                         <tr>
                             <th>Ficha</th>
@@ -224,35 +223,6 @@ ob_start();
         </div>
     </div>
 <?php endif; ?>
-
-<!-- Script de navegación y sincronización de fecha -->
-<script>
-window.fechaActualCalendario = '<?= htmlspecialchars($estructuraSemana['fecha_referencia'] ?? date('Y-m-d')) ?>';
-
-function cargarHorario(fecha) {
-    window.fechaActualCalendario = fecha;
-    const url = new URL(window.location.href);
-    url.searchParams.set('fecha', fecha);
-    window.location.href = url.toString();
-}
-
-function renderizarCalendario(fecha) {
-    cargarHorario(fecha);
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const selectorFecha = document.getElementById('selectorFechaRapida');
-    if (selectorFecha) {
-        selectorFecha.addEventListener('change', function() {
-            const fecha = this.value;
-            if (fecha) {
-                window.fechaActualCalendario = fecha;
-                cargarHorario(fecha);
-            }
-        });
-    }
-});
-</script>
 
 <?php
 $contenido = ob_get_clean();
