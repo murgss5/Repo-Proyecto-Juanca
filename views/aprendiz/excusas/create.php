@@ -4,35 +4,65 @@
  * Formulario funcional para registrar una excusa médica.
  */
 
-// Carga la autenticacion y verifica que sea aprendiz
-require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
+// Carga constantes y autenticación del sistema
+require_once __DIR__ . '/../../../includes/constantes.php';
+require_once __DIR__ . '/../../../includes/autenticacion.php';
 exigirRol(3);
-// Carga constantes y conexion a la base de datos
-require_once dirname(__DIR__, 3) . '/includes/constantes.php';
-require_once dirname(__DIR__, 3) . '/config/conexion.php';
+require_once __DIR__ . '/../../../config/conexion.php';
 
 $conexion = (new Conexion())->conectar();
 
 // Cargar inasistencias del aprendiz que no tengan excusa
-$consultaInasistencias = $conexion->prepare(
-    "SELECT
-        a.id_asistencia,
-        a.fecha_asistencia,
-        h.entrada,
-        h.salida,
-        h.competencia
-     FROM asistencia a
-     INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
-     LEFT JOIN horario h ON h.id_horario = a.fk_horario
-     LEFT JOIN excusa e ON e.fk_asistencia = a.id_asistencia
-     WHERE ap.fk_usuario = :id_usuario
-     AND a.estado_entrada = 'INASISTENCIA'
-     AND e.id_excusa IS NULL
-     ORDER BY a.fecha_asistencia DESC, h.entrada ASC"
-);
-$consultaInasistencias->bindValue(':id_usuario', $_SESSION['aprendiz']['id_usuario'], PDO::PARAM_INT);
-$consultaInasistencias->execute();
-$inasistenciasDisponibles = $consultaInasistencias->fetchAll();
+// Se utiliza esquema resiliente para soportar tanto con fk_horario directo como a través de sesiones_jornada
+$inasistenciasDisponibles = [];
+$idUsuarioAprendiz = (int)($_SESSION['aprendiz']['id_usuario'] ?? 0);
+
+try {
+    $consultaInasistencias = $conexion->prepare(
+        "SELECT
+            a.id_asistencia,
+            a.fecha_asistencia,
+            h.entrada,
+            h.salida,
+            h.competencia
+         FROM asistencia a
+         INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
+         LEFT JOIN horario h ON h.id_horario = a.fk_horario
+         LEFT JOIN excusa e ON e.fk_asistencia = a.id_asistencia
+         WHERE ap.fk_usuario = :id_usuario
+         AND a.estado_entrada = 'INASISTENCIA'
+         AND e.id_excusa IS NULL
+         ORDER BY a.fecha_asistencia DESC, h.entrada ASC"
+    );
+    $consultaInasistencias->bindValue(':id_usuario', $idUsuarioAprendiz, PDO::PARAM_INT);
+    $consultaInasistencias->execute();
+    $inasistenciasDisponibles = $consultaInasistencias->fetchAll();
+} catch (PDOException $e) {
+    try {
+        $consultaInasistencias = $conexion->prepare(
+            "SELECT
+                a.id_asistencia,
+                a.fecha_asistencia,
+                h.entrada,
+                h.salida,
+                h.competencia
+             FROM asistencia a
+             INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
+             LEFT JOIN sesiones_jornada s ON s.id_sesion = a.fk_sesion_jornada
+             LEFT JOIN horario h ON h.id_horario = s.horario_id
+             LEFT JOIN excusa e ON e.fk_asistencia = a.id_asistencia
+             WHERE ap.fk_usuario = :id_usuario
+             AND a.estado_entrada = 'INASISTENCIA'
+             AND e.id_excusa IS NULL
+             ORDER BY a.fecha_asistencia DESC, a.id_asistencia DESC"
+        );
+        $consultaInasistencias->bindValue(':id_usuario', $idUsuarioAprendiz, PDO::PARAM_INT);
+        $consultaInasistencias->execute();
+        $inasistenciasDisponibles = $consultaInasistencias->fetchAll();
+    } catch (PDOException $e2) {
+        $inasistenciasDisponibles = [];
+    }
+}
 
 // Asegurar token CSRF para el formulario
 if (empty($_SESSION['csrf_token'])) {
@@ -51,8 +81,7 @@ $miga = [
     ['label' => 'Subir excusa'],
 ];
 
-
-// Inicia el bufer de salida para evitar errores si despues se necesita usar header().
+// Inicia el bufer de salida para el layout
 ob_start();
 ?>
 
@@ -127,7 +156,7 @@ ob_start();
                                         }
                                     ?>
                                         <option value="<?= htmlspecialchars($inasistencia['id_asistencia']) ?>">
-                                            <?= htmlspecialchars(date('d/m/Y', strtotime($inasistencia['fecha_asistencia']))) ?><?= $infoClase ?> &middot; Inasistencia registrada
+                                             <?= htmlspecialchars(date('d/m/Y', strtotime($inasistencia['fecha_asistencia']))) ?><?= $infoClase ?> &middot; Inasistencia registrada
                                         </option>
                                     <?php endforeach; ?>
                                 </select>

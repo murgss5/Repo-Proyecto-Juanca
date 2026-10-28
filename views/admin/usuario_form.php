@@ -20,13 +20,14 @@ $datos = [
     'nombre' => '',
     'apellido' => '',
     'telefono' => '',
+    'correo_electronico' => '',
     'codigo_rfid' => '',
     'id_ficha' => ''
 ];
 
 if ($edicion) {
     $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-    $sql = 'SELECT u.id_usuario, u.nombre_usuario, u.identificacion, u.nombre, u.apellido, u.telefono, ap.codigo_rfid, ap.fk_ficha AS id_ficha '
+    $sql = 'SELECT u.id_usuario, u.nombre_usuario, u.identificacion, u.nombre, u.apellido, u.telefono, u.correo_electronico, ap.codigo_rfid, ap.fk_ficha AS id_ficha '
          . 'FROM usuario u '
          . ($rolGestionado === 3 ? 'INNER JOIN aprendiz ap ON ap.fk_usuario = u.id_usuario' : 'LEFT JOIN aprendiz ap ON 1=0')
          . ' WHERE u.id_usuario = ? AND u.fk_rol = ?';
@@ -144,6 +145,31 @@ ob_start();
                                 </div>
                                 <input type="text" id="apellido" name="apellido" class="form-control" placeholder="Ej. Restrepo Gómez" value="<?= htmlspecialchars($datos['apellido']) ?>" required>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 form-group mb-3">
+                            <label for="correo_electronico" class="font-weight-bold text-dark">
+                                Correo Electrónico
+                            </label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                </div>
+                                <?php if ($rolGestionado === 3 && $edicion): ?>
+                                    <input type="email" id="correo_electronico" name="correo_electronico" class="form-control bg-light" placeholder="Sin correo registrado" value="<?= htmlspecialchars($datos['correo_electronico'] ?? '') ?>" readonly>
+                                <?php elseif ($rolGestionado === 3): ?>
+                                    <input type="email" id="correo_electronico" name="correo_electronico" class="form-control" placeholder="Ej. aprendiz@correo.com" value="<?= htmlspecialchars($datos['correo_electronico'] ?? '') ?>">
+                                <?php else: ?>
+                                    <input type="email" id="correo_electronico" name="correo_electronico" class="form-control" placeholder="Ej. instructor@correo.com" value="<?= htmlspecialchars($datos['correo_electronico'] ?? '') ?>">
+                                <?php endif; ?>
+                            </div>
+                            <?php if ($rolGestionado === 3 && $edicion): ?>
+                                <small class="text-muted"><i class="fas fa-info-circle text-info mr-1"></i> El correo es actualizado directamente por el aprendiz desde su perfil.</small>
+                            <?php elseif ($rolGestionado === 3): ?>
+                                <small class="text-muted">Opcional. El aprendiz podrá registrarlo o modificarlo directamente desde su perfil.</small>
+                            <?php endif; ?>
                         </div>
                     </div>
 

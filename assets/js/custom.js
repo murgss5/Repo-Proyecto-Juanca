@@ -36,6 +36,7 @@
     if ($(this).is("#modalVer")) {
       $(this).find(".documento-aprendiz").text(boton.data("documento") || "");
       $(this).find(".telefono-aprendiz").text(boton.data("telefono") || "Sin registro");
+      $(this).find(".correo-aprendiz").text(boton.data("correo") || "Sin registrar");
       $(this).find(".rfid-aprendiz").text(boton.data("rfid") || "");
     }
   });

@@ -397,7 +397,8 @@ class AprendizModel
 
         try {
             $stmt = $conexion->prepare(
-                'UPDATE usuario SET tipo_documento = ?, identificacion = ?, nombre = ?, apellido = ?, telefono = ?, correo_electronico = ? WHERE id_usuario = ?'
+                // El correo electrónico es gestionado directamente por el aprendiz desde su perfil; no se sobreescribe desde el instructor
+                'UPDATE usuario SET tipo_documento = ?, identificacion = ?, nombre = ?, apellido = ?, telefono = ? WHERE id_usuario = ?'
             );
             $stmt->execute([
                 $tipoDoc !== '' ? $tipoDoc : null,
@@ -405,7 +406,7 @@ class AprendizModel
                 $nombre,
                 $apellidos,
                 $telefono !== '' ? $telefono : null,
-                $correo !== '' ? $correo : null,
+
                 $idUsuario
             ]);
             return ['success' => true, 'error' => null];

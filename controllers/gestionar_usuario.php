@@ -81,7 +81,12 @@ try {
     $nombre = trim($_POST['nombre'] ?? '');
     $apellido = trim($_POST['apellido'] ?? '');
     $telefono = trim($_POST['telefono'] ?? '');
+    $correo = trim($_POST['correo_electronico'] ?? '');
     $clave = $_POST['contrasena'] ?? '';
+
+    if ($correo !== '' && !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+        volver('error', 'El formato del correo electrónico no es válido.', $rol, $id ?: null);
+    }
 
     // Valida campos obligatorios
     if ($usuario === '' || $documento === '' || $nombre === '' || $apellido === '' || ($accion === 'crear' && $clave === '')) {
@@ -142,8 +147,8 @@ try {
 
     if ($accion === 'crear') {
         // Inserta en tabla usuario con contrasena hasheada
-        $q = $conexion->prepare('INSERT INTO usuario(nombre_usuario,contrasena,nombre,apellido,identificacion,telefono,fk_rol) VALUES(?,?,?,?,?,?,?)');
-        $q->execute([$usuario, password_hash($clave, PASSWORD_DEFAULT), $nombre, $apellido, $documento, $telefono ?: null, $rol]);
+        $q = $conexion->prepare('INSERT INTO usuario(nombre_usuario,contrasena,nombre,apellido,identificacion,telefono,correo_electronico,fk_rol) VALUES(?,?,?,?,?,?,?,?)');
+        $q->execute([$usuario, password_hash($clave, PASSWORD_DEFAULT), $nombre, $apellido, $documento, $telefono ?: null, $correo !== '' ? $correo : null, $rol]);
         $id = (int)$conexion->lastInsertId();
         // Si es aprendiz, genera RFID automatico e inserta en tabla aprendiz
         if ($rol === 3) {
@@ -165,8 +170,16 @@ try {
     } else {
         // EDITAR: actualiza usuario (incluye contrasena solo si se escribio una nueva)
         if (!$id) throw new RuntimeException();
-        $sql = 'UPDATE usuario SET nombre_usuario=?,nombre=?,apellido=?,identificacion=?,telefono=?' . ($clave !== '' ? ',contrasena=?' : '') . ' WHERE id_usuario=? AND fk_rol=?';
-        $val = [$usuario, $nombre, $apellido, $documento, $telefono ?: null];
+        if ($rol === 2) {
+            $sql = 'UPDATE usuario SET nombre_usuario=?,nombre=?,apellido=?,identificacion=?,telefono=?,correo_electronico=?' . ($clave !== '' ? ',contrasena=?' : '') . ' WHERE id_usuario=? AND fk_rol=?';
+            $val = [$usuario, $nombre, $apellido, $documento, $telefono ?: null, $correo !== '' ? $correo : null];
+        } else {
+            // Para aprendices (rol 3), el correo es gestionado exclusivamente por el aprendiz desde su propio perfil
+            $sql = 'UPDATE usuario SET nombre_usuario=?,nombre=?,apellido=?,identificacion=?,telefono=?' . ($clave !== '' ? ',contrasena=?' : '') . ' WHERE id_usuario=? AND fk_rol=?';
+            $val = [$usuario, $nombre, $apellido, $documento, $telefono ?: null];
+    
+        }
+
         if ($clave !== '') $val[] = password_hash($clave, PASSWORD_DEFAULT);
         $val[] = $id;
         $val[] = $rol;

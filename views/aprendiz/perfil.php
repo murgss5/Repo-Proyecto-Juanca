@@ -290,7 +290,8 @@ ob_start();
               </div>
               <div class="form-group col-md-6">
                 <label for="edit_correo_electronico" class="font-weight-bold small text-dark mb-1">Correo electrónico</label>
-                <input type="email" id="edit_correo_electronico" name="correo_electronico" class="form-control" maxlength="100" placeholder="Opcional" autocomplete="email">
+                <input type="email" id="edit_correo_electronico" name="correo_electronico" class="form-control" maxlength="100" placeholder="Ej. aprendiz@correo.com" autocomplete="email">
+                <small class="form-text text-muted">Puedes actualizar libremente tu correo personal.</small>
               </div>
             </div>
 

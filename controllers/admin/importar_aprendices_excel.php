@@ -23,7 +23,11 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../includes/autenticacion.php';
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../includes/constantes.php';
+$vendorAutoload = __DIR__ . '/../../vendor/autoload.php';
+if (file_exists($vendorAutoload)) {
+    require_once $vendorAutoload;
+}
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -114,6 +118,14 @@ if (!in_array($ext, ['xlsx', 'xls'], true)) {
 }
 
 // 6. Cargar y leer el archivo con PhpSpreadsheet
+if (!class_exists('PhpOffice\PhpSpreadsheet\IOFactory')) {
+    ob_clean();
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Librería PhpSpreadsheet no encontrada. Ejecute "composer install" en el servidor para habilitar el procesador Excel.'
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 try {
     $reader = IOFactory::createReaderForFile($file['tmp_name']);
     $reader->setReadDataOnly(true);
@@ -139,6 +151,9 @@ if ($highestRow < 2) {
 }
 
 // 7. Preparación de consultas para inserción y control de duplicados
+try {
+    $conexion->exec("ALTER TABLE aprendiz ADD COLUMN correo_enviado TINYINT(1) NOT NULL DEFAULT 0");
+} catch (\Throwable $e) {}
 $contador = 0;
 $duplicados = 0;
 $nombres_omitidos = [];

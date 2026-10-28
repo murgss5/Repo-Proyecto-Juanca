@@ -7,6 +7,7 @@
 // Inicia la sesion
 session_start();
 // Carga la conexion a la base de datos
+require_once __DIR__ . '/../includes/constantes.php';
 require_once __DIR__ . '/../config/conexion.php';
 // Carga las funciones de autenticacion
 require_once __DIR__ . '/../includes/autenticacion.php';
@@ -17,7 +18,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 $usuarioAprendiz = usuarioActual(3);
 if (!$usuarioAprendiz) {
-    header('Location: ../views/auth/login.php');
+    header('Location: ' . RUTA_BASE . 'views/auth/login.php');
     exit;
 }
 
@@ -28,11 +29,11 @@ if (empty($_SESSION['csrf_token']) && !empty($_SESSION['token_csrf'])) {
 
 // Verificación de seguridad CSRF
 if (!isset($_POST['csrf_token']) || empty($_SESSION['csrf_token']) || !hash_equals((string)$_SESSION['csrf_token'], (string)$_POST['csrf_token'])) {
-    header('Location: ../views/aprendiz/excusas/create.php?error=' . urlencode('Token de seguridad inválido'));
+    header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=' . urlencode('Token de seguridad inválido'));
     exit;
 }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ../views/aprendiz/excusas/create.php?error=Metodo no permitido');
+    header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=Metodo no permitido');
     exit;
 }
 
@@ -41,12 +42,12 @@ $idAsistencia = filter_input(INPUT_POST, 'id_asistencia', FILTER_VALIDATE_INT);
 $observacion = trim($_POST['observaciones'] ?? '');
 
 if ($idAsistencia === false || $idAsistencia === null) {
-    header('Location: ../views/aprendiz/excusas/create.php?error=Inasistencia no valida');
+    header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=Inasistencia no valida');
     exit;
 }
 
 if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK) {
-    header('Location: ../views/aprendiz/excusas/create.php?error=Debe seleccionar un archivo');
+    header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=Debe seleccionar un archivo');
     exit;
 }
 
@@ -73,7 +74,7 @@ try {
     ]);
 
     if (!$consultaValidar->fetchColumn()) {
-        header('Location: ../views/aprendiz/excusas/create.php?error=La inasistencia seleccionada no es valida o ya tiene una excusa registrada');
+        header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=La inasistencia seleccionada no es valida o ya tiene una excusa registrada');
         exit;
     }
 
@@ -83,7 +84,7 @@ try {
 
     // Verifica tamaño maximo
     if ($archivo['size'] > $tamanoMaximo) {
-        header('Location: ../views/aprendiz/excusas/create.php?error=El archivo supera el tamaño maximo de 5 MB');
+        header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=El archivo supera el tamaño maximo de 5 MB');
         exit;
     }
 
@@ -100,7 +101,7 @@ try {
 
     // Verifica que el tipo de archivo sea permitido
     if (!isset($mimePermitidos[$mimeReal])) {
-        header('Location: ../views/aprendiz/excusas/create.php?error=Tipo de archivo no permitido. Solo PDF, JPG y PNG');
+        header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=Tipo de archivo no permitido. Solo PDF, JPG y PNG');
         exit;
     }
 
@@ -112,7 +113,7 @@ try {
 
     // Mover archivo subido a la carpeta destino
     if (!move_uploaded_file($archivo['tmp_name'], $rutaDestino)) {
-        header('Location: ../views/aprendiz/excusas/create.php?error=No se pudo guardar el archivo. Intente nuevamente');
+        header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=No se pudo guardar el archivo. Intente nuevamente');
         exit;
     }
 
@@ -129,15 +130,15 @@ try {
         if (file_exists($rutaDestino)) {
             unlink($rutaDestino);
         }
-        header('Location: ../views/aprendiz/excusas/create.php?error=No se pudo registrar la excusa. Intente nuevamente');
+        header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=No se pudo registrar la excusa. Intente nuevamente');
         exit;
     }
 
     // Redirigir con mensaje de exito
-    header('Location: ../views/aprendiz/excusas/create.php?mensaje=Excusa enviada correctamente. Queda pendiente de revision por el instructor');
+    header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?mensaje=Excusa enviada correctamente. Queda pendiente de revision por el instructor');
     exit;
 
 } catch (PDOException $e) {
-    header('Location: ../views/aprendiz/excusas/create.php?error=Error en la base de datos. Intente mas tarde');
+    header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=Error en la base de datos. Intente mas tarde');
     exit;
 }

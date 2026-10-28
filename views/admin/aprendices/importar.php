@@ -4,7 +4,10 @@
  * Sistema de Control de Ingreso de Aprendices - SENA
  */
 
-require_once __DIR__ . '/../../../config/conexion.php';
+require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
+exigirRol(1);
+require_once dirname(__DIR__, 3) . '/includes/constantes.php';
+require_once dirname(__DIR__, 3) . '/config/conexion.php';
 require_once __DIR__ . '/../../../models/FichaModel.php';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -18,8 +21,8 @@ if (empty($_SESSION['token_csrf'])) {
 $paginaTitulo = 'Importación de Aprendices';
 $menuActivo   = 'aprendices';
 $miga = [
-    ['label' => 'Inicio', 'url' => (defined('RUTA_BASE') ? RUTA_BASE : '/proyecto_juanca/') . 'views/admin/dashboard.php'],
-    ['label' => 'Aprendices', 'url' => (defined('RUTA_BASE') ? RUTA_BASE : '/proyecto_juanca/') . 'views/admin/aprendices/index.php'],
+    ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/admin/dashboard.php'],
+    ['label' => 'Aprendices', 'url' => RUTA_BASE . 'views/admin/aprendices/index.php'],
     ['label' => 'Importación de Aprendices']
 ];
 
@@ -84,7 +87,7 @@ include __DIR__ . '/../../layouts/sidebar.php';
           <div class="row">
             <div class="col-md-8 col-lg-6 mx-auto">
               <div class="p-4 border rounded bg-white shadow-sm">
-                <form id="formImportarAprendices" enctype="multipart/form-data" method="post" action="<?= (defined('RUTA_BASE') ? RUTA_BASE : '/proyecto_juanca/') ?>controllers/admin/importar_aprendices_excel.php">
+                <form id="formImportarAprendices" enctype="multipart/form-data" method="post" action="<?= RUTA_BASE ?>controllers/admin/importar_aprendices_excel.php">
                   <?php if (!empty($_SESSION['token_csrf'])): ?>
                     <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
                   <?php endif; ?>
@@ -140,7 +143,7 @@ include __DIR__ . '/../../layouts/sidebar.php';
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-            <form id="formTestCorreo" method="post" action="<?= (defined('RUTA_BASE') ? RUTA_BASE : '/proyecto_juanca/') ?>controllers/admin/probar_correo.php">
+            <form id="formTestCorreo" method="post" action="<?= RUTA_BASE ?>controllers/admin/probar_correo.php">
               <div class="modal-body py-4">
                 <p class="text-muted small mb-3">
                   Permite simular el envío de credenciales mediante PHPMailer sin modificar la base de datos ni alterar los registros de aprendices.
@@ -218,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const formData = new FormData(form);
-            const url = form.getAttribute('action') || '<?= (defined("RUTA_BASE") ? RUTA_BASE : "/proyecto_juanca/") ?>controllers/admin/importar_aprendices_excel.php';
+            const url = form.getAttribute('action') || '<?= RUTA_BASE ?>controllers/admin/importar_aprendices_excel.php';
 
             fetch(url, {
                 method: 'POST',

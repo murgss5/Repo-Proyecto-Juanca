@@ -142,6 +142,7 @@ ob_start();
                           data-nombre="<?= htmlspecialchars((string)$aprendiz['nombre'], ENT_QUOTES, 'UTF-8') ?>"
                           data-documento="<?= htmlspecialchars((string)$aprendiz['documento'], ENT_QUOTES, 'UTF-8') ?>"
                           data-telefono="<?= htmlspecialchars((string)($aprendiz['telefono'] ?? 'Sin registro'), ENT_QUOTES, 'UTF-8') ?>"
+                          data-correo="<?= htmlspecialchars((string)($aprendiz['correo_electronico'] ?? 'Sin registrar'), ENT_QUOTES, 'UTF-8') ?>"
                           data-rfid="<?= htmlspecialchars((string)$aprendiz['codigo_rfid'], ENT_QUOTES, 'UTF-8') ?>"
                           data-ficha="<?= htmlspecialchars((string)$aprendiz['id_ficha'], ENT_QUOTES, 'UTF-8') ?>"
                           title="Ver"><i class="fas fa-eye"></i></button>
@@ -184,6 +185,7 @@ ob_start();
         <p class="mb-1"><i class="fas fa-user text-sena"></i> <strong>Nombre:</strong> <span class="nombre-aprendiz"></span></p>
         <p class="mb-1"><i class="fas fa-id-card text-sena"></i> <strong>Documento:</strong> <span class="documento-aprendiz"></span></p>
         <p class="mb-1"><i class="fas fa-phone text-sena"></i> <strong>Teléfono:</strong> <span class="telefono-aprendiz"></span></p>
+        <p class="mb-1"><i class="fas fa-envelope text-sena"></i> <strong>Correo:</strong> <span class="correo-aprendiz"></span></p>
         <p class="mb-1"><i class="fas fa-layer-group text-sena"></i> <strong>Ficha:</strong> Ficha #<span class="ficha-aprendiz"></span></p>
         <p class="mb-1"><i class="fas fa-rss text-sena"></i> <strong>RFID:</strong> <span class="rfid-aprendiz"></span></p>
       </div>
@@ -285,10 +287,11 @@ ob_start();
           </div>
           <div class="form-group col-md-6">
             <label>Correo Electrónico</label>
-            <input type="email" name="correo" id="edit_correo" class="form-control">
+            <input type="email" name="correo" id="edit_correo" class="form-control bg-light" placeholder="Sin correo registrado" readonly>
+            <small class="text-muted d-block mt-1"><i class="fas fa-info-circle mr-1"></i> El correo es actualizado directamente por el aprendiz desde su perfil.</small>
           </div>
         </div>
-        <small class="text-muted">Ficha, Rol, Usuario y Contraseña no pueden ser editados.</small>
+        <small class="text-muted">Ficha, Rol, Usuario, Contraseña y Correo Electrónico no pueden ser editados.</small>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>

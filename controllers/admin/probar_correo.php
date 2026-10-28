@@ -14,7 +14,21 @@ ob_start();
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/../../config/mailer.php';
+require_once __DIR__ . '/../../includes/constantes.php';
+require_once __DIR__ . '/../../includes/autenticacion.php';
+
+if (file_exists(__DIR__ . '/../../config/mailer.php')) {
+    require_once __DIR__ . '/../../config/mailer.php';
+}
+
+if (!function_exists('enviarCredencialesSena')) {
+    function enviarCredencialesSena($destinatario, $nombre, $usuario, $clave) {
+        $asunto = 'Credenciales de Acceso - Sistema SENA';
+        $mensaje = "Cordial saludo, {$nombre}.\n\nSus credenciales de acceso son:\nUsuario: {$usuario}\nContraseña: {$clave}\n\nSistema de Control de Ingreso SENA";
+        $headers = 'From: no-reply@adsocta.com' . "\r\n" . 'Content-Type: text/plain; charset=UTF-8';
+        return @mail($destinatario, $asunto, $mensaje, $headers);
+    }
+}
 
 // 1. Validar autenticación de Administrador (rol 1)
 if (empty($_SESSION['admin']['id_usuario'])) {

@@ -282,6 +282,16 @@ try {
         ':id'             => $idUsuario
     ]);
 
+    // Si el aprendiz registró o modificó su correo, se reinicia el indicador para el envío de credenciales
+    if ($corModificado) {
+        try {
+            $stmtApr = $conexion->prepare('UPDATE aprendiz SET correo_enviado = 0 WHERE fk_usuario = :id');
+            $stmtApr->execute([':id' => $idUsuario]);
+        } catch (PDOException $eCol) {
+            // Ignorar si la columna no existe aún
+        }
+    }
+
     $conexion->commit();
 
     // 9. Actualizar datos de sesión en memoria (namespace aprendiz)
@@ -296,6 +306,7 @@ try {
         if (isset($_SESSION['aprendiz']['telefono'])) {
             $_SESSION['aprendiz']['telefono'] = $telefono !== '' ? $telefono : null;
         }
+        $_SESSION['aprendiz']['correo_electronico'] = $correo !== '' ? $correo : null;
     }
 
     // 10. Mensaje de respuesta según si el documento cambió
