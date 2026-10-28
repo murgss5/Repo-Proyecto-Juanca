@@ -30,6 +30,7 @@ ob_start();
 <?php $flash = getFlash(); ?>
 <?php if ($flash): ?>
 <div class="alert alert-<?= $flash['tipo'] === 'success' ? 'success' : 'danger' ?> alert-dismissible fade show shadow-sm" role="alert">
+    <i class="fas <?= $flash['tipo'] === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle' ?> mr-2"></i>
     <?= htmlspecialchars($flash['mensaje']) ?>
     <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
         <span aria-hidden="true">&times;</span>
@@ -38,79 +39,87 @@ ob_start();
 <?php endif; ?>
 
 <div class="card card-outline card-success shadow-sm">
-    <div class="card-header">
-        <h3 class="card-title font-weight-bold">
+    <!-- Encabezado moderno y destacado -->
+    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+        <h3 class="card-title font-weight-bold text-dark mb-0">
             <i class="fas fa-file-excel text-success mr-2"></i> Motor Matricial de Importación de Horarios SENA
         </h3>
+        <div class="card-tools ml-auto">
+            <a href="<?= RUTA_BASE ?>views/admin/horarios/index.php" class="btn btn-outline-secondary btn-sm shadow-sm">
+                <i class="fas fa-arrow-left mr-1"></i> Volver a Horarios
+            </a>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="alert alert-light border border-success mb-4">
+
+    <div class="card-body p-4">
+        <!-- Sección de Guía Informativa del Formato Oficial -->
+        <div class="alert alert-success border-0 bg-light shadow-sm mb-4 p-3 rounded">
             <div class="d-flex align-items-center">
-                <i class="fas fa-calendar-alt fa-2x text-success mr-3"></i>
+                <div class="mr-3 flex-shrink-0">
+                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success text-white shadow-sm" style="width: 50px; height: 50px;">
+                        <i class="fas fa-calendar-check fa-lg"></i>
+                    </span>
+                </div>
                 <div>
-                    <h6 class="font-weight-bold mb-1 text-dark">Formato Oficial de Horarios SENA</h6>
+                    <h6 class="font-weight-bold mb-1 text-dark">
+                        <i class="fas fa-info-circle text-success mr-1"></i> Formato Oficial de Horarios SENA
+                    </h6>
                     <p class="mb-0 text-muted small">
-                        El sistema lee automáticamente la estructura matricial oficial generada por el SENA: extrae el número de ficha,
-                        reconoce los días semanales y franjas horarias, detecta los instructores y ambientes, y 
-                        <strong>agrupa automáticamente las horas continuas</strong> de una misma sesión de clase.
+                        El motor analiza la matriz oficial de programación: identifica automáticamente el código de ficha, mapea los días y franjas de clase, asigna instructores y ambientes, y <strong>consolida de forma inteligente las sesiones continuas</strong> para optimizar el calendario de formación.
                     </p>
                 </div>
             </div>
         </div>
 
+        <!-- Formulario Principal de Subida -->
         <form id="formImportarHorario" method="post" action="<?= RUTA_BASE ?>controllers/importar_horarios_excel.php" enctype="multipart/form-data">
             <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
 
-            <div class="form-group">
-                <label for="archivo_excel" class="font-weight-bold">
-                    Seleccionar Archivo de Horarios (.xlsx) <span class="text-danger">*</span>
-                </label>
-                <div class="custom-file">
-                    <input type="file" class="custom-file-input" id="archivo_excel" name="archivo_excel" accept=".xlsx" required>
-                    <label class="custom-file-label" for="archivo_excel">Elegir archivo Excel oficial...</label>
+            <!-- Selector de Archivo Estilizado (File Upload Moderno) -->
+            <div class="upload-dropzone p-4 text-center rounded position-relative mb-4" id="dropzoneUpload" style="border: 2px dashed #28a745 !important; background-color: #fafdf9; transition: all 0.25s ease;">
+                <input type="file" class="custom-file-input position-absolute w-100 h-100" id="archivo_excel" name="archivo_excel" accept=".xlsx" required style="top: 0; left: 0; opacity: 0; cursor: pointer; z-index: 5;">
+                
+                <!-- Prompt Inicial de Carga -->
+                <div class="upload-prompt py-3" id="dropzonePrompt">
+                    <div class="mb-3">
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success text-white shadow-sm" style="width: 62px; height: 62px;">
+                            <i class="fas fa-file-excel fa-2x"></i>
+                        </span>
+                    </div>
+                    <h5 class="font-weight-bold text-dark mb-1">Arrastre su archivo Excel aquí o haga clic para examinar</h5>
+                    <p class="text-muted small mb-3">Compatible con matrices oficiales SENA (formato <code>.xlsx</code>)</p>
+                    <span class="btn btn-outline-success btn-sm font-weight-bold px-3 shadow-sm">
+                        <i class="fas fa-folder-open mr-1"></i> Examinar archivo
+                    </span>
                 </div>
-                <small class="form-text text-muted mt-2">
-                    <i class="fas fa-info-circle mr-1"></i> Compatible con archivos matriciales SENA (.xlsx). Lee la hoja activa u <code>Hoja1</code>.
-                </small>
+
+                <!-- Tarjeta de Previsualización del Archivo Seleccionado -->
+                <div class="file-preview-card d-none p-3 bg-white rounded border border-success align-items-center justify-content-between shadow-sm mt-2 mx-auto" id="filePreviewCard" style="max-width: 520px;">
+                    <div class="d-flex align-items-center text-left">
+                        <div class="mr-3">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded bg-success text-white" style="width: 44px; height: 44px;">
+                                <i class="fas fa-file-excel fa-lg"></i>
+                            </span>
+                        </div>
+                        <div>
+                            <div class="font-weight-bold text-dark text-truncate" id="previewNombre" style="max-width: 320px;">archivo.xlsx</div>
+                            <div class="text-muted small" id="previewTamano">0 KB</div>
+                        </div>
+                    </div>
+                    <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Listo para procesar</span>
+                </div>
             </div>
 
-            <div class="row mt-4">
-                <div class="col-12">
-                    <button type="submit" id="btnEnviar" class="btn btn-success px-4 font-weight-bold">
-                        <i class="fas fa-cogs mr-1"></i> Procesar e importar horario SENA
-                    </button>
-                    <a href="<?= RUTA_BASE ?>views/admin/horarios/index.php" class="btn btn-secondary ml-2">
-                        <i class="fas fa-arrow-left mr-1"></i> Volver al listado
-                    </a>
-                </div>
+            <!-- Botones de Acción Alineados -->
+            <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 pt-3 border-top">
+                <a href="<?= RUTA_BASE ?>views/admin/horarios/index.php" class="btn btn-outline-secondary px-3 shadow-sm mb-2 mb-sm-0">
+                    <i class="fas fa-arrow-left mr-1"></i> Volver al listado
+                </a>
+                <button type="submit" id="btnEnviar" class="btn btn-success font-weight-bold px-4 shadow-sm">
+                    <i class="fas fa-cogs mr-1"></i> Procesar e importar horario SENA
+                </button>
             </div>
         </form>
-
-        <hr class="my-4">
-
-        <div class="row">
-            <div class="col-md-12">
-                <h6 class="font-weight-bold text-dark mb-3">
-                    <i class="fas fa-check-circle text-success mr-1"></i> Reglas de procesamiento del Motor Matricial SENA:
-                </h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <ul class="text-muted small pl-3">
-                            <li class="mb-2"><strong>Detección y Creación de Ficha:</strong> Búsqueda automática en la celda <code>E2/D2</code> y sugerencia del programa en <code>H2</code>. Si la ficha no existe, se abre una ventana para su registro inmediato sin truncar el proceso.</li>
-                            <li class="mb-2"><strong>Columnas de Horas:</strong> Hora de inicio programada en la <code>Columna B</code> y hora de fin en la <code>Columna C</code>.</li>
-                            <li class="mb-2"><strong>Mapeo de Días:</strong> Lunes (<code>Col D</code>), Martes (<code>Col F</code>), Miércoles (<code>Col H</code>), Jueves (<code>Col J</code>), Viernes (<code>Col L</code>) y Sábado (<code>Col N</code>).</li>
-                        </ul>
-                    </div>
-                    <div class="col-md-6">
-                        <ul class="text-muted small pl-3">
-                            <li class="mb-2"><strong>Agrupación Temporal Inteligente:</strong> Horas consecutivas con el mismo instructor, ambiente y competencia se consolidan en una única sesión con <code>hora_fin</code> acumulada.</li>
-                            <li class="mb-2"><strong>Instructores Dinámicos:</strong> Cruce flexible contra la tabla de usuarios. Si se identifican instructores nuevos, el sistema solicita sus datos en un modal interactivo antes de guardar.</li>
-                            <li class="mb-2"><strong>Referencia de Fechas:</strong> Detección de mes y días de clase con cálculo basado en el año actual (<strong><?= date('Y') ?></strong>).</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -118,7 +127,7 @@ ob_start();
 <div class="modal fade" id="modalFichaFaltante" data-backdrop="static" data-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="modalFichaLabel" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered" role="document">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-success text-white">
+            <div class="modal-header bg-success text-white py-3">
                 <h5 class="modal-title font-weight-bold" id="modalFichaLabel">
                     <i class="fas fa-folder-plus mr-2"></i> Registrar Ficha Faltante
                 </h5>
@@ -127,38 +136,53 @@ ob_start();
                 </button>
             </div>
             <form id="formFichaFaltante">
-                <div class="modal-body">
+                <div class="modal-body py-4 px-4">
                     <div class="alert alert-light border border-success py-2 mb-3">
                         <i class="fas fa-info-circle text-success mr-1"></i>
                         La ficha detectada en la matriz no está registrada en el sistema. Complete los datos del programa para crearla dinámicamente y continuar:
                     </div>
 
                     <div class="form-group mb-3">
-                        <label class="small font-weight-bold text-dark">Número de Ficha</label>
-                        <input type="text" class="form-control" id="inputNumeroFicha" name="numero_ficha" readonly>
+                        <label for="inputNumeroFicha" class="font-weight-bold text-dark">Número de Ficha</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
+                            </div>
+                            <input type="text" class="form-control bg-light font-weight-bold" id="inputNumeroFicha" name="numero_ficha" readonly>
+                        </div>
                     </div>
 
                     <div class="form-group mb-3">
-                        <label class="small font-weight-bold text-dark">Nombre del Programa de Formación *</label>
-                        <input type="text" class="form-control" id="inputNombrePrograma" name="programa" required placeholder="Ej: ANÁLISIS Y DESARROLLO DE SOFTWARE">
+                        <label for="inputNombrePrograma" class="font-weight-bold text-dark">Nombre del Programa de Formación <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-graduation-cap"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="inputNombrePrograma" name="programa" required placeholder="Ej: ANÁLISIS Y DESARROLLO DE SOFTWARE">
+                        </div>
                     </div>
 
                     <div class="form-group mb-3">
-                        <label class="small font-weight-bold text-dark">Jornada *</label>
-                        <select class="form-control" id="selectJornadaFicha" name="jornada" required>
-                            <option value="Mañana">Mañana</option>
-                            <option value="Tarde">Tarde</option>
-                            <option value="Noche">Noche</option>
-                            <option value="Mixta">Mixta</option>
-                            <option value="Fines de semana">Fines de semana</option>
-                        </select>
+                        <label for="selectJornadaFicha" class="font-weight-bold text-dark">Jornada <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-sun"></i></span>
+                            </div>
+                            <select class="form-control" id="selectJornadaFicha" name="jornada" required>
+                                <option value="Mañana">Mañana</option>
+                                <option value="Tarde">Tarde</option>
+                                <option value="Noche">Noche</option>
+                                <option value="Mixta">Mixta</option>
+                                <option value="Fines de semana">Fines de semana</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                <div class="modal-footer bg-light border-top py-3">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i> Cancelar
                     </button>
-                    <button type="submit" id="btnCrearFichaRapida" class="btn btn-success font-weight-bold">
+                    <button type="submit" id="btnCrearFichaRapida" class="btn btn-success font-weight-bold shadow-sm">
                         <i class="fas fa-plus-circle mr-1"></i> Crear ficha y continuar
                     </button>
                 </div>
@@ -171,7 +195,7 @@ ob_start();
 <div class="modal fade" id="modalInstructoresFaltantes" data-backdrop="static" data-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="modalInstructoresLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-warning">
+            <div class="modal-header bg-warning py-3">
                 <h5 class="modal-title font-weight-bold text-dark" id="modalInstructoresLabel">
                     <i class="fas fa-user-plus mr-2"></i> Instructores no registrados detectados
                 </h5>
@@ -180,7 +204,7 @@ ob_start();
                 </button>
             </div>
             <form id="formInstructoresFaltantes">
-                <div class="modal-body">
+                <div class="modal-body py-4 px-4">
                     <div class="alert alert-info py-2 mb-3">
                         <i class="fas fa-info-circle mr-1"></i>
                         Se detectaron los siguientes instructores en la matriz de la <strong id="modalFichaTitulo">ficha</strong>. 
@@ -191,11 +215,11 @@ ob_start();
                         <!-- Inyección dinámica de instructores faltantes -->
                     </div>
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                <div class="modal-footer bg-light border-top py-3">
+                    <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i> Cancelar
                     </button>
-                    <button type="button" id="btnGuardarInstructores" class="btn btn-success font-weight-bold">
+                    <button type="button" id="btnGuardarInstructores" class="btn btn-success font-weight-bold shadow-sm">
                         <i class="fas fa-save mr-1"></i> Registrar y continuar importación
                     </button>
                 </div>
@@ -206,13 +230,70 @@ ob_start();
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Actualizar nombre del archivo en el input file custom
     const fileInput = document.getElementById('archivo_excel');
+    const dropzone = document.getElementById('dropzoneUpload');
+    const dropzonePrompt = document.getElementById('dropzonePrompt');
+    const filePreviewCard = document.getElementById('filePreviewCard');
+    const previewNombre = document.getElementById('previewNombre');
+    const previewTamano = document.getElementById('previewTamano');
+
+    // Función auxiliar para formatear tamaño de archivo
+    function formatBytes(bytes) {
+        if (!bytes || bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Actualizar vista previa al seleccionar archivo
+    function actualizarPreviewArchivo(archivo) {
+        if (archivo) {
+            previewNombre.textContent = archivo.name;
+            previewTamano.textContent = formatBytes(archivo.size);
+            dropzonePrompt.classList.add('d-none');
+            filePreviewCard.classList.remove('d-none');
+            filePreviewCard.classList.add('d-flex');
+            dropzone.style.backgroundColor = '#f0fdf4';
+            dropzone.style.borderColor = '#28a745';
+        } else {
+            dropzonePrompt.classList.remove('d-none');
+            filePreviewCard.classList.add('d-none');
+            filePreviewCard.classList.remove('d-flex');
+            dropzone.style.backgroundColor = '#fafdf9';
+        }
+    }
+
     if (fileInput) {
         fileInput.addEventListener('change', function(e) {
-            const fileName = e.target.files[0] ? e.target.files[0].name : 'Elegir archivo Excel oficial...';
-            const label = e.target.nextElementSibling;
-            if (label) label.textContent = fileName;
+            actualizarPreviewArchivo(e.target.files[0] || null);
+        });
+
+        // Efectos drag and drop
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.style.backgroundColor = '#eaf6e3';
+                dropzone.style.borderColor = '#28a745';
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!fileInput.files.length) {
+                    dropzone.style.backgroundColor = '#fafdf9';
+                }
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', function(e) {
+            if (e.dataTransfer && e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                actualizarPreviewArchivo(e.dataTransfer.files[0]);
+            }
         });
     }
 
@@ -234,7 +315,8 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'warning',
                 title: 'Archivo requerido',
-                text: 'Por favor seleccione un archivo Excel (.xlsx) antes de continuar.'
+                text: 'Por favor seleccione un archivo Excel (.xlsx) antes de continuar.',
+                confirmButtonColor: '#28a745'
             });
             return;
         }
@@ -284,22 +366,37 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span class="font-weight-bold text-dark">
                                 <i class="fas fa-user-tie text-success mr-2"></i> ${escapeHtml(nombre)}
                             </span>
-                            <span class="badge badge-warning">No registrado</span>
+                            <span class="badge badge-warning text-dark"><i class="fas fa-exclamation-triangle mr-1"></i> No registrado</span>
                             <input type="hidden" name="instructores[${idx}][nombre_excel]" value="${escapeHtml(nombre)}">
                         </div>
                         <div class="card-body py-3">
                             <div class="form-row">
                                 <div class="form-group col-md-4 mb-2">
-                                    <label class="small font-weight-bold">Número de Cédula *</label>
-                                    <input type="text" class="form-control form-control-sm" name="instructores[${idx}][identificacion]" required placeholder="Ej: 1098765432" autocomplete="off">
+                                    <label class="small font-weight-bold">Número de Cédula <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control" name="instructores[${idx}][identificacion]" required placeholder="Ej: 1098765432" autocomplete="off">
+                                    </div>
                                 </div>
                                 <div class="form-group col-md-5 mb-2">
-                                    <label class="small font-weight-bold">Correo Electrónico *</label>
-                                    <input type="email" class="form-control form-control-sm" name="instructores[${idx}][correo_electronico]" required placeholder="instructor@sena.edu.co" autocomplete="off">
+                                    <label class="small font-weight-bold">Correo Electrónico <span class="text-danger">*</span></label>
+                                    <div class="input-group input-group-sm">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                        </div>
+                                        <input type="email" class="form-control" name="instructores[${idx}][correo_electronico]" required placeholder="instructor@sena.edu.co" autocomplete="off">
+                                    </div>
                                 </div>
                                 <div class="form-group col-md-3 mb-2">
                                     <label class="small font-weight-bold">Teléfono (opcional)</label>
-                                    <input type="text" class="form-control form-control-sm" name="instructores[${idx}][telefono]" placeholder="3001234567" autocomplete="off">
+                                    <div class="input-group input-group-sm">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control" name="instructores[${idx}][telefono]" placeholder="3001234567" autocomplete="off">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -321,7 +418,8 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'error',
                 title: 'Error en la importación',
-                text: data.error || 'Ocurrió un error inesperado al procesar el archivo.'
+                text: data.error || 'Ocurrió un error inesperado al procesar el archivo.',
+                confirmButtonColor: '#28a745'
             });
         })
         .catch(err => {
@@ -330,7 +428,8 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'error',
                 title: 'Error de comunicación',
-                text: 'No se pudo conectar con el servidor: ' + err.message
+                text: 'No se pudo conectar con el servidor: ' + err.message,
+                confirmButtonColor: '#28a745'
             });
         });
     }
@@ -353,7 +452,8 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'warning',
                 title: 'Campos requeridos',
-                text: 'Complete todos los campos del formulario.'
+                text: 'Complete todos los campos del formulario.',
+                confirmButtonColor: '#28a745'
             });
             return;
         }
@@ -395,7 +495,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     icon: 'error',
                     title: 'Error al crear la ficha',
-                    text: res.error || 'No se pudo crear la ficha en el sistema.'
+                    text: res.error || 'No se pudo crear la ficha en el sistema.',
+                    confirmButtonColor: '#28a745'
                 });
             }
         })
@@ -405,7 +506,8 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'error',
                 title: 'Error de comunicación',
-                text: 'No se pudo conectar con el servidor: ' + err.message
+                text: 'No se pudo conectar con el servidor: ' + err.message,
+                confirmButtonColor: '#28a745'
             });
         });
     });
@@ -419,7 +521,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Campos obligatorios',
-                    text: 'Por favor complete el documento y correo de todos los instructores detectados.'
+                    text: 'Por favor complete el documento y correo de todos los instructores detectados.',
+                    confirmButtonColor: '#28a745'
                 });
                 return;
             }
@@ -460,7 +563,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
                     icon: 'error',
                     title: 'Error al finalizar importación',
-                    text: data.error || 'Ocurrió un error al registrar los instructores y horarios.'
+                    text: data.error || 'Ocurrió un error al registrar los instructores y horarios.',
+                    confirmButtonColor: '#28a745'
                 });
             }
         })
@@ -470,7 +574,8 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'error',
                 title: 'Error de comunicación',
-                text: 'No se pudo conectar con el servidor: ' + err.message
+                text: 'No se pudo conectar con el servidor: ' + err.message,
+                confirmButtonColor: '#28a745'
             });
         });
     });
@@ -480,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.bloques && data.bloques.length > 0) {
             detalleHtml = `
                 <div class="table-responsive text-left mt-3" style="max-height: 220px; overflow-y: auto;">
-                    <table class="table table-sm table-bordered small">
+                    <table class="table table-sm table-bordered table-striped small">
                         <thead class="thead-light">
                             <tr>
                                 <th>Día</th>
@@ -509,10 +614,10 @@ document.addEventListener('DOMContentLoaded', function() {
             title: '¡Importación Matricial Exitosa!',
             html: `
                 <p class="mb-2 font-weight-bold text-success">${escapeHtml(data.mensaje)}</p>
-                <div class="text-left bg-light p-2 rounded small border mb-2">
-                    <strong>Ficha destino:</strong> #${data.ficha}<br>
-                    <strong>Bloques consolidados guardados:</strong> ${data.insertados}<br>
-                    ${data.duplicados > 0 ? `<strong>Bloques existentes omitidos:</strong> ${data.duplicados}<br>` : ''}
+                <div class="text-left bg-light p-3 rounded small border mb-2">
+                    <div><strong>Ficha destino:</strong> #${data.ficha}</div>
+                    <div><strong>Bloques consolidados guardados:</strong> ${data.insertados}</div>
+                    ${data.duplicados > 0 ? `<div><strong>Bloques existentes omitidos:</strong> ${data.duplicados}</div>` : ''}
                 </div>
                 ${detalleHtml}
             `,
@@ -526,9 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = '<?= RUTA_BASE ?>views/admin/horarios/index.php';
             } else {
                 form.reset();
-                if (fileInput.nextElementSibling) {
-                    fileInput.nextElementSibling.textContent = 'Elegir archivo Excel oficial...';
-                }
+                actualizarPreviewArchivo(null);
             }
         });
     }

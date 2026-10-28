@@ -46,7 +46,8 @@ finfo_close($finfo);
 
 header('Content-Type: ' . $tipoMime);
 header('Content-Length: ' . filesize($rutaArchivo));
-header('Content-Disposition: attachment; filename="' . $nombreArchivo . '"');
+$disposicion = (isset($_GET['inline']) && (string)$_GET['inline'] === '1') ? 'inline' : 'attachment';
+header('Content-Disposition: ' . $disposicion . '; filename="' . $nombreArchivo . '"');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: 0');

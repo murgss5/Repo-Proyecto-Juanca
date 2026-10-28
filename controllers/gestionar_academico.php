@@ -112,7 +112,7 @@ try {
         if (!$id) volverAcademico($modulo, 'error', 'Horario no válido.', $vista);
 
         // Verificar integridad referencial antes de eliminar
-        $chkAst = $conexion->prepare('SELECT COUNT(*) FROM asistencia WHERE fk_horario = ?');
+        $chkAst = $conexion->prepare('SELECT COUNT(*) FROM asistencia a INNER JOIN sesiones_jornada s ON a.fk_sesion_jornada = s.id_sesion WHERE s.horario_id = ?');
         $chkAst->execute([$id]);
         $cantAst = (int)$chkAst->fetchColumn();
 
@@ -173,7 +173,7 @@ try {
         $chkSes->execute([$id]);
         $cantSesHist = (int)$chkSes->fetchColumn();
 
-        $chkAst = $conexion->prepare('SELECT COUNT(*) FROM asistencia WHERE fk_horario = ?');
+        $chkAst = $conexion->prepare('SELECT COUNT(*) FROM asistencia a INNER JOIN sesiones_jornada s ON a.fk_sesion_jornada = s.id_sesion WHERE s.horario_id = ?');
         $chkAst->execute([$id]);
         $cantAstHist = (int)$chkAst->fetchColumn();
 
