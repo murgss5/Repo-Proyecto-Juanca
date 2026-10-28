@@ -15,21 +15,49 @@ if (defined('RUTA_BASE')) {
     return;
 }
 
-/**
- * Ruta base relativa desde la ubicacion actual del script
- * hasta la raiz del proyecto. Se calcula automaticamente
- * segun la profundidad de la carpeta para que las vistas
- * funcionen desde XAMPP sin importar en que subcarpeta esten.
- *
- * Ejemplo:
- *   /proyecto_juanca/views/admin/dashboard.php        -> '../../'
- *   /proyecto_juanca/views/admin/aprendices/index.php -> '../../../'
- */
-$nivelProfundidad = substr_count(trim(dirname($_SERVER['SCRIPT_NAME']), '/'), '/');
-define('RUTA_BASE', str_repeat('../', max(0, $nivelProfundidad)));
-
 // Ruta fisica absoluta de la raiz del proyecto
 define('DIRECTORIO_PROYECTO', dirname(__DIR__));
+
+/**
+ * Calculo de RUTA_BASE como ruta web absoluta (ej. '/' o '/control_asistencia/').
+ *
+ * Funciona de manera universal:
+ *  - En hosting donde el dominio apunta a la raiz (public_html/): '/'
+ *  - En XAMPP local (htdocs/control_asistencia/): '/control_asistencia/'
+ *  - En hosting dentro de una subcarpeta (public_html/sistema/): '/sistema/'
+ *
+ * Permite anulacion explicita por entorno mediante constante o variable
+ * de entorno APP_BASE_URL (ej. en .htaccess o php.ini: SetEnv APP_BASE_URL /mi_ruta/).
+ */
+$basePersonalizada = getenv('APP_BASE_URL') ?: (defined('APP_BASE_URL') ? APP_BASE_URL : null);
+if ($basePersonalizada !== null && $basePersonalizada !== false && trim((string)$basePersonalizada) !== '') {
+    $rutaCalculada = '/' . trim((string)$basePersonalizada, '/') . '/';
+    define('RUTA_BASE', $rutaCalculada === '//' ? '/' : $rutaCalculada);
+} else {
+    $scriptFilename = str_replace('\\', '/', $_SERVER['SCRIPT_FILENAME'] ?? '');
+    $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+    $projectDir = str_replace('\\', '/', DIRECTORIO_PROYECTO);
+
+    $rutaCalculada = '/';
+    if ($scriptFilename !== '' && $scriptName !== '') {
+        $pos = stripos($scriptFilename, $projectDir);
+        if ($pos !== false) {
+            $relativePath = substr($scriptFilename, $pos + strlen($projectDir));
+            if ($relativePath === '' || $relativePath === '/') {
+                $base = dirname($scriptName);
+                $rutaCalculada = rtrim($base, '/\\') . '/';
+            } else {
+                $len = strlen($relativePath);
+                if (substr_compare($scriptName, $relativePath, -$len, $len, true) === 0) {
+                    $base = substr($scriptName, 0, strlen($scriptName) - $len);
+                    $rutaCalculada = rtrim($base, '/\\') . '/';
+                }
+            }
+        }
+    }
+    $rutaCalculada = '/' . trim($rutaCalculada, '/') . '/';
+    define('RUTA_BASE', $rutaCalculada === '//' ? '/' : $rutaCalculada);
+}
 
 /**
  * MODO DE PRUEBAS PARA SIMULACION DE INGRESOS RFID

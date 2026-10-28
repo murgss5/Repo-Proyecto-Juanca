@@ -12,7 +12,7 @@ require_once __DIR__ . '/../includes/autenticacion.php';
 
 // verifica que el formulario fue enviado por POST
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    header("Location: ../views/auth/login.php");
+    header("Location: " . RUTA_BASE . "views/auth/login.php");
     exit;
 }
 
@@ -22,7 +22,7 @@ $contrasena = $_POST["contrasena"] ?? "";
 
 // valida que los campos no esten vacios
 if ($identificador === "" || $contrasena === "") {
-    header("Location: ../views/auth/login.php?error=Todos los campos son obligatorios");
+    header("Location: " . RUTA_BASE . "views/auth/login.php?error=Todos los campos son obligatorios");
     exit;
 }
 
@@ -47,7 +47,7 @@ $usuarios = $consulta->fetchAll();
 if (count($usuarios) > 1) {
     $correlacionId = bin2hex(random_bytes(8));
     error_log("Ambiguedad de autenticacion [Correlacion ID: {$correlacionId}]: multiples cuentas detectadas para la solicitud.");
-    header("Location: ../views/auth/login.php?error=credenciales");
+    header("Location: " . RUTA_BASE . "views/auth/login.php?error=credenciales");
     exit;
 }
 
@@ -74,7 +74,7 @@ if ($usuario) {
 }
 
 if (!$usuario || !$contrasenaValida) {
-    header("Location: ../views/auth/login.php?error=credenciales");
+    header("Location: " . RUTA_BASE . "views/auth/login.php?error=credenciales");
     exit;
 }
 
@@ -100,21 +100,21 @@ $claveRol = iniciarSesionRol($usuario);
 // redirige segun el rol del usuario
 switch ((int) $usuario["fk_rol"]) {
     case 1:
-        header("Location: ../views/admin/dashboard.php");
+        header("Location: " . RUTA_BASE . "views/admin/dashboard.php");
         break;
 
     case 2:
-        header("Location: ../views/instructor/dashboard.php");
+        header("Location: " . RUTA_BASE . "views/instructor/dashboard.php");
         break;
 
     case 3:
-        header("Location: ../views/aprendiz/dashboard.php");
+        header("Location: " . RUTA_BASE . "views/aprendiz/dashboard.php");
         break;
 
     default:
         // En caso de rol no valido, limpiar solo el rol no valido
         unset($_SESSION[$claveRol]);
-        header("Location: ../views/auth/login.php?error=El usuario no tiene un rol valido");
+        header("Location: " . RUTA_BASE . "views/auth/login.php?error=El usuario no tiene un rol valido");
         break;
 }
 exit;

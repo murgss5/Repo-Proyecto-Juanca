@@ -16,7 +16,7 @@ $rolActualId = rolId();
 
 $usuarioData = usuarioActual();
 $nombreUsuarioActual = $usuarioData['nombre'] ?? 'Usuario';
-$fotoUsuario = $usuarioData['foto'] ?? RUTA_BASE . '/assets/img/default-user.png';
+$fotoUsuario = $usuarioData['foto'] ?? RUTA_BASE . 'assets/img/default-user.png';
 
 // Determinar el nombre del rol en texto
 $nombreRolActual = 'Usuario';
