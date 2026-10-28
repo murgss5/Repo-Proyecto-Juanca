@@ -451,9 +451,44 @@ body {
 }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 767.98px) {
+@media (max-width: 768px) {
   .breadcrumb.float-sm-right { float: none !important; margin-top: 0.5rem; }
   .content-header .col-sm-6 h1 { font-size: 1.4rem; }
+
+  /* Optimizacion del calendario semanal en movil (<= 768px) */
+  .calendario-componente,
+  .calendario-scroll-wrapper,
+  .calendario-grid-contenedor {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  table.calendario,
+  .calendario-tabla,
+  .tabla-calendario,
+  .calendario-scroll-wrapper table {
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+
+  .calendario-fila-encabezado,
+  .calendario-cuerpo-grid {
+    grid-template-columns: 48px repeat(var(--col-count, 6), minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  .calendario-header-hora,
+  .calendario-columna-horas {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+  }
+
+  .calendario-header-dia,
+  .calendario-columna-dia {
+    padding: 2px 1px !important;
+  }
 }
 
 /* ---------- Campo de subida de archivo ---------- */

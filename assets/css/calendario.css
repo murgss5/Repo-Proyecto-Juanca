@@ -514,28 +514,362 @@
   padding: 12px 20px;
 }
 
-/* ---------- Responsividad ---------- */
+/* ---------- Responsividad para tablets / medianas (< 992px) ---------- */
 @media (max-width: 991.98px) {
   .calendario-toolbar {
     flex-direction: column;
     align-items: stretch;
+    padding: 12px 14px;
+    gap: 10px;
   }
 
   .calendario-nav-grupo {
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .calendario-titulo-rango {
     justify-content: center;
     text-align: center;
+    font-size: 14px;
   }
 
   .calendario-filtros-grupo {
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .calendario-select-ficha {
     width: 100%;
     max-width: 100%;
+    min-width: auto;
+  }
+}
+
+/* ============================================================
+   OPTIMIZACIÓN RESPONSIVE MÓVIL (<= 768px)
+   Compresión proporcional al 100% de la pantalla sin scroll horizontal
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Contenedores fluidos al 100% sin scroll horizontal */
+  .calendario-componente,
+  .calendario-scroll-wrapper,
+  .calendario-scroll-wrapper.table-responsive,
+  .calendario-grid-contenedor,
+  .calendario-grid-contenedor.w-100 {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Soporte para estructura basada en tabla HTML con table-layout: fixed y ancho 100% */
+  table.calendario,
+  .calendario-tabla,
+  .tabla-calendario,
+  .calendario-scroll-wrapper table,
+  table.table-calendario {
+    table-layout: fixed !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin-bottom: 0 !important;
+  }
+
+  table.calendario th:first-child,
+  table.calendario td:first-child,
+  .calendario-tabla th:first-child,
+  .calendario-tabla td:first-child,
+  .calendario-scroll-wrapper table th:first-child,
+  .calendario-scroll-wrapper table td:first-child {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    box-sizing: border-box !important;
+  }
+
+  table.calendario th:not(:first-child),
+  table.calendario td:not(:first-child),
+  .calendario-tabla th:not(:first-child),
+  .calendario-tabla td:not(:first-child),
+  .calendario-scroll-wrapper table th:not(:first-child),
+  .calendario-scroll-wrapper table td:not(:first-child) {
+    width: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Distribución proporcional del grid: 48px para horas y división equitativa del espacio restante */
+  :root,
+  .calendario-grid-contenedor {
+    --cal-row-height: 44px !important;
+  }
+
+  .calendario-fila-encabezado,
+  .calendario-cuerpo-grid {
+    display: grid !important;
+    grid-template-columns: 48px repeat(var(--col-count, 6), minmax(0, 1fr)) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Columna reducida para horas */
+  .calendario-header-hora,
+  .calendario-columna-horas {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    box-sizing: border-box !important;
+  }
+
+  .calendario-header-hora {
+    padding: 6px 1px !important;
+    font-size: 8px !important;
+    letter-spacing: 0 !important;
+    text-align: center !important;
+  }
+
+  /* Altura y padding reducidos en filas de horas */
+  .calendario-celda-hora-label {
+    height: var(--cal-row-height, 44px) !important;
+    min-height: 38px !important;
+    padding: 2px 2px 0 1px !important;
+    font-size: 8.5px !important;
+    letter-spacing: -0.4px !important;
+    justify-content: center !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Celdas de días en la cabecera y cuerpo: reducción drástica de padding */
+  .calendario-header-dia,
+  .calendario-header-dia.dia-lun,
+  .calendario-header-dia.dia-mar,
+  .calendario-header-dia.dia-mie,
+  .calendario-header-dia.dia-jue,
+  .calendario-header-dia.dia-vie,
+  .calendario-header-dia.dia-sab,
+  .calendario-header-dia.lun,
+  .calendario-header-dia.mar,
+  .calendario-header-dia.mie,
+  .calendario-header-dia.jue,
+  .calendario-header-dia.vie,
+  .calendario-header-dia.sab,
+  .calendario-columna-dia,
+  .calendario-columna-dia.dia-lun,
+  .calendario-columna-dia.dia-mar,
+  .calendario-columna-dia.dia-mie,
+  .calendario-columna-dia.dia-jue,
+  .calendario-columna-dia.dia-vie,
+  .calendario-columna-dia.dia-sab,
+  .calendario-columna-dia.lun,
+  .calendario-columna-dia.mar,
+  .calendario-columna-dia.mie,
+  .calendario-columna-dia.jue,
+  .calendario-columna-dia.vie,
+  .calendario-columna-dia.sab,
+  .calendario-scroll-wrapper td,
+  .calendario-scroll-wrapper th {
+    padding: 2px 1px !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .calendario-columna-dia {
+    height: calc(var(--cal-total-hours, 16) * var(--cal-row-height, 44px)) !important;
+    background-size: 100% var(--cal-row-height, 44px) !important;
+  }
+
+  .calendario-header-dia .dia-abrev {
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0 !important;
+    margin-bottom: 1px !important;
+  }
+
+  .calendario-header-dia .dia-numero {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 11px !important;
+    line-height: 22px !important;
+  }
+
+  /* Bloques de horario compactos y tipografía optimizada */
+  .calendario-bloque-clase {
+    min-height: 22px !important;
+    padding: 2px 3px !important;
+    margin: 1px 1px !important;
+    border-left-width: 2.5px !important;
+    border-radius: 3px !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Etiqueta "Bloque 1" / Horario resumido */
+  .bloque-header {
+    font-size: 8.5px !important;
+    font-weight: 700 !important;
+    margin-bottom: 1px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+  }
+
+  .bloque-header i {
+    display: none !important; /* Oculta ícono de reloj para ganar espacio horizontal */
+  }
+
+  /* Título de la formación ("TÉCNICO...") */
+  .bloque-titulo {
+    font-size: 9.5px !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important;
+    margin-bottom: 1px !important;
+    word-break: break-word !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  /* Pie del bloque: Nombre del instructor */
+  .bloque-meta {
+    font-size: 8px !important;
+    font-weight: 600 !important;
+    padding-top: 1px !important;
+    margin-top: 1px !important;
+    border-top: 1px solid rgba(57, 169, 0, 0.15) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.1 !important;
+    display: block !important;
+  }
+
+  .bloque-meta i {
+    display: none !important; /* Oculta ícono del instructor para no desbordar */
+  }
+
+  .bloque-meta-extra {
+    display: none !important;
+  }
+
+  /* Barra de herramientas compacta y fluida */
+  .calendario-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 8px 6px !important;
+    gap: 6px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .calendario-nav-grupo {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  .calendario-btn-nav {
+    padding: 3px 6px !important;
+    font-size: 11px !important;
+  }
+
+  #filtro_fecha {
+    font-size: 11px !important;
+    padding: 2px 4px !important;
+    height: 28px !important;
+    max-width: 125px !important;
+  }
+
+  .calendario-titulo-rango {
+    justify-content: center !important;
+    text-align: center !important;
+    font-size: 12px !important;
+  }
+
+  .calendario-filtros-grupo {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
+
+  .calendario-badge-info {
+    font-size: 10.5px !important;
+    padding: 2px 6px !important;
+  }
+}
+
+/* Pantallas extra-pequeñas (< 480px) */
+@media (max-width: 479.98px) {
+  .calendario-fila-encabezado,
+  .calendario-cuerpo-grid {
+    grid-template-columns: 40px repeat(var(--col-count, 6), minmax(0, 1fr)) !important;
+  }
+
+  .calendario-header-hora,
+  .calendario-columna-horas {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+  }
+
+  .calendario-header-hora {
+    font-size: 7.5px !important;
+    padding: 4px 1px !important;
+  }
+
+  .calendario-celda-hora-label {
+    font-size: 8px !important;
+    padding: 2px 1px 0 1px !important;
+  }
+
+  .calendario-header-dia .dia-abrev {
+    font-size: 8px !important;
+  }
+
+  .calendario-header-dia .dia-numero {
+    width: 19px !important;
+    height: 19px !important;
+    font-size: 10px !important;
+    line-height: 19px !important;
+  }
+
+  .calendario-bloque-clase {
+    padding: 1px 2px !important;
+    border-left-width: 2px !important;
+  }
+
+  .bloque-header {
+    font-size: 8px !important;
+  }
+
+  .bloque-titulo {
+    font-size: 8.5px !important;
+    line-height: 1.1 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  .bloque-meta {
+    font-size: 7.5px !important;
+  }
+
+  .calendario-btn-nav {
+    padding: 2px 5px !important;
+    font-size: 10px !important;
+  }
+
+  #filtro_fecha {
+    max-width: 115px !important;
   }
 }
