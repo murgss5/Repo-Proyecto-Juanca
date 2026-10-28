@@ -1,0 +1,10 @@
+# Bloqueo de acceso web a archivos confidenciales (.sql, .bak)
+<FilesMatch "\.(sql|bak)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Bloqueo de acceso a la carpeta completa de backups
+RewriteEngine On
+RewriteRule ^backups/ - [F]
+

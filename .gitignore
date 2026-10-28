@@ -31,3 +31,6 @@ config/conexion.php
 /uploads/
 # Archivos predeterminados de hosting
 default.php
+
+*.sql
+backups/
