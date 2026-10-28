@@ -1,5 +1,5 @@
 # Credenciales y configuración privada
-/config/conexion.php
+config/conexion.php
 
 # Archivos locales y temporales
 /backups/
