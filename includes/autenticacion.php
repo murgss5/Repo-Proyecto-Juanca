@@ -23,6 +23,8 @@ if (!headers_sent()) {
     header("Expires: 0");
 }
 
+require_once __DIR__ . '/constantes.php';
+
 /**
  * Mapea un identificador de rol o clave a su clave canonica de sesion ('admin', 'instructor', 'aprendiz')
  * @param int|string|null $rol
@@ -119,8 +121,11 @@ function detectarRolContexto(): ?int
  */
 function redirigirAlLogin(): void
 {
-    $profundidad = substr_count(trim(dirname($_SERVER['SCRIPT_NAME']), '/'), '/');
-    $rutaBase = str_repeat('../', max(0, $profundidad));
+    if (!defined('RUTA_BASE')) {
+        require_once __DIR__ . '/constantes.php';
+    }
+
+    $loginUrl = RUTA_BASE . 'views/auth/login.php';
 
     // Si es peticion AJAX o solicita JSON, responder HTTP 401 sin redireccion HTML
     $solicitadoCon = $_SERVER['HTTP_X_REQUESTED_WITH'] ?? '';
@@ -132,12 +137,12 @@ function redirigirAlLogin(): void
         echo json_encode([
             'success'   => false,
             'error'     => 'Sesion no activa o expirada.',
-            'redirect'  => $rutaBase . 'views/auth/login.php'
+            'redirect'  => $loginUrl
         ]);
         exit;
     }
 
-    header('Location: ' . $rutaBase . 'views/auth/login.php');
+    header('Location: ' . $loginUrl);
     exit;
 }
 

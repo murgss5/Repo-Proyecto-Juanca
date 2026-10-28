@@ -96,7 +96,7 @@ unset($excusa);
 
 function claseEstadoExcusa($estado) {
     switch ($estado) {
-        case 'Pendiente': return 'badge-warning text-white';
+        case 'Pendiente': return 'badge-warning';
         case 'Aprobada':  return 'badge-success';
         case 'Rechazada': return 'badge-danger';
         default:          return 'badge-secondary';
@@ -113,79 +113,58 @@ $miga = [
 
 ob_start();
 ?>
-
-<!-- 1. Sección de Filtros de Búsqueda -->
-<div class="card card-outline card-success shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
-        <h3 class="card-title font-weight-bold text-dark m-0">
-            <i class="fas fa-filter text-success mr-2"></i> Filtros de Búsqueda
-        </h3>
-    </div>
-    <div class="card-body">
-        <form method="get" id="formFiltroExcusas">
-            <!-- Fila 1: Estado (col-md-2), Fecha inicial (col-md-3), Fecha final (col-md-3), Ficha (col-md-4) -->
-            <div class="row">
-                <div class="col-md-2 col-sm-6 mb-3">
-                    <label class="small font-weight-bold text-muted mb-1">
-                        <i class="fas fa-tag mr-1 text-success"></i> Estado
-                    </label>
-                    <select name="estado" class="form-control form-control-sm custom-select custom-select-sm">
-                        <option value="">Todos</option>
-                        <option value="PENDIENTE" <?= $filtroEstado === 'PENDIENTE' ? 'selected' : '' ?>>Pendiente</option>
-                        <option value="APROBADA" <?= $filtroEstado === 'APROBADA' ? 'selected' : '' ?>>Aprobada</option>
-                        <option value="RECHAZADA" <?= $filtroEstado === 'RECHAZADA' ? 'selected' : '' ?>>Rechazada</option>
-                    </select>
-                </div>
-                <div class="col-md-3 col-sm-6 mb-3">
-                    <label class="small font-weight-bold text-muted mb-1">
-                        <i class="far fa-calendar-alt mr-1 text-success"></i> Fecha inicial
-                    </label>
-                    <input type="date" name="fecha_inicio" class="form-control form-control-sm" value="<?= htmlspecialchars($filtroFechaIni ?? '') ?>">
-                </div>
-                <div class="col-md-3 col-sm-6 mb-3">
-                    <label class="small font-weight-bold text-muted mb-1">
-                        <i class="far fa-calendar-alt mr-1 text-success"></i> Fecha final
-                    </label>
-                    <input type="date" name="fecha_fin" class="form-control form-control-sm" value="<?= htmlspecialchars($filtroFechaFin ?? '') ?>">
-                </div>
-                <div class="col-md-4 col-sm-12 mb-3">
-                    <label class="small font-weight-bold text-muted mb-1">
-                        <i class="fas fa-layer-group mr-1 text-success"></i> Ficha
-                    </label>
-                    <select name="ficha" class="form-control form-control-sm custom-select custom-select-sm">
-                        <option value="">Todas las fichas</option>
-                        <?php foreach ($fichas as $ficha): ?>
-                            <option value="<?= htmlspecialchars($ficha['id_ficha']) ?>" <?= $filtroFicha == $ficha['id_ficha'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($ficha['id_ficha'] . ' - ' . $ficha['nombre_programa']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-filter text-sena"></i> Filtros</h3>
             </div>
-
-            <!-- Fila 2: Aprendiz (col-md-8) y Acciones (col-md-4) -->
-            <div class="row align-items-end">
-                <div class="col-md-8 col-sm-12 mb-3">
-                    <label class="small font-weight-bold text-muted mb-1">
-                        <i class="fas fa-user mr-1 text-success"></i> Aprendiz
-                    </label>
-                    <input type="text" name="aprendiz" class="form-control form-control-sm" placeholder="Buscar por nombre o documento..." value="<?= htmlspecialchars($filtroAprendiz ?? '') ?>">
-                </div>
-                <div class="col-md-4 col-sm-12 mb-3 text-right">
-                    <button type="submit" class="btn btn-sm btn-primary font-weight-bold shadow-sm mr-2">
-                        <i class="fas fa-search mr-1"></i> Filtrar
-                    </button>
-                    <a href="<?= RUTA_BASE ?>views/admin/excusas/index.php" class="btn btn-sm btn-outline-secondary shadow-sm">
-                        <i class="fas fa-times mr-1"></i> Limpiar
-                    </a>
-                </div>
+            <div class="card-body">
+                <form method="get" class="row">
+                    <div class="col-md-3 col-sm-6 mb-2">
+                        <label class="small text-muted">Estado</label>
+                        <select name="estado" class="form-control">
+                            <option value="">Todos</option>
+                            <option value="PENDIENTE" <?= $filtroEstado === 'PENDIENTE' ? 'selected' : '' ?>>Pendiente</option>
+                            <option value="APROBADA" <?= $filtroEstado === 'APROBADA' ? 'selected' : '' ?>>Aprobada</option>
+                            <option value="RECHAZADA" <?= $filtroEstado === 'RECHAZADA' ? 'selected' : '' ?>>Rechazada</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-2">
+                        <label class="small text-muted">Fecha inicial</label>
+                        <input type="date" name="fecha_inicio" class="form-control" value="<?= htmlspecialchars($filtroFechaIni ?? '') ?>">
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-2">
+                        <label class="small text-muted">Fecha final</label>
+                        <input type="date" name="fecha_fin" class="form-control" value="<?= htmlspecialchars($filtroFechaFin ?? '') ?>">
+                    </div>
+                    <div class="col-md-3 col-sm-6 mb-2">
+                        <label class="small text-muted">Ficha</label>
+                        <select name="ficha" class="form-control">
+                            <option value="">Todas las fichas</option>
+                            <?php foreach ($fichas as $ficha): ?>
+                                <option value="<?= htmlspecialchars($ficha['id_ficha']) ?>" <?= $filtroFicha == $ficha['id_ficha'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($ficha['id_ficha'] . ' - ' . $ficha['nombre_programa']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-sm-12 mb-2">
+                        <label class="small text-muted">Aprendiz (nombre o identificación)</label>
+                        <input type="text" name="aprendiz" class="form-control" placeholder="Buscar por nombre o documento..." value="<?= htmlspecialchars($filtroAprendiz ?? '') ?>">
+                    </div>
+                    <div class="col-md-6 col-sm-12 mb-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary mr-2"><i class="fas fa-search"></i> Filtrar</button>
+                        <a href="<?= RUTA_BASE ?>views/admin/excusas/index.php" class="btn btn-secondary"><i class="fas fa-times"></i> Limpiar</a>
+                    </div>
+                </form>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
-<!-- 2. Sección de Métricas (KPIs AdminLTE Enterprise) -->
-<div class="row mb-4">
+<!-- Resumen de estados -->
+<div class="row mb-3">
     <?php
     $pendientes = 0; $aprobadas = 0; $rechazadas = 0;
     foreach ($excusas as $excusa) {
@@ -194,88 +173,82 @@ ob_start();
         if ($excusa['estado'] === 'RECHAZADA') { $rechazadas++; }
     }
     ?>
-    <div class="col-12 col-md-4 mb-3 mb-md-0">
-        <div class="info-box shadow-sm h-100 mb-0">
-            <span class="info-box-icon bg-warning text-white elevation-1"><i class="fas fa-hourglass-half"></i></span>
+    <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
+        <div class="info-box info-box-amarillo">
+            <span class="info-box-icon"><i class="fas fa-hourglass-half"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text text-muted font-weight-bold small">Excusas pendientes</span>
-                <span class="info-box-number text-dark font-weight-bold" style="font-size: 1.35rem;"><?= number_format($pendientes) ?></span>
+                <span class="info-box-text">Excusas pendientes</span>
+                <span class="info-box-number"><?= $pendientes ?></span>
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-4 mb-3 mb-md-0">
-        <div class="info-box shadow-sm h-100 mb-0">
-            <span class="info-box-icon bg-success elevation-1"><i class="fas fa-check-circle"></i></span>
+    <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
+        <div class="info-box info-box-sena">
+            <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text text-muted font-weight-bold small">Excusas aprobadas</span>
-                <span class="info-box-number text-dark font-weight-bold" style="font-size: 1.35rem;"><?= number_format($aprobadas) ?></span>
+                <span class="info-box-text">Excusas aprobadas</span>
+                <span class="info-box-number"><?= $aprobadas ?></span>
             </div>
         </div>
     </div>
-    <div class="col-12 col-md-4 mb-3 mb-md-0">
-        <div class="info-box shadow-sm h-100 mb-0">
-            <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-times-circle"></i></span>
+    <div class="col-lg-4 col-md-6 col-sm-12 mb-3">
+        <div class="info-box info-box-rojo">
+            <span class="info-box-icon"><i class="fas fa-times-circle"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text text-muted font-weight-bold small">Excusas rechazadas</span>
-                <span class="info-box-number text-dark font-weight-bold" style="font-size: 1.35rem;"><?= number_format($rechazadas) ?></span>
+                <span class="info-box-text">Excusas rechazadas</span>
+                <span class="info-box-number"><?= $rechazadas ?></span>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 3. Sección de Listado de Excusas -->
-<div class="card card-outline card-primary shadow-sm mb-4">
-    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h3 class="card-title font-weight-bold text-dark m-0">
-            <i class="fas fa-file-medical text-primary mr-2"></i> Listado de excusas
-        </h3>
-        <span class="badge badge-primary px-3 py-1 font-weight-normal">
-            <?= count($excusas) ?> excusas
-        </span>
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-file-medical text-sena"></i> Listado de excusas (<?= count($excusas) ?>)</h3>
     </div>
 
     <div class="card-body">
         <?php if (isset($_GET['mensaje'])): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle mr-1"></i> <?= htmlspecialchars($_GET['mensaje']) ?>
+                <i class="fas fa-check-circle"></i> <?= htmlspecialchars($_GET['mensaje']) ?>
                 <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
             </div>
         <?php endif; ?>
         <?php if (isset($_GET['error'])): ?>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-triangle mr-1"></i> <?= htmlspecialchars($_GET['error']) ?>
+                <i class="fas fa-exclamation-triangle"></i> <?= htmlspecialchars($_GET['error']) ?>
                 <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
             </div>
         <?php endif; ?>
 
         <div class="table-responsive">
-            <table class="table table-hover table-striped align-middle table-sm tabla-datos mb-0" data-empty-message="No se encontraron excusas con los filtros actuales.">
-                <thead class="bg-light">
+            <table class="table table-hover table-bordered tabla-datos" data-empty-message="No se encontraron excusas con los filtros actuales.">
+                <thead>
                     <tr>
-                        <th class="border-top-0">ID</th>
-                        <th class="border-top-0">Aprendiz</th>
-                        <th class="border-top-0">Identificación</th>
-                        <th class="border-top-0">Programa / Ficha</th>
-                        <th class="border-top-0">Fecha de inasistencia</th>
-                        <th class="border-top-0">Fecha de subida</th>
-                        <th class="border-top-0">Observación</th>
-                        <th class="border-top-0 text-center">Estado</th>
-                        <th class="border-top-0">Fecha de revisión</th>
-                        <th class="border-top-0">Instructor revisor</th>
-                        <th class="border-top-0 text-center">Adjunto</th>
-                        <th class="border-top-0 text-center">Acciones</th>
+                        <th>ID</th>
+                        <th>Aprendiz</th>
+                        <th>Identificación</th>
+                        <th>Programa / Ficha</th>
+                        <th>Fecha de inasistencia</th>
+                        <th>Fecha de subida</th>
+                        <th>Observación</th>
+                        <th>Estado</th>
+                        <th>Fecha de revisión</th>
+                        <th>Instructor revisor</th>
+                        <th class="text-center">Adjunto</th>
+                        <th class="text-center">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!empty($excusas)): ?>
                         <?php foreach ($excusas as $excusa): ?>
                             <tr>
-                                <td class="font-weight-bold text-muted"><?= htmlspecialchars($excusa['id_excusa']) ?></td>
-                                <td class="font-weight-bold"><?= htmlspecialchars($excusa['aprendiz']) ?></td>
+                                <td><?= htmlspecialchars($excusa['id_excusa']) ?></td>
+                                <td><?= htmlspecialchars($excusa['aprendiz']) ?></td>
                                 <td><?= htmlspecialchars($excusa['identificacion_aprendiz']) ?></td>
                                 <td>
                                     <span class="badge badge-info">Ficha #<?= htmlspecialchars($excusa['id_ficha']) ?></span>
-                                    <br><small class="text-muted"><?= htmlspecialchars($excusa['nombre_programa']) ?></small>
+                                    <br><small><?= htmlspecialchars($excusa['nombre_programa']) ?></small>
                                 </td>
                                 <td><?= htmlspecialchars(date('d/m/Y', strtotime($excusa['fecha_asistencia']))) ?></td>
                                 <td><?= htmlspecialchars(date('d/m/Y H:i', strtotime($excusa['fecha_subida']))) ?></td>
@@ -286,7 +259,7 @@ ob_start();
                                         <span class="text-muted">&mdash;</span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="text-center"><span class="badge badge-estado <?= claseEstadoExcusa($excusa['estado_mostrado']) ?>"><?= htmlspecialchars($excusa['estado_mostrado']) ?></span></td>
+                                <td><span class="badge badge-estado <?= claseEstadoExcusa($excusa['estado_mostrado']) ?>"><?= htmlspecialchars($excusa['estado_mostrado']) ?></span></td>
                                 <td>
                                     <?php if ($excusa['fecha_revision']): ?>
                                         <?= htmlspecialchars(date('d/m/Y H:i', strtotime($excusa['fecha_revision']))) ?>
@@ -329,7 +302,6 @@ ob_start();
         </div>
     </div>
 </div>
-
 <?php
 $contenido = ob_get_clean();
 

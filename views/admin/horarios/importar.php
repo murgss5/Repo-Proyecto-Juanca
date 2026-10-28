@@ -37,48 +37,83 @@ ob_start();
 </div>
 <?php endif; ?>
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card card-outline card-success shadow-sm">
-            <div class="card-header border-bottom-0">
-                <h3 class="card-title font-weight-bold">
-                    <i class="fas fa-file-excel text-success mr-2"></i> Motor Matricial de Importación de Horarios SENA
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info shadow-sm mb-4">
-                    <i class="fas fa-info-circle mr-2"></i> Sube el archivo Excel oficial del horario. El sistema detectará automáticamente la ficha, los instructores y las franjas horarias.
+<div class="card card-outline card-success shadow-sm">
+    <div class="card-header">
+        <h3 class="card-title font-weight-bold">
+            <i class="fas fa-file-excel text-success mr-2"></i> Motor Matricial de Importación de Horarios SENA
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-light border border-success mb-4">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-calendar-alt fa-2x text-success mr-3"></i>
+                <div>
+                    <h6 class="font-weight-bold mb-1 text-dark">Formato Oficial de Horarios SENA</h6>
+                    <p class="mb-0 text-muted small">
+                        El sistema lee automáticamente la estructura matricial oficial generada por el SENA: extrae el número de ficha,
+                        reconoce los días semanales y franjas horarias, detecta los instructores y ambientes, y 
+                        <strong>agrupa automáticamente las horas continuas</strong> de una misma sesión de clase.
+                    </p>
                 </div>
+            </div>
+        </div>
 
-                <form id="formImportarHorario" method="post" action="<?= RUTA_BASE ?>controllers/importar_horarios_excel.php" enctype="multipart/form-data">
-                    <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
+        <form id="formImportarHorario" method="post" action="<?= RUTA_BASE ?>controllers/importar_horarios_excel.php" enctype="multipart/form-data">
+            <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
 
-                    <div class="form-group mb-4">
-                        <label for="archivo_excel" class="font-weight-bold">
-                            Seleccionar Archivo de Horarios (.xlsx) <span class="text-danger">*</span>
-                        </label>
-                        <div class="custom-file">
-                            <input type="file" class="custom-file-input" id="archivo_excel" name="archivo_excel" accept=".xlsx" required>
-                            <label class="custom-file-label" for="archivo_excel">Elegir archivo Excel oficial...</label>
-                        </div>
-                        <small class="form-text text-muted mt-2">
-                            <i class="fas fa-info-circle mr-1"></i> Compatible con archivos matriciales SENA (.xlsx). Lee la hoja activa u <code>Hoja1</code>.
-                        </small>
+            <div class="form-group">
+                <label for="archivo_excel" class="font-weight-bold">
+                    Seleccionar Archivo de Horarios (.xlsx) <span class="text-danger">*</span>
+                </label>
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="archivo_excel" name="archivo_excel" accept=".xlsx" required>
+                    <label class="custom-file-label" for="archivo_excel">Elegir archivo Excel oficial...</label>
+                </div>
+                <small class="form-text text-muted mt-2">
+                    <i class="fas fa-info-circle mr-1"></i> Compatible con archivos matriciales SENA (.xlsx). Lee la hoja activa u <code>Hoja1</code>.
+                </small>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <button type="submit" id="btnEnviar" class="btn btn-success px-4 font-weight-bold">
+                        <i class="fas fa-cogs mr-1"></i> Procesar e importar horario SENA
+                    </button>
+                    <a href="<?= RUTA_BASE ?>views/admin/horarios/index.php" class="btn btn-secondary ml-2">
+                        <i class="fas fa-arrow-left mr-1"></i> Volver al listado
+                    </a>
+                </div>
+            </div>
+        </form>
+
+        <hr class="my-4">
+
+        <div class="row">
+            <div class="col-md-12">
+                <h6 class="font-weight-bold text-dark mb-3">
+                    <i class="fas fa-check-circle text-success mr-1"></i> Reglas de procesamiento del Motor Matricial SENA:
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="text-muted small pl-3">
+                            <li class="mb-2"><strong>Detección y Creación de Ficha:</strong> Búsqueda automática en la celda <code>E2/D2</code> y sugerencia del programa en <code>H2</code>. Si la ficha no existe, se abre una ventana para su registro inmediato sin truncar el proceso.</li>
+                            <li class="mb-2"><strong>Columnas de Horas:</strong> Hora de inicio programada en la <code>Columna B</code> y hora de fin en la <code>Columna C</code>.</li>
+                            <li class="mb-2"><strong>Mapeo de Días:</strong> Lunes (<code>Col D</code>), Martes (<code>Col F</code>), Miércoles (<code>Col H</code>), Jueves (<code>Col J</code>), Viernes (<code>Col L</code>) y Sábado (<code>Col N</code>).</li>
+                        </ul>
                     </div>
-
-                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                        <a href="<?= RUTA_BASE ?>views/admin/horarios/index.php" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left mr-1"></i> Volver al listado
-                        </a>
-                        <button type="submit" id="btnEnviar" class="btn btn-success px-4 font-weight-bold shadow-sm">
-                            <i class="fas fa-cogs mr-1"></i> Procesar e importar horario SENA
-                        </button>
+                    <div class="col-md-6">
+                        <ul class="text-muted small pl-3">
+                            <li class="mb-2"><strong>Agrupación Temporal Inteligente:</strong> Horas consecutivas con el mismo instructor, ambiente y competencia se consolidan en una única sesión con <code>hora_fin</code> acumulada.</li>
+                            <li class="mb-2"><strong>Instructores Dinámicos:</strong> Cruce flexible contra la tabla de usuarios. Si se identifican instructores nuevos, el sistema solicita sus datos en un modal interactivo antes de guardar.</li>
+                            <li class="mb-2"><strong>Referencia de Fechas:</strong> Detección de mes y días de clase con cálculo basado en el año actual (<strong><?= date('Y') ?></strong>).</li>
+                        </ul>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
 <!-- MODAL 1: Ficha Faltante (Creación Rápida) -->
 <div class="modal fade" id="modalFichaFaltante" data-backdrop="static" data-keyboard="false" tabindex="-1" role="dialog" aria-labelledby="modalFichaLabel" aria-hidden="true">
     <div class="modal-dialog modal-md modal-dialog-centered" role="document">

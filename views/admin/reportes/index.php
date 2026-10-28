@@ -284,9 +284,12 @@ ob_start();
                         <button type="submit" name="filtro_semana" value="1" class="btn btn-sm btn-outline-info font-weight-bold shadow-sm" title="Filtrar automáticamente esta semana">
                             <i class="fas fa-calendar-week mr-1"></i> Esta semana
                         </button>
-                        <a href="<?= RUTA_BASE ?>views/admin/reportes/exportar_csv.php?<?= http_build_query($_GET) ?>" class="btn btn-sm btn-success font-weight-bold shadow-sm" title="Exportar a Microsoft Excel">
-                            <i class="fas fa-file-excel mr-1"></i> Exportar Excel
+                        <a href="<?= RUTA_BASE ?>views/admin/reportes/exportar_csv.php?<?= http_build_query($_GET) ?>" class="btn btn-sm btn-outline-success font-weight-bold shadow-sm" title="Exportar a archivo CSV">
+                            <i class="fas fa-file-excel mr-1"></i> Exportar CSV
                         </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger font-weight-bold shadow-sm" onclick="window.print()" title="Imprimir reporte o guardar como PDF">
+                            <i class="fas fa-file-pdf mr-1"></i> Guardar PDF
+                        </button>
                         <a href="<?= RUTA_BASE ?>views/admin/reportes/index.php" class="btn btn-sm btn-outline-secondary shadow-sm" title="Restablecer filtros">
                             <i class="fas fa-times mr-1"></i> Limpiar
                         </a>
