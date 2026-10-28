@@ -34,6 +34,14 @@ $consultaInasistencias->bindValue(':id_usuario', $_SESSION['aprendiz']['id_usuar
 $consultaInasistencias->execute();
 $inasistenciasDisponibles = $consultaInasistencias->fetchAll();
 
+// Asegurar token CSRF para el formulario
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = $_SESSION['token_csrf'] ?? bin2hex(random_bytes(32));
+}
+if (empty($_SESSION['token_csrf'])) {
+    $_SESSION['token_csrf'] = $_SESSION['csrf_token'];
+}
+
 // --- Variables del layout ---
 $paginaTitulo = 'Subir excusa médica';
 $menuActivo   = 'subir-excusa';
@@ -82,6 +90,7 @@ ob_start();
                 </span>
             </div>
             <form action="<?= RUTA_BASE ?>controllers/subir_excusa.php" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <div class="card-body p-4">
                     <?php if (empty($inasistenciasDisponibles)): ?>
                         <div class="text-center py-5 px-3">

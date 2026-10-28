@@ -21,7 +21,16 @@ if (!$usuarioAprendiz) {
     exit;
 }
 
-// Solo procesar peticiones POST
+// Sincronizar token de sesión si fue generado con clave token_csrf
+if (empty($_SESSION['csrf_token']) && !empty($_SESSION['token_csrf'])) {
+    $_SESSION['csrf_token'] = $_SESSION['token_csrf'];
+}
+
+// Verificación de seguridad CSRF
+if (!isset($_POST['csrf_token']) || empty($_SESSION['csrf_token']) || !hash_equals((string)$_SESSION['csrf_token'], (string)$_POST['csrf_token'])) {
+    header('Location: ../views/aprendiz/excusas/create.php?error=' . urlencode('Token de seguridad inválido'));
+    exit;
+}
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ../views/aprendiz/excusas/create.php?error=Metodo no permitido');
     exit;
