@@ -6,6 +6,27 @@
  * Mantiene compatibilidad total con lectores fisicos RFID via POST.
  */
 
+require_once __DIR__ . '/../config/claves.php';
+
+// Si la petición viene en formato JSON, poblar $_POST para compatibilidad uniforme
+$rawInputJson = json_decode(file_get_contents('php://input'), true);
+if (is_array($rawInputJson) && !isset($_POST['api_key']) && isset($rawInputJson['api_key'])) {
+    $_POST['api_key'] = $rawInputJson['api_key'];
+}
+
+// Validación estricta de API Key antes de procesar cualquier dato o conexión a BD
+if (!isset($_POST['api_key']) || $_POST['api_key'] !== API_KEY_RFID) {
+    header('HTTP/1.1 403 Forbidden');
+    http_response_code(403);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'mensaje' => 'Acceso denegado',
+        'message' => 'Acceso denegado'
+    ]);
+    exit;
+}
+
 session_start();
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/AsistenciaModel.php';
@@ -21,10 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Obtener datos del request (JSON o form-data)
-$input = json_decode(file_get_contents('php://input'), true);
-if (!$input) {
-    $input = $_POST;
-}
+$input = is_array($rawInputJson) ? $rawInputJson : $_POST;
 
 $codigoRfid = trim($input['codigo_rfid'] ?? '');
 $tipoRegistro = $input['tipo'] ?? 'entrada'; // 'entrada' o 'salida'
