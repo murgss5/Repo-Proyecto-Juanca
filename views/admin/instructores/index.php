@@ -1,7 +1,134 @@
 <?php
-require_once dirname(__DIR__) . '/../../includes/autenticacion.php'; exigirRol(1); require_once dirname(__DIR__) . '/../../includes/constantes.php'; require_once dirname(__DIR__) . '/../../config/conexion.php';
-if(empty($_SESSION['token_csrf']))$_SESSION['token_csrf']=bin2hex(random_bytes(32));$db=(new Conexion())->conectar();$instructores=$db->query("SELECT u.id_usuario,u.identificacion,CONCAT(u.nombre,CHAR(32),u.apellido) AS nombre,u.telefono,COUNT(f.id_ficha) AS fichas FROM usuario u LEFT JOIN ficha f ON f.fk_usuario=u.id_usuario WHERE u.fk_rol=2 GROUP BY u.id_usuario ORDER BY u.apellido,u.nombre")->fetchAll();$paginaTitulo='Instructores';$menuActivo='instructores';$miga=[['label'=>'Inicio','url'=>RUTA_BASE.'views/admin/dashboard.php'],['label'=>'Instructores']];ob_start(); ?>
-<div class="card"><div class="card-header"><h3 class="card-title"><i class="fas fa-chalkboard-teacher text-sena"></i> Listado de instructores</h3><div class="card-tools"><a class="btn btn-primary btn-sm" href="<?=RUTA_BASE?>views/admin/instructores/create.php"><i class="fas fa-user-plus"></i> Nuevo instructor</a></div></div><div class="card-body">
-<?php if(isset($_GET['mensaje'])):?><div class="alert alert-success"><?=htmlspecialchars($_GET['mensaje'])?></div><?php endif;?><?php if(isset($_GET['error'])):?><div class="alert alert-danger"><?=htmlspecialchars($_GET['error'])?></div><?php endif;?>
-<div class="input-group mb-3"><div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-search"></i></span></div><input class="form-control buscador-tabla" placeholder="Buscar instructor..."></div><div class="table-responsive"><table class="table table-hover table-bordered tabla-datos"><thead><tr><th>Documento</th><th>Nombre</th><th>Teléfono</th><th>Fichas asignadas</th><th>Acciones</th></tr></thead><tbody><?php foreach($instructores as $i):?><tr><td><?=htmlspecialchars($i['identificacion'])?></td><td><?=htmlspecialchars($i['nombre'])?></td><td><?=htmlspecialchars($i['telefono']??'Sin registro')?></td><td><?=$i['fichas']?></td><td><a class="btn btn-sm btn-warning" href="<?=RUTA_BASE?>views/admin/instructores/edit.php?id=<?=$i['id_usuario']?>"><i class="fas fa-edit"></i></a><form action="<?=RUTA_BASE?>controllers/gestionar_usuario.php" method="post" class="d-inline" onsubmit="return confirm('¿Eliminar este instructor?');"><input type="hidden" name="accion" value="eliminar"><input type="hidden" name="rol" value="2"><input type="hidden" name="id_usuario" value="<?=$i['id_usuario']?>"><input type="hidden" name="token_csrf" value="<?=htmlspecialchars($_SESSION['token_csrf'])?>"><button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button></form></td></tr><?php endforeach;?></tbody></table></div></div></div>
-<?php $contenido=ob_get_clean();include __DIR__.'/../../layouts/layout_admin.php';
+/**
+ * Vista: Listado de instructores (Administrador).
+ * Muestra el listado real de instructores con opciones de editar y eliminar.
+ */
+
+require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
+exigirRol(1);
+
+require_once dirname(__DIR__) . '/../../includes/constantes.php';
+require_once dirname(__DIR__) . '/../../config/conexion.php';
+
+// Genera token CSRF si no existe
+if (empty($_SESSION['token_csrf'])) {
+    $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
+}
+
+$db = (new Conexion())->conectar();
+$instructores = $db->query(
+    "SELECT u.id_usuario, u.identificacion, CONCAT(u.nombre, CHAR(32), u.apellido) AS nombre, u.telefono, COUNT(f.id_ficha) AS fichas 
+     FROM usuario u 
+     LEFT JOIN ficha f ON f.fk_usuario = u.id_usuario 
+     WHERE u.fk_rol = 2 
+     GROUP BY u.id_usuario 
+     ORDER BY u.apellido, u.nombre"
+)->fetchAll();
+
+$paginaTitulo = 'Instructores';
+$menuActivo   = 'instructores';
+$miga = [
+    ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/admin/dashboard.php'],
+    ['label' => 'Instructores'],
+];
+
+ob_start();
+?>
+
+<!-- Alertas de estado -->
+<?php if (isset($_GET['mensaje'])): ?>
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fas fa-check-circle mr-2"></i> <?= htmlspecialchars($_GET['mensaje']) ?>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+<?php endif; ?>
+
+<?php if (isset($_GET['error'])): ?>
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fas fa-exclamation-triangle mr-2"></i> <?= htmlspecialchars($_GET['error']) ?>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+<?php endif; ?>
+
+<!-- Tarjeta Principal de Instructores -->
+<div class="card card-outline card-success shadow-sm">
+    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+        <h3 class="card-title font-weight-bold text-dark mb-0">
+            <i class="fas fa-chalkboard-teacher text-success mr-2"></i> Listado de Instructores
+        </h3>
+        <div class="card-tools ml-auto">
+            <a href="<?= RUTA_BASE ?>views/admin/instructores/create.php" class="btn btn-success btn-sm font-weight-bold shadow-sm">
+                <i class="fas fa-plus mr-1"></i> Nuevo Instructor
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body p-4">
+        <!-- Barra superior interna: Buscador -->
+        <div class="row mb-3 align-items-center">
+            <div class="col-md-5 col-sm-12 mb-2">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    </div>
+                    <input type="text" class="form-control buscador-tabla" placeholder="Buscar instructor por nombre, documento o teléfono...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Datos -->
+        <div class="table-responsive">
+            <table class="table table-hover table-striped text-nowrap tabla-datos" data-empty-message="No se encontraron instructores registrados.">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Documento</th>
+                        <th>Nombre Completo</th>
+                        <th>Teléfono</th>
+                        <th>Fichas Asignadas</th>
+                        <th class="text-center" style="width: 120px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($instructores as $i): ?>
+                        <tr>
+                            <td class="align-middle font-weight-bold"><?= htmlspecialchars($i['identificacion']) ?></td>
+                            <td class="align-middle"><?= htmlspecialchars($i['nombre']) ?></td>
+                            <td class="align-middle text-muted"><?= htmlspecialchars($i['telefono'] ?? 'Sin registro') ?></td>
+                            <td class="align-middle">
+                                <span class="badge <?= (int)$i['fichas'] > 0 ? 'badge-info' : 'badge-secondary' ?> px-2 py-1">
+                                    <i class="fas fa-layer-group mr-1"></i> <?= (int)$i['fichas'] ?> <?= (int)$i['fichas'] === 1 ? 'ficha' : 'fichas' ?>
+                                </span>
+                            </td>
+                            <td class="text-center align-middle">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a class="btn btn-warning btn-sm shadow-sm" href="<?= RUTA_BASE ?>views/admin/instructores/edit.php?id=<?= htmlspecialchars($i['id_usuario']) ?>" title="Editar instructor">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="<?= RUTA_BASE ?>controllers/gestionar_usuario.php" method="post" class="d-inline ml-1" onsubmit="return confirm('¿Está seguro de eliminar este instructor?');">
+                                        <input type="hidden" name="accion" value="eliminar">
+                                        <input type="hidden" name="rol" value="2">
+                                        <input type="hidden" name="id_usuario" value="<?= htmlspecialchars($i['id_usuario']) ?>">
+                                        <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
+                                        <button type="submit" class="btn btn-danger btn-sm shadow-sm" title="Eliminar instructor">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<?php
+$contenido = ob_get_clean();
+
+// Render del layout principal del panel de administracion
+include __DIR__ . '/../../layouts/layout_admin.php';
