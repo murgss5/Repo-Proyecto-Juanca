@@ -4,21 +4,12 @@
  * Permite al instructor abrir una jornada para una ficha especifica
  */
 
-session_start();
-require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../includes/autenticacion.php';
+exigirRol(2);
 
-// Validar sesion y rol instructor
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
+require_once __DIR__ . '/../config/conexion.php';
+
 $usuarioInstructor = usuarioActual(2);
-if (!$usuarioInstructor) {
-    http_response_code(403);
-    setFlash('error', 'Acceso denegado: se requiere rol Instructor');
-    header('Location: ' . $_SERVER['HTTP_REFERER'] ?? '../views/instructor/dashboard.php');
-    exit;
-}
 
 // Solo procesar peticiones POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

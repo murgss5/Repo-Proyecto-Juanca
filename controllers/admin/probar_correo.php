@@ -11,11 +11,12 @@
 // Buffer de salida para evitar que advertencias o espacios corrompan la respuesta JSON
 ob_start();
 
-session_start();
+require_once __DIR__ . '/../../includes/autenticacion.php';
+exigirRol(1);
+
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../../includes/constantes.php';
-require_once __DIR__ . '/../../includes/autenticacion.php';
 
 if (file_exists(__DIR__ . '/../../config/mailer.php')) {
     require_once __DIR__ . '/../../config/mailer.php';

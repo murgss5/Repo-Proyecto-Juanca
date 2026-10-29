@@ -4,14 +4,14 @@
  * fase 3: inserta horarios validos en transaccion
  */
 
-session_start();
+exigirRol(1);
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../includes/autenticacion.php';
 require_once __DIR__ . '/../includes/HorarioValidator.php';
 
 // validar post y rol admin
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_SESSION['admin']['id_usuario'])) {
-    header('Location: ../views/auth/login.php');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ../views/admin/horarios/importar.php');
     exit;
 }
 

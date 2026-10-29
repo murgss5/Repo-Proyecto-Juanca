@@ -27,6 +27,10 @@ $datos = [
 
 if ($edicion) {
     $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+    if (!$id || $id <= 0) {
+        header('Location: ' . RUTA_BASE . 'views/admin/' . $modulo . '/index.php?error=' . urlencode('Identificador de usuario no válido.'));
+        exit;
+    }
     $sql = 'SELECT u.id_usuario, u.nombre_usuario, u.identificacion, u.nombre, u.apellido, u.telefono, u.correo_electronico, ap.codigo_rfid, ap.fk_ficha AS id_ficha '
          . 'FROM usuario u '
          . ($rolGestionado === 3 ? 'INNER JOIN aprendiz ap ON ap.fk_usuario = u.id_usuario' : 'LEFT JOIN aprendiz ap ON 1=0')

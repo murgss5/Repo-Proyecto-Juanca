@@ -5,7 +5,7 @@
  */
 
 require_once __DIR__ . '/../includes/autenticacion.php';
-exigirRol(2);
+exigirRol(1, 2);
 
 require_once __DIR__ . '/../includes/AprendizExcelReader.php';
 

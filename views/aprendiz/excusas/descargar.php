@@ -4,18 +4,10 @@
  * Valida que la excusa pertenezca al aprendiz autenticado antes de permitir la descarga.
  */
 
-session_start();
-require_once __DIR__ . '/../../../config/conexion.php';
 require_once __DIR__ . '/../../../includes/autenticacion.php';
+exigirRol(3);
 
-// Validar sesión y rol
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
-if (empty($_SESSION['aprendiz']['id_usuario'])) {
-    http_response_code(403);
-    exit('Acceso denegado: se requiere rol Aprendiz');
-}
+require_once __DIR__ . '/../../../config/conexion.php';
 
 // Validar id_excusa por GET
 $idExcusa = filter_input(INPUT_GET, 'id_excusa', FILTER_VALIDATE_INT);

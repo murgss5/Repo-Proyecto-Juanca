@@ -5,22 +5,13 @@
  * y generar inasistencias para aprendices sin registro de esa ficha
  */
 
-session_start();
-require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../includes/autenticacion.php';
+exigirRol(1, 2);
 
-// Validar sesion y rol (instructor=2 o administrador=1)
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
+require_once __DIR__ . '/../config/conexion.php';
+
 $usuarioSesion = usuarioActual(2) ?? usuarioActual(1);
-$rolUsuario = $usuarioSesion['fk_rol'] ?? null;
-if (!in_array($rolUsuario, [1, 2], true)) {
-    http_response_code(403);
-    setFlash('error', 'Acceso denegado: se requiere rol Instructor o Administrador');
-    header('Location: ' . $_SERVER['HTTP_REFERER'] ?? '../views/instructor/dashboard.php');
-    exit;
-}
+$rolUsuario = (int)($usuarioSesion['fk_rol'] ?? 0);
 
 // Solo procesar peticiones POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

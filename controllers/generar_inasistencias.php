@@ -1,21 +1,32 @@
 <?php
 /**
  * Tarea automatica: Generar inasistencias
- * Ejecuta el procedimiento almacenado generar_inasistencias()
+ * Ejecuta el procedimiento almacenado generar_inasistencias_v2()
  */
 
-// Token de seguridad para ejecucion desde navegador
-define('GENERAR_INASISTENCIAS_TOKEN', 'cambiar_esta_clave_2026');
-
-// Carga la conexion PDO
+require_once __DIR__ . '/../includes/autenticacion.php';
 require_once __DIR__ . '/../config/conexion.php';
 
-// Verifica token si se ejecuta desde navegador (no CLI)
+// Token de seguridad para ejecucion desde cron o navegador externo
+if (!defined('GENERAR_INASISTENCIAS_TOKEN')) {
+    define('GENERAR_INASISTENCIAS_TOKEN', 'cambiar_esta_clave_2026');
+}
+
+// Verifica permisos si se ejecuta desde navegador o HTTP (no CLI)
 if (php_sapi_name() !== 'cli') {
-    $tokenRecibido = $_GET['token'] ?? '';
-    if (!hash_equals(GENERAR_INASISTENCIAS_TOKEN, $tokenRecibido)) {
+    asegurarSesionIniciada();
+    $esAdmin = !empty($_SESSION['admin']['id_usuario']);
+
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
+    $tokenHeader = $headers['X-Cron-Token'] ?? $headers['X-CRON-TOKEN'] ?? '';
+    $tokenRecibido = (string)($_GET['token'] ?? $tokenHeader);
+
+    $tokenValido = ($tokenRecibido !== '' && hash_equals(GENERAR_INASISTENCIAS_TOKEN, $tokenRecibido));
+
+    if (!$esAdmin && !$tokenValido) {
         http_response_code(403);
-        exit('Acceso denegado');
+        header('Content-Type: text/plain; charset=UTF-8');
+        exit('Acceso denegado: se requiere sesión de Administrador o token de autorización válido.');
     }
 }
 
@@ -37,6 +48,7 @@ try {
     exit;
 
 } catch (PDOException $e) {
+    http_response_code(500);
     echo 'No fue posible ejecutar el proceso.';
     exit;
 }

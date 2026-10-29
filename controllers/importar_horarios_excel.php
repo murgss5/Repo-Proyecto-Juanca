@@ -13,12 +13,10 @@
  * - Inserción atómica en BD mediante transacción PDO
  */
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/../includes/autenticacion.php';
+exigirRol(1);
 
 require_once __DIR__ . '/../config/conexion.php';
-require_once __DIR__ . '/../includes/autenticacion.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -39,12 +37,12 @@ function responderJson(array $data): void {
 $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
           || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
 
-// 1. Validar autenticación de administrador (rol 1)
-if (empty($_SESSION['admin']['id_usuario'])) {
+// 1. Validar método POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     if ($isAjax) {
-        responderJson(['success' => false, 'error' => 'Sesión no válida o expirada. Por favor inicie sesión como Administrador.']);
+        responderJson(['success' => false, 'error' => 'Método no permitido. Se requiere POST.']);
     }
-    header('Location: ../views/auth/login.php');
+    header('Location: ../views/admin/horarios/importar.php');
     exit;
 }
 

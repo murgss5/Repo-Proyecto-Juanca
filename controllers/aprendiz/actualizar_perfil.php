@@ -5,11 +5,11 @@
  * teléfono y correo electrónico. Exige la contraseña actual si se modifica el documento.
  */
 
-require_once __DIR__ . '/../../includes/constantes.php';
 require_once __DIR__ . '/../../includes/autenticacion.php';
-require_once __DIR__ . '/../../config/conexion.php';
+exigirRol(3);
 
-asegurarSesionIniciada();
+require_once __DIR__ . '/../../includes/constantes.php';
+require_once __DIR__ . '/../../config/conexion.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -25,16 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// 2. Validar rol Aprendiz (rol 3) y sesión activa
-$usuario = usuarioActual();
-if (!$usuario || (int)$usuario['fk_rol'] !== 3) {
-    http_response_code(403);
-    echo json_encode([
-        'success' => false,
-        'error'   => 'Acceso denegado. Se requiere sesión activa con rol Aprendiz.'
-    ]);
-    exit;
-}
+$usuario = usuarioActual(3);
 
 // 3. Validar token CSRF estricto
 $tokenRecibido = $_POST['token_csrf'] ?? '';

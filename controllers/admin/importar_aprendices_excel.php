@@ -18,11 +18,12 @@
 // Desactivar salida previa para garantizar JSON limpio
 ob_start();
 
-session_start();
+require_once __DIR__ . '/../../includes/autenticacion.php';
+exigirRol(1);
+
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../../config/conexion.php';
-require_once __DIR__ . '/../../includes/autenticacion.php';
 require_once __DIR__ . '/../../includes/constantes.php';
 $vendorAutoload = __DIR__ . '/../../vendor/autoload.php';
 if (file_exists($vendorAutoload)) {
@@ -30,16 +31,6 @@ if (file_exists($vendorAutoload)) {
 }
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
-
-// 1. Validar autenticación de Administrador (rol 1)
-if (empty($_SESSION['admin']['id_usuario'])) {
-    ob_clean();
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Sesión no válida o expirada. Inicie sesión como Administrador.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
 
 // 2. Validar método POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

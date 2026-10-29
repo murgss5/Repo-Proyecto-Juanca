@@ -10,7 +10,7 @@ require_once __DIR__ . '/../includes/autenticacion.php';
 require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../models/AsistenciaModel.php';
 
-asegurarSesionIniciada();
+exigirRol(2);
 
 header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');

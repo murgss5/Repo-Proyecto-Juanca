@@ -5,9 +5,9 @@
  */
 
 require_once dirname(__DIR__, 2) . '/includes/autenticacion.php';
-require_once dirname(__DIR__, 2) . '/config/conexion.php';
+exigirRol(2);
 
-asegurarSesionIniciada();
+require_once dirname(__DIR__, 2) . '/config/conexion.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -15,16 +15,11 @@ header('Pragma: no-cache');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['success' => false, 'error' => 'Mtodo no permitido.']);
+    echo json_encode(['success' => false, 'error' => 'Método no permitido.']);
     exit;
 }
 
-$usuarioActual = usuarioActual();
-if (!$usuarioActual || $usuarioActual['fk_rol'] !== 2) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Acceso denegado. Se requiere rol Instructor.']);
-    exit;
-}
+$usuarioActual = usuarioActual(2);
 
 $tokenRecibido = $_POST['token_csrf'] ?? '';
 if (!hash_equals($_SESSION['token_csrf'] ?? '', $tokenRecibido)) {

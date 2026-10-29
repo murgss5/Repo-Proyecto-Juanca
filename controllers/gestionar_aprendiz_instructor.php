@@ -11,7 +11,7 @@
  * y protección CSRF.
  */
 
-session_start();
+
 require_once __DIR__ . '/../includes/autenticacion.php';
 exigirRol(2);
 

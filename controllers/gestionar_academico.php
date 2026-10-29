@@ -4,7 +4,8 @@
  * permite crear, editar y eliminar fichas y horarios con validaciones
  */
 
-session_start();
+require_once __DIR__ . '/../includes/autenticacion.php';
+exigirRol(1);
 date_default_timezone_set('America/Bogota');
 require_once __DIR__ . '/../config/conexion.php';
 
@@ -22,8 +23,8 @@ function volverAcademico(string $modulo, string $tipo, string $texto, string $vi
 }
 
 // Verifica que sea POST y que el usuario sea administrador (rol 1)
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_SESSION['admin']['id_usuario'])) {
-    header('Location: ../views/auth/login.php');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ../views/admin/dashboard.php');
     exit;
 }
 

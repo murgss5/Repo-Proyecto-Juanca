@@ -4,36 +4,26 @@
  * Procesa el formulario de subida de excusa y guarda el archivo de forma segura
  */
 
-// Inicia la sesion
-session_start();
-// Carga la conexion a la base de datos
+require_once __DIR__ . '/../includes/autenticacion.php';
+exigirRol(3);
+
 require_once __DIR__ . '/../includes/constantes.php';
 require_once __DIR__ . '/../config/conexion.php';
-// Carga las funciones de autenticacion
-require_once __DIR__ . '/../includes/autenticacion.php';
 
-// Validar sesion y rol (solo aprendices pueden subir excusas)
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
 $usuarioAprendiz = usuarioActual(3);
-if (!$usuarioAprendiz) {
-    header('Location: ' . RUTA_BASE . 'views/auth/login.php');
-    exit;
-}
 
-// Sincronizar token de sesión si fue generado con clave token_csrf
-if (empty($_SESSION['csrf_token']) && !empty($_SESSION['token_csrf'])) {
-    $_SESSION['csrf_token'] = $_SESSION['token_csrf'];
-}
-
-// Verificación de seguridad CSRF
-if (!isset($_POST['csrf_token']) || empty($_SESSION['csrf_token']) || !hash_equals((string)$_SESSION['csrf_token'], (string)$_POST['csrf_token'])) {
-    header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=' . urlencode('Token de seguridad inválido'));
-    exit;
-}
+// 1. Validar método POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=Metodo no permitido');
+    exit;
+}
+
+// 2. Sincronizar y validar token CSRF
+$tokenCsrfSesion = (string)($_SESSION['token_csrf'] ?? $_SESSION['csrf_token'] ?? '');
+$tokenRecibido = (string)($_POST['csrf_token'] ?? $_POST['token_csrf'] ?? '');
+
+if ($tokenCsrfSesion === '' || !hash_equals($tokenCsrfSesion, $tokenRecibido)) {
+    header('Location: ' . RUTA_BASE . 'views/aprendiz/excusas/create.php?error=' . urlencode('Token de seguridad inválido'));
     exit;
 }
 

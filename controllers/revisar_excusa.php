@@ -4,9 +4,10 @@
  * Permite al instructor aprobar o rechazar excusas de sus aprendices
  */
 
-session_start();
-require_once __DIR__ . '/../config/conexion.php';
 require_once __DIR__ . '/../includes/autenticacion.php';
+exigirRol(2);
+
+require_once __DIR__ . '/../config/conexion.php';
 
 /**
  * funcion auxiliar para redirigir al listado de excusas con mensaje
@@ -19,11 +20,12 @@ function volverAExcusas(string $parametro, string $mensaje): void
     exit;
 }
 
-// Verifica que sea POST y que el usuario sea instructor (rol 2)
-$usuarioInstructor = usuarioActual(2);
-if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$usuarioInstructor) {
-    volverAExcusas('error', 'No tiene permiso para revisar excusas.');
+// Verifica que sea POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    volverAExcusas('error', 'Método no permitido.');
 }
+
+$usuarioInstructor = usuarioActual(2);
 
 // Verifica el token CSRF para evitar envios falsos
 if (!hash_equals($_SESSION['token_csrf'] ?? '', $_POST['token_csrf'] ?? '')) {
