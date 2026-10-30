@@ -99,12 +99,12 @@ ob_start();
       <table class="table table-hover table-striped align-middle tabla-datos">
         <thead class="thead-light">
           <tr>
-            <th>Documento</th>
+            <th class="col-documento" style="width: 110px;">Documento</th>
             <th>Nombre completo</th>
-            <th>Teléfono</th>
-            <th>RFID</th>
-            <th>Ficha</th>
-            <th class="text-center">Acciones</th>
+            <th class="d-none d-md-table-cell">Teléfono</th>
+            <th class="d-none d-lg-table-cell">RFID</th>
+            <th class="d-none d-md-table-cell">Ficha</th>
+            <th class="text-center col-acciones" style="width: 110px;">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -112,18 +112,26 @@ ob_start();
                 $esTemporal = strpos($aprendiz['codigo_rfid'], 'RFID') === 0;
           ?>
             <tr data-id-aprendiz="<?= htmlspecialchars((string)$aprendiz['id_aprendiz'], ENT_QUOTES, 'UTF-8') ?>">
-              <td><?= htmlspecialchars((string)$aprendiz['documento'], ENT_QUOTES, 'UTF-8') ?></td>
-              <td><?= htmlspecialchars((string)$aprendiz['nombre'], ENT_QUOTES, 'UTF-8') ?></td>
-              <td><?= htmlspecialchars((string)($aprendiz['telefono'] ?? 'Sin registro'), ENT_QUOTES, 'UTF-8') ?></td>
-              <td class="col-rfid">
+              <td class="col-documento align-middle font-weight-bold"><?= htmlspecialchars((string)$aprendiz['documento'], ENT_QUOTES, 'UTF-8') ?></td>
+              <td class="align-middle">
+                <span class="font-weight-bold text-dark"><?= htmlspecialchars((string)$aprendiz['nombre'], ENT_QUOTES, 'UTF-8') ?></span>
+                <div class="d-md-none text-muted small mt-1">
+                  <span class="badge badge-success px-2 py-0 mr-1">Ficha #<?= htmlspecialchars((string)$aprendiz['id_ficha'], ENT_QUOTES, 'UTF-8') ?></span>
+                  <?php if (!empty($aprendiz['telefono'])): ?>
+                    <span><i class="fas fa-phone-alt text-success mr-1"></i><?= htmlspecialchars((string)$aprendiz['telefono'], ENT_QUOTES, 'UTF-8') ?></span>
+                  <?php endif; ?>
+                </div>
+              </td>
+              <td class="d-none d-md-table-cell align-middle"><?= htmlspecialchars((string)($aprendiz['telefono'] ?? 'Sin registro'), ENT_QUOTES, 'UTF-8') ?></td>
+              <td class="col-rfid d-none d-lg-table-cell align-middle">
                 <?php if ($esTemporal): ?>
                   <span class="text-muted font-italic">Pendiente</span>
                 <?php else: ?>
                   <code><?= htmlspecialchars((string)$aprendiz['codigo_rfid'], ENT_QUOTES, 'UTF-8') ?></code>
                 <?php endif; ?>
               </td>
-              <td><span class="badge badge-success px-2 py-1">Ficha #<?= htmlspecialchars((string)$aprendiz['id_ficha'], ENT_QUOTES, 'UTF-8') ?></span></td>
-              <td class="text-center">
+              <td class="d-none d-md-table-cell align-middle"><span class="badge badge-success px-2 py-1">Ficha #<?= htmlspecialchars((string)$aprendiz['id_ficha'], ENT_QUOTES, 'UTF-8') ?></span></td>
+              <td class="text-center col-acciones align-middle">
                 <div class="btn-group btn-group-sm" role="group">
                   <?php if ($esTemporal): ?>
                     <button type="button" class="btn btn-success btn-registrar-rfid-indiv"

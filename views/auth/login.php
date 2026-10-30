@@ -35,35 +35,30 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
 <div id="pageTransitionBar" class="page-transition-bar"></div>
 
 <div class="login-split-container min-vh-100 d-flex flex-column flex-md-row fade-in-content">
-  <!-- Lado izquierdo: Marca y presentación institucional (visible en md y superiores) -->
-  <div class="login-brand-side login-split-side col-md-6 d-none d-md-flex flex-column justify-content-center align-items-center text-center p-5 text-white position-relative overflow-hidden">
-    <!-- Contenido central 100% centrado -->
-    <div class="login-brand-content d-flex flex-column align-items-center text-center my-auto">
-      <img src="<?= RUTA_BASE ?>assets/img/sena.svg" alt="Logo SENA" width="200" height="200" class="login-brand-logo mx-auto mb-4 img-fluid">
-      <h1 class="display-5 font-weight-bold text-white mb-3 text-center" style="line-height: 1.15; font-size: 2.3rem;">
-        Control de Ingreso<br>de Aprendices
+  <!-- Lado izquierdo / Banner superior movil: Marca y presentacion institucional -->
+  <div class="login-brand-side login-split-side col-md-6 col-12 d-flex flex-column justify-content-center align-items-center text-center p-4 p-md-5 text-white position-relative overflow-hidden">
+    <!-- Contenido central -->
+    <div class="login-brand-content d-flex flex-column align-items-center text-center my-auto w-100">
+      <img src="<?= RUTA_BASE ?>assets/img/sena.svg" alt="Logo SENA" width="200" height="200" class="login-brand-logo mx-auto mb-3 mb-md-4 img-fluid">
+      <h1 class="font-weight-bold text-white mb-2 mb-md-3 text-center login-brand-title">
+        Control de Ingreso<br class="d-none d-md-inline"> de Aprendices
       </h1>
-      <p class="text-white-50 lead mb-0 text-center mx-auto" style="font-size: 1.05rem; line-height: 1.6; max-width: 440px;">
+      <p class="text-white-50 lead mb-0 text-center mx-auto login-brand-desc">
         Bienvenido al sistema de registro, asistencia y control de acceso presencial para la comunidad SENA.
       </p>
     </div>
 
-    <!-- Pie inferior centrado -->
-    <div class="position-absolute pb-4 text-center text-white-50 small w-100" style="bottom: 0; left: 0; right: 0;">
+    <!-- Pie inferior centrado (solo desktop) -->
+    <div class="position-absolute pb-4 text-center text-white-50 small w-100 d-none d-md-block" style="bottom: 0; left: 0; right: 0;">
       Servicio Nacional de Aprendizaje
     </div>
   </div>
 
-  <!-- Lado derecho: Formulario de autenticación centrado -->
-  <div class="login-split-form-col col-md-6 col-12 d-flex flex-column justify-content-between align-items-center bg-white p-4 p-md-5 min-vh-100">
-    <!-- Cabecera visible solo en móvil -->
-    <div class="d-md-none w-100 text-center pt-3 pb-2">
-      <img src="<?= RUTA_BASE ?>assets/img/sena.svg" alt="Logo SENA" width="60" height="60" class="mb-2">
-      <h2 class="h5 font-weight-bold text-dark mb-0">SENA &middot; Control de Ingreso</h2>
-    </div>
+  <!-- Lado derecho / Seccion de autenticacion -->
+  <div class="login-split-form-col col-md-6 col-12 d-flex flex-column justify-content-between align-items-center p-3 p-md-5">
 
     <!-- Contenedor central del formulario -->
-    <div class="login-form-wrapper my-auto py-4">
+    <div class="login-form-wrapper my-auto py-3 py-md-4">
       <div class="mb-4">
         <h3 class="font-weight-bold text-dark mb-1">Iniciar sesión</h3>
         <p class="text-muted small mb-0">Ingresa tus datos para acceder al sistema</p>
@@ -117,13 +112,13 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block py-2 font-weight-bold shadow-sm">
+        <button type="submit" class="btn btn-primary btn-block py-2 font-weight-bold shadow-sm btn-submit-login">
           <i class="fas fa-sign-in-alt mr-2"></i> Ingresar
         </button>
       </form>
     </div>
 
-    <!-- Footer discreto en el lado derecho -->
+    <!-- Footer discreto -->
     <div class="login-footer text-center text-muted small pb-2 w-100">
       SENA &copy; 2026 &bull; Todos los derechos reservados
     </div>

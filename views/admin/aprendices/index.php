@@ -161,29 +161,60 @@ ob_start();
             <table class="table table-hover table-striped text-nowrap tabla-datos" data-empty-message="No se encontraron aprendices registrados.">
                 <thead class="thead-light">
                     <tr>
-                        <th>Documento</th>
+                        <th class="col-documento" style="width: 110px;">Documento</th>
                         <th>Nombre Completo</th>
-                        <th>Teléfono</th>
-                        <th>Ficha</th>
-                        <th>Código RFID</th>
-                        <th class="text-center" style="width: 140px;">Credenciales</th>
-                        <th class="text-center" style="width: 120px;">Acciones</th>
+                        <th class="d-none d-md-table-cell">Teléfono</th>
+                        <th class="d-none d-md-table-cell">Ficha</th>
+                        <th class="d-none d-lg-table-cell">Código RFID</th>
+                        <th class="text-center d-none d-sm-table-cell" style="width: 140px;">Credenciales</th>
+                        <th class="text-center col-acciones" style="width: 100px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($aprendicesRegistrados as $aprendiz): ?>
                         <tr>
-                            <td class="align-middle font-weight-bold"><?= htmlspecialchars($aprendiz['documento']) ?></td>
-                            <td class="align-middle"><?= htmlspecialchars($aprendiz['nombre']) ?></td>
-                            <td class="align-middle text-muted"><?= htmlspecialchars($aprendiz['telefono'] ?? 'Sin registro') ?></td>
+                            <td class="align-middle font-weight-bold col-documento"><?= htmlspecialchars($aprendiz['documento']) ?></td>
                             <td class="align-middle">
+                                <span class="font-weight-bold text-dark"><?= htmlspecialchars($aprendiz['nombre']) ?></span>
+                                <div class="d-md-none text-muted small mt-1">
+                                    <span class="badge badge-info px-2 py-0 mr-1">Ficha #<?= htmlspecialchars($aprendiz['id_ficha']) ?></span>
+                                    <?php if (!empty($aprendiz['telefono'])): ?>
+                                        <span class="mr-1"><i class="fas fa-phone-alt text-success mr-1"></i><?= htmlspecialchars($aprendiz['telefono']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="d-sm-none mt-1">
+                                    <?php if (!empty($aprendiz['correo_enviado']) && (int)$aprendiz['correo_enviado'] === 1): ?>
+                                        <span class="badge badge-success px-1" title="Credenciales enviadas a <?= htmlspecialchars($aprendiz['correo_electronico'] ?? '') ?>">
+                                            <i class="fas fa-check-circle mr-1"></i> Enviado
+                                        </span>
+                                    <?php elseif (!empty($aprendiz['correo_electronico']) && filter_var($aprendiz['correo_electronico'], FILTER_VALIDATE_EMAIL)): ?>
+                                        <span class="badge badge-warning text-dark px-1" title="Pendiente de enviar credenciales">
+                                            <i class="fas fa-clock mr-1"></i> Pendiente
+                                        </span>
+                                    <?php else: ?>
+                                        <button type="button" 
+                                                class="btn btn-outline-secondary btn-xs py-0 px-1 shadow-xs btn-abrir-asignar-correo" 
+                                                data-toggle="modal" 
+                                                data-target="#modalAsignarCorreo" 
+                                                data-id-usuario="<?= htmlspecialchars($aprendiz['id_usuario']) ?>" 
+                                                data-id-aprendiz="<?= htmlspecialchars($aprendiz['id_aprendiz']) ?>" 
+                                                data-nombre="<?= htmlspecialchars($aprendiz['nombre']) ?>" 
+                                                data-documento="<?= htmlspecialchars($aprendiz['documento']) ?>" 
+                                                title="Asignar correo electrónico">
+                                            <i class="fas fa-envelope-open-text mr-1"></i> Asignar correo
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                            <td class="align-middle text-muted d-none d-md-table-cell"><?= htmlspecialchars($aprendiz['telefono'] ?? 'Sin registro') ?></td>
+                            <td class="align-middle d-none d-md-table-cell">
                                 <span class="badge badge-info px-2 py-1">Ficha #<?= htmlspecialchars($aprendiz['id_ficha']) ?></span>
                             </td>
-                            <td class="align-middle">
+                            <td class="align-middle d-none d-lg-table-cell">
                                 <code><?= htmlspecialchars($aprendiz['codigo_rfid']) ?></code>
                             </td>
                             <!-- Indicador de Estado de Correo / Botón Asignar Correo -->
-                            <td class="text-center align-middle">
+                            <td class="text-center align-middle d-none d-sm-table-cell">
                                 <?php if (!empty($aprendiz['correo_enviado']) && (int)$aprendiz['correo_enviado'] === 1): ?>
                                     <span class="badge badge-success px-2 py-1" title="Credenciales enviadas a <?= htmlspecialchars($aprendiz['correo_electronico'] ?? '') ?>">
                                         <i class="fas fa-check-circle mr-1"></i> Enviado
@@ -206,7 +237,7 @@ ob_start();
                                     </button>
                                 <?php endif; ?>
                             </td>
-                            <td class="text-center align-middle">
+                            <td class="text-center align-middle col-acciones">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a class="btn btn-warning btn-sm shadow-sm" href="<?= RUTA_BASE ?>views/admin/aprendices/edit.php?id=<?= htmlspecialchars($aprendiz['id_usuario']) ?>" title="Editar aprendiz">
                                         <i class="fas fa-edit"></i>

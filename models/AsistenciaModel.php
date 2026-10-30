@@ -294,13 +294,15 @@ class AsistenciaModel
                     $estadoSalida = 'SALIDA_NORMAL';
                 }
 
+                $horaActualTime = date('H:i:s', strtotime($horaActualDatetime));
                 $q = $conexion->prepare(
                     "UPDATE asistencia
-                     SET salida = :salida, estado_salida = :estado_salida, minutos_salida_anticipada = :minutos_salida_anticipada
+                     SET salida = :salida, hora_salida = :hora_salida, estado_salida = :estado_salida, minutos_salida_anticipada = :minutos_salida_anticipada
                      WHERE id_asistencia = :id_asistencia"
                 );
                 $q->execute([
                     ':salida'                    => $horaActualDatetime,
+                    ':hora_salida'               => $horaActualTime,
                     ':estado_salida'             => $estadoSalida,
                     ':minutos_salida_anticipada' => $minutosSalidaAnticipada,
                     ':id_asistencia'             => $asistenciaExistente['id_asistencia']
@@ -436,19 +438,21 @@ class AsistenciaModel
                 $mensaje = 'Entrada registrada: RETARDO (' . $minutosRetardo . ' min)';
             }
 
+            $horaActualTime = date('H:i:s', strtotime($horaActualDatetime));
             // Insertar asistencia válida
             $qInsert = $conexion->prepare(
                 "INSERT INTO asistencia (
-                    fecha_asistencia, entrada, estado_entrada, minutos_retardo,
+                    fecha_asistencia, entrada, hora_entrada, estado_entrada, minutos_retardo,
                     fk_aprendiz, fk_sesion_jornada, fk_horario
                 ) VALUES (
-                    :fecha, :entrada, :estado_entrada, :minutos_retardo,
+                    :fecha, :entrada, :hora_entrada, :estado_entrada, :minutos_retardo,
                     :aprendiz_id, :sesion_id, :horario_id
                 )"
             );
             $qInsert->execute([
                 ':fecha'           => $fechaHoy,
                 ':entrada'         => $horaActualDatetime,
+                ':hora_entrada'    => $horaActualTime,
                 ':estado_entrada'  => $estadoEntrada,
                 ':minutos_retardo' => $minutosRetardo,
                 ':aprendiz_id'     => $aprendizId,

@@ -56,8 +56,8 @@ ob_start();
 
 <!-- Tarjeta Principal de Instructores -->
 <div class="card card-outline card-success shadow-sm">
-    <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
-        <h3 class="card-title font-weight-bold text-dark mb-0">
+    <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap align-items-center justify-content-between">
+        <h3 class="card-title font-weight-bold text-dark mb-2 mb-sm-0">
             <i class="fas fa-chalkboard-teacher text-success mr-2"></i> Listado de Instructores
         </h3>
         <div class="card-tools ml-auto">
@@ -80,30 +80,40 @@ ob_start();
             </div>
         </div>
 
-        <!-- Tabla de Datos -->
+        <!-- Tabla de Datos Optimizada para Moviles -->
         <div class="table-responsive">
-            <table class="table table-hover table-striped text-nowrap tabla-datos" data-empty-message="No se encontraron instructores registrados.">
+            <table class="table table-hover table-striped text-nowrap tabla-datos mb-0" data-empty-message="No se encontraron instructores registrados.">
                 <thead class="thead-light">
                     <tr>
-                        <th>Documento</th>
+                        <th class="col-documento" style="width: 110px;">Documento</th>
                         <th>Nombre Completo</th>
-                        <th>Teléfono</th>
-                        <th>Fichas Asignadas</th>
-                        <th class="text-center" style="width: 120px;">Acciones</th>
+                        <th class="d-none d-md-table-cell">Teléfono</th>
+                        <th class="d-none d-md-table-cell">Fichas Asignadas</th>
+                        <th class="text-center col-acciones" style="width: 100px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($instructores as $i): ?>
                         <tr>
-                            <td class="align-middle font-weight-bold"><?= htmlspecialchars($i['identificacion']) ?></td>
-                            <td class="align-middle"><?= htmlspecialchars($i['nombre']) ?></td>
-                            <td class="align-middle text-muted"><?= htmlspecialchars($i['telefono'] ?? 'Sin registro') ?></td>
+                            <td class="align-middle font-weight-bold col-documento"><?= htmlspecialchars($i['identificacion']) ?></td>
                             <td class="align-middle">
+                                <span class="font-weight-bold text-dark"><?= htmlspecialchars($i['nombre']) ?></span>
+                                <div class="d-md-none text-muted small mt-1">
+                                    <?php if (!empty($i['telefono'])): ?>
+                                        <span class="mr-2"><i class="fas fa-phone-alt text-success mr-1"></i><?= htmlspecialchars($i['telefono']) ?></span>
+                                    <?php endif; ?>
+                                    <span class="badge <?= (int)$i['fichas'] > 0 ? 'badge-info' : 'badge-secondary' ?> px-2 py-0">
+                                        <i class="fas fa-layer-group mr-1"></i><?= (int)$i['fichas'] ?> <?= (int)$i['fichas'] === 1 ? 'ficha' : 'fichas' ?>
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="align-middle text-muted d-none d-md-table-cell"><?= htmlspecialchars($i['telefono'] ?? 'Sin registro') ?></td>
+                            <td class="align-middle d-none d-md-table-cell">
                                 <span class="badge <?= (int)$i['fichas'] > 0 ? 'badge-info' : 'badge-secondary' ?> px-2 py-1">
                                     <i class="fas fa-layer-group mr-1"></i> <?= (int)$i['fichas'] ?> <?= (int)$i['fichas'] === 1 ? 'ficha' : 'fichas' ?>
                                 </span>
                             </td>
-                            <td class="text-center align-middle">
+                            <td class="text-center align-middle col-acciones">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <a class="btn btn-warning btn-sm shadow-sm" href="<?= RUTA_BASE ?>views/admin/instructores/edit.php?id=<?= htmlspecialchars($i['id_usuario']) ?>" title="Editar instructor">
                                         <i class="fas fa-edit"></i>

@@ -355,16 +355,11 @@ body {
   background-color: var(--sena-verde);
 }
 
-/* ---------- Login: Split-Screen Layout ---------- */
+/* ---------- Login: Split-Screen & Responsive Institutional Layout ---------- */
 .login-split-container {
   min-height: 100vh;
   width: 100%;
   background-color: #ffffff;
-}
-
-.login-brand-side {
-  background: linear-gradient(135deg, #0a251c 0%, #123e2b 100%) !important;
-  color: #ffffff !important;
 }
 
 .login-brand-side,
@@ -376,7 +371,7 @@ body {
   z-index: 1;
 }
 
-/* Patrones geométricos institucionales: líneas verdes, rombos y chevrons */
+/* Patrones geometricos institucionales: lineas verdes, rombos y chevrons */
 .login-brand-side::before,
 .login-split-side::before {
   content: "";
@@ -400,15 +395,29 @@ body {
 }
 
 .login-brand-logo {
-  width: 200px;
-  max-width: 220px;
+  width: 190px;
+  max-width: 210px;
   height: auto;
   filter: brightness(0) invert(1);
   display: block;
+  transition: all 0.3s ease;
+}
+
+.login-brand-title {
+  line-height: 1.18;
+  font-size: 2.2rem;
+  letter-spacing: -0.5px;
+}
+
+.login-brand-desc {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 440px;
 }
 
 .login-split-form-col {
   background-color: #ffffff;
+  min-height: 100vh;
 }
 
 .login-form-wrapper {
@@ -420,18 +429,149 @@ body {
   background-color: #f8fafc;
   border-color: #e2e8f0;
   color: #64748b;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
 }
 
 .login-form-wrapper .form-control {
   border-color: #e2e8f0;
   color: #1e293b;
-  height: calc(1.5em + 1.1rem + 2px);
+  height: calc(1.5em + 1.15rem + 2px);
   font-size: 0.95rem;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.login-form-wrapper .input-group > .form-control:not(:last-child) {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.login-form-wrapper .input-group-append > .btn {
+  border-color: #e2e8f0;
+  background-color: #f8fafc;
+  color: #64748b;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.login-form-wrapper .input-group-append > .btn:hover {
+  background-color: #f1f5f9;
+  color: #334155;
 }
 
 .login-form-wrapper .form-control:focus {
   border-color: var(--sena-verde);
   box-shadow: 0 0 0 0.2rem rgba(57, 169, 0, 0.18);
+}
+
+.login-form-wrapper .btn-submit-login,
+.login-form-wrapper .btn-primary {
+  background-color: var(--sena-verde) !important;
+  border-color: var(--sena-verde) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border-radius: 8px;
+  padding: 0.68rem 1.25rem;
+  box-shadow: 0 4px 14px rgba(57, 169, 0, 0.32);
+  transition: all 0.25s ease;
+}
+
+.login-form-wrapper .btn-submit-login:hover,
+.login-form-wrapper .btn-primary:hover {
+  background-color: var(--sena-verde-oscuro) !important;
+  border-color: var(--sena-verde-oscuro) !important;
+  box-shadow: 0 6px 18px rgba(43, 125, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.login-form-wrapper .btn-submit-login:active,
+.login-form-wrapper .btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(43, 125, 0, 0.3);
+}
+
+/* ==================== MOVIL (<= 768px): Banner institucional superior ==================== */
+@media (max-width: 767.98px) {
+  .login-split-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f6f8fa;
+  }
+
+  .login-brand-side {
+    width: 100% !important;
+    min-height: auto !important;
+    flex: 0 0 auto !important;
+    padding: 2.25rem 1.25rem 2.6rem 1.25rem !important;
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+    box-shadow: 0 8px 24px rgba(10, 37, 28, 0.28);
+    position: relative;
+    z-index: 10;
+  }
+
+  .login-brand-logo {
+    width: 70px !important;
+    max-width: 75px !important;
+    margin-bottom: 0.65rem !important;
+  }
+
+  .login-brand-title {
+    font-size: 1.35rem !important;
+    line-height: 1.22 !important;
+    margin-bottom: 0.35rem !important;
+  }
+
+  .login-brand-desc {
+    font-size: 0.85rem !important;
+    line-height: 1.4 !important;
+    color: rgba(255, 255, 255, 0.85) !important;
+    max-width: 320px !important;
+  }
+
+  .login-split-form-col {
+    width: 100% !important;
+    min-height: auto !important;
+    flex: 1 1 auto;
+    padding: 1.25rem 1rem 2rem 1rem !important;
+    background-color: transparent !important;
+    justify-content: flex-start !important;
+  }
+
+  .login-form-wrapper {
+    background-color: #ffffff;
+    border-radius: 18px;
+    padding: 1.75rem 1.5rem;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    margin-top: -1.4rem !important;
+    position: relative;
+    z-index: 20;
+    max-width: 100%;
+  }
+
+  .login-form-wrapper .form-control {
+    height: 48px;
+    font-size: 0.95rem;
+  }
+
+  .login-form-wrapper .btn-submit-login,
+  .login-form-wrapper .btn-primary {
+    height: 48px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .login-footer {
+    padding-top: 1.25rem !important;
+    padding-bottom: 0.75rem !important;
+    color: #64748b !important;
+  }
 }
 
 /* ---------- Avatar / perfil ---------- */
@@ -488,6 +628,150 @@ body {
   .calendario-header-dia,
   .calendario-columna-dia {
     padding: 2px 1px !important;
+  }
+  /* ---------- Optimizacion de Tablas DataTables en Movil (<= 768px) ---------- */
+  .table-responsive {
+    border: 0 !important;
+    margin-bottom: 0.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-responsive > .table {
+    margin-bottom: 0;
+  }
+
+  /* Compactar espaciado y permitir ajuste fluido de celdas */
+  .tabla-datos {
+    width: 100% !important;
+  }
+
+  .tabla-datos.text-nowrap th:not(.text-nowrap),
+  .tabla-datos.text-nowrap td:not(.col-documento):not(.col-ficha):not(.col-acciones) {
+    white-space: normal !important;
+    word-break: break-word;
+  }
+
+  .tabla-datos th,
+  .tabla-datos td {
+    padding: 0.6rem 0.5rem !important;
+    font-size: 0.86rem;
+    vertical-align: middle !important;
+  }
+
+  .col-documento,
+  .col-ficha {
+    white-space: nowrap !important;
+    font-size: 0.84rem;
+  }
+
+  /* Acciones: Botones compactos agrupados sin desbordamiento horizontal */
+  .col-acciones,
+  .tabla-datos td:last-child {
+    white-space: nowrap !important;
+    width: 1% !important;
+    text-align: center;
+    padding: 0.35rem 0.3rem !important;
+  }
+
+  .tabla-datos .btn-group,
+  .tabla-datos .btn-group-sm {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap !important;
+    gap: 3px;
+  }
+
+  .tabla-datos .btn-group > .btn,
+  .tabla-datos .btn-group-sm > .btn,
+  .tabla-datos .btn-sm {
+    padding: 0.28rem 0.45rem !important;
+    font-size: 0.78rem !important;
+    line-height: 1.2 !important;
+    border-radius: 6px !important;
+  }
+
+  .tabla-datos form.d-inline {
+    display: inline-flex !important;
+    margin: 0 !important;
+  }
+
+  /* Controles de DataTables (Paginacion, selector de registros e info) */
+  .dataTables_wrapper .row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .dataTables_wrapper .dataTables_info,
+  .dataTables_wrapper .dataTables_paginate,
+  .dataTables_wrapper .dataTables_length {
+    text-align: center !important;
+    float: none !important;
+    margin: 0.5rem auto !important;
+    padding: 0 !important;
+    width: 100%;
+  }
+
+  .dataTables_wrapper .dataTables_paginate .pagination {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    font-size: 0.82rem;
+    margin: 0.25rem 0 !important;
+  }
+
+  .dataTables_wrapper .dataTables_paginate .page-item .page-link {
+    padding: 0.3rem 0.55rem !important;
+    font-size: 0.82rem !important;
+  }
+
+  /* Modo tarjetas apiladas opcional (.tabla-cards-mobile) */
+  .tabla-cards-mobile thead {
+    display: none !important;
+  }
+
+  .tabla-cards-mobile,
+  .tabla-cards-mobile tbody,
+  .tabla-cards-mobile tr,
+  .tabla-cards-mobile td {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .tabla-cards-mobile tr {
+    margin-bottom: 0.85rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    padding: 0.65rem 0.85rem;
+  }
+
+  .tabla-cards-mobile td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 0.38rem 0 !important;
+    border: none !important;
+    border-bottom: 1px dashed #f1f5f9 !important;
+    white-space: normal !important;
+  }
+
+  .tabla-cards-mobile td:last-child {
+    border-bottom: none !important;
+    padding-top: 0.6rem !important;
+    justify-content: flex-end !important;
+  }
+
+  .tabla-cards-mobile td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #64748b;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
   }
 }
 
