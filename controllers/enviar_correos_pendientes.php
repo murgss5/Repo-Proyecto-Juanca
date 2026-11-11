@@ -14,6 +14,9 @@ require_once dirname(__DIR__) . '/includes/autenticacion.php';
 exigirRol(1);
 require_once dirname(__DIR__) . '/includes/constantes.php';
 require_once dirname(__DIR__) . '/config/conexion.php';
+if (file_exists(dirname(__DIR__) . '/config/mailer.php')) {
+    require_once dirname(__DIR__) . '/config/mailer.php';
+}
 
 // Validar método POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -194,7 +197,9 @@ foreach ($aprendices as $item) {
 
     $despachado = false;
     try {
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        if (function_exists('enviarCredencialesSena')) {
+            $despachado = enviarCredencialesSena($correo, $nombre, $documento, $documento);
+        } elseif (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             $despachado = @mail($correo, $asunto, $cuerpoHtml, $cabecerasStr);
         } else {
             $despachado = @mail($correo, $asunto, $cuerpoHtml, $cabecerasStr, '-f' . $fromEmail);

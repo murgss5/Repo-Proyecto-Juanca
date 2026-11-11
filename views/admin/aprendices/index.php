@@ -211,7 +211,13 @@ ob_start();
                                 <span class="badge badge-info px-2 py-1">Ficha #<?= htmlspecialchars($aprendiz['id_ficha']) ?></span>
                             </td>
                             <td class="align-middle d-none d-lg-table-cell">
-                                <code><?= htmlspecialchars($aprendiz['codigo_rfid']) ?></code>
+                                <?php if (empty($aprendiz['codigo_rfid']) || strpos($aprendiz['codigo_rfid'], 'RFID') === 0): ?>
+                                    <span class="badge badge-warning text-dark px-2 py-1" title="Pendiente de registrar tarjeta RFID">
+                                        <i class="fas fa-clock mr-1"></i> Pendiente
+                                    </span>
+                                <?php else: ?>
+                                    <code><?= htmlspecialchars($aprendiz['codigo_rfid']) ?></code>
+                                <?php endif; ?>
                             </td>
                             <!-- Indicador de Estado de Correo / Botón Asignar Correo -->
                             <td class="text-center align-middle d-none d-sm-table-cell">
@@ -242,12 +248,16 @@ ob_start();
                                     <a class="btn btn-warning btn-sm shadow-sm" href="<?= RUTA_BASE ?>views/admin/aprendices/edit.php?id=<?= htmlspecialchars($aprendiz['id_usuario']) ?>" title="Editar aprendiz">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form action="<?= RUTA_BASE ?>controllers/gestionar_usuario.php" method="post" class="d-inline ml-1" onsubmit="return confirm('¿Está seguro de eliminar este aprendiz?');">
+                                    <form action="<?= RUTA_BASE ?>controllers/gestionar_usuario.php" method="post" class="d-inline ml-1 form-eliminar-aprendiz">
                                         <input type="hidden" name="accion" value="eliminar">
                                         <input type="hidden" name="rol" value="3">
                                         <input type="hidden" name="id_usuario" value="<?= htmlspecialchars($aprendiz['id_usuario']) ?>">
                                         <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm shadow-sm" title="Eliminar aprendiz">
+                                        <button type="button" 
+                                                class="btn btn-danger btn-sm shadow-sm btn-eliminar-aprendiz" 
+                                                data-nombre="<?= htmlspecialchars($aprendiz['nombre']) ?>" 
+                                                data-documento="<?= htmlspecialchars($aprendiz['documento']) ?>" 
+                                                title="Eliminar aprendiz">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
@@ -435,6 +445,31 @@ ob_start();
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // ------------------------------------------------------------
+    // Notificaciones Flash de Estado mediante SweetAlert2
+    // ------------------------------------------------------------
+    <?php if (isset($_GET['mensaje'])): ?>
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'success',
+            title: '¡Operación Exitosa!',
+            text: <?= json_encode($_GET['mensaje'], JSON_UNESCAPED_UNICODE) ?>,
+            confirmButtonColor: '#39a900',
+            timer: 3500,
+            timerProgressBar: true
+        });
+    }
+    <?php elseif (isset($_GET['error'])): ?>
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'error',
+            title: 'Atención',
+            text: <?= json_encode($_GET['error'], JSON_UNESCAPED_UNICODE) ?>,
+            confirmButtonColor: '#d33'
+        });
+    }
+    <?php endif; ?>
+
     // ------------------------------------------------------------
     // Lógica del Modal 1: Envío de Correos Pendientes
     // ------------------------------------------------------------
@@ -629,6 +664,60 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     }
+
+    // ------------------------------------------------------------
+    // Lógica de Eliminación de Aprendiz con SweetAlert2
+    // ------------------------------------------------------------
+    document.addEventListener('click', function (e) {
+        const btnEliminar = e.target.closest('.btn-eliminar-aprendiz');
+        if (!btnEliminar) return;
+
+        e.preventDefault();
+        const form = btnEliminar.closest('form.form-eliminar-aprendiz');
+        if (!form) return;
+
+        const nombre = btnEliminar.getAttribute('data-nombre') || 'este aprendiz';
+        const documento = btnEliminar.getAttribute('data-documento') || '';
+
+        let mensajeHtml = `¿Está seguro de que desea eliminar al aprendiz <strong>${nombre}</strong>?`;
+        if (documento) {
+            mensajeHtml += `<br><span class="text-muted small mt-1 d-block"><i class="fas fa-id-card mr-1"></i> Documento: <strong>${documento}</strong></span>`;
+        }
+        mensajeHtml += `<br><span class="text-danger small font-weight-bold d-block mt-2"><i class="fas fa-exclamation-triangle mr-1"></i> Esta acción no se puede deshacer.</span>`;
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: '¿Confirmar eliminación?',
+                html: mensajeHtml,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#39a900', // Verde institucional SENA
+                cancelButtonColor: '#d33',     // Rojo de cancelación
+                confirmButtonText: '<i class="fas fa-trash-alt mr-1"></i> Sí, eliminar',
+                cancelButtonText: '<i class="fas fa-times mr-1"></i> Cancelar',
+                reverseButtons: true,
+                focusCancel: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Eliminando aprendiz...',
+                        text: 'Por favor espere un momento.',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        showConfirmButton: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    form.submit();
+                }
+            });
+        } else {
+            if (confirm(`¿Está seguro de eliminar al aprendiz ${nombre}?`)) {
+                form.submit();
+            }
+        }
+    });
 });
 </script>
 

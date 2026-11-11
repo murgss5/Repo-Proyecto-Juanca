@@ -70,7 +70,7 @@ try {
         FROM aprendiz a
         INNER JOIN usuario u ON a.fk_usuario = u.id_usuario
         WHERE a.fk_ficha = :id_ficha
-          AND a.codigo_rfid LIKE "RFID%"
+          AND (a.codigo_rfid IS NULL OR a.codigo_rfid = "" OR a.codigo_rfid LIKE "RFID%")
         ORDER BY u.apellido ASC, u.nombre ASC, u.identificacion ASC, a.id_aprendiz ASC
     ');
     

@@ -98,12 +98,10 @@ class AsistenciaModel
             }
 
             // 2. Verificar que el aprendiz esté registrado y habilitado
-            // Se rechazan códigos temporales que inicien por 'RFID', usuarios sin rol aprendiz o sin ficha
             if (
                 empty($aprendiz['fk_usuario']) ||
                 empty($aprendiz['fk_ficha']) ||
-                (int)($aprendiz['fk_rol'] ?? 0) !== 3 ||
-                strpos((string)$aprendiz['codigo_rfid'], 'RFID') === 0
+                (int)($aprendiz['fk_rol'] ?? 0) !== 3
             ) {
                 return [
                     'http_code' => 403,
@@ -125,7 +123,7 @@ class AsistenciaModel
                 ];
             }
 
-            // 4. Obtener fecha, hora y día actual con la zona horaria del proyecto
+            // 4. Obtener fecha, hora y día actual con la zona horaria del proyecto ('America/Bogota')
             $fechaHoy = $fechaReferencia ?? date('Y-m-d');
             $horaActual = $horaReferencia ?? date('H:i:s');
             $horaActualDatetime = "$fechaHoy $horaActual";
@@ -168,30 +166,61 @@ class AsistenciaModel
                 ];
             }
 
-            // 6. Clasificar horarios según el momento del escaneo y las reglas de puntualidad
+            // 5.1 Verificar si el instructor tiene una sesión de jornada ABIERTA hoy para esta ficha
+            $qSesionAbierta = $conexion->prepare(
+                "SELECT id_sesion, horario_id, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado
+                 FROM sesiones_jornada
+                 WHERE ficha_id = :ficha_id
+                   AND fecha = :fecha
+                   AND estado = 'abierta'
+                   AND hora_cierre_real IS NULL
+                 ORDER BY id_sesion DESC
+                 LIMIT 1"
+            );
+            $qSesionAbierta->execute([
+                ':ficha_id' => $fichaId,
+                ':fecha'    => $fechaHoy
+            ]);
+            $sesionAbierta = $qSesionAbierta->fetch(PDO::FETCH_ASSOC);
+
+            // 6. Clasificar horarios según el momento del escaneo y sesión de jornada activa
             $clasesHabilitadas = [];
             $clasesExpiradas = [];
-            $clasesParaSalida = [];
+            $clasesSalida = [];
 
-            foreach ($horarios as $h) {
-                $entradaSec = strtotime("$fechaHoy {$h['entrada']}");
-                $salidaSec = strtotime("$fechaHoy {$h['salida']}");
-
-                // Regla 3: Permitir registro desde 15 min antes hasta 20 min después de la hora programada
-                $ventanaInicioEntradaSec = $entradaSec - (15 * 60);
-                $ventanaFinEntradaSec = $entradaSec + (20 * 60);
-
-                if ($tipoRegistro === 'entrada') {
-                    if ($horaActualSec >= $ventanaInicioEntradaSec && $horaActualSec <= $ventanaFinEntradaSec) {
-                        $clasesHabilitadas[] = $h;
-                    } elseif ($horaActualSec > $ventanaFinEntradaSec && $horaActualSec <= $salidaSec) {
-                        // La clase está en curso pero ya superó el límite de 20 minutos para ingresar
-                        $clasesExpiradas[] = $h;
+            // Si hay una sesión de jornada abierta por el instructor, esa clase tiene prioridad absoluta
+            if ($sesionAbierta && !empty($sesionAbierta['horario_id'])) {
+                foreach ($horarios as $h) {
+                    if ((int)$h['id_horario'] === (int)$sesionAbierta['horario_id']) {
+                        if ($tipoRegistro === 'entrada') {
+                            $clasesHabilitadas[] = $h;
+                        } else {
+                            $clasesSalida[] = $h;
+                        }
                     }
-                } else {
-                    // Para salida: dentro del horario de clase o hasta 60 min posteriores
-                    if ($horaActualSec >= $entradaSec && $horaActualSec <= ($salidaSec + 3600)) {
-                        $clasesSalida[] = $h;
+                }
+            }
+
+            // Si no se asignó por sesión abierta específica, evaluar por franja horaria estándar
+            if (empty($clasesHabilitadas) && empty($clasesSalida)) {
+                foreach ($horarios as $h) {
+                    $entradaSec = strtotime("$fechaHoy {$h['entrada']}");
+                    $salidaSec = strtotime("$fechaHoy {$h['salida']}");
+
+                    // Permitir entrada desde 15 minutos antes hasta la hora de salida de la clase
+                    $ventanaInicioEntradaSec = $entradaSec - (15 * 60);
+
+                    if ($tipoRegistro === 'entrada') {
+                        if ($horaActualSec >= $ventanaInicioEntradaSec && $horaActualSec <= $salidaSec) {
+                            $clasesHabilitadas[] = $h;
+                        } elseif ($horaActualSec > $salidaSec) {
+                            $clasesExpiradas[] = $h;
+                        }
+                    } else {
+                        // Para salida: dentro del horario de clase o hasta 60 min posteriores
+                        if ($horaActualSec >= $entradaSec && $horaActualSec <= ($salidaSec + 3600)) {
+                            $clasesSalida[] = $h;
+                        }
                     }
                 }
             }
@@ -206,8 +235,7 @@ class AsistenciaModel
                     ];
                 }
 
-                // Si hay más de una clase candidata a salida (ej. clases consecutivas en el cambio de bloque),
-                // priorizar aquella cuya hora de salida sea más cercana al momento actual
+                // Si hay más de una clase candidata a salida, priorizar la más cercana al momento actual
                 if (count($clasesSalida) > 1) {
                     usort($clasesSalida, function ($a, $b) use ($horaActualSec, $fechaHoy) {
                         $diffA = abs($horaActualSec - strtotime("$fechaHoy {$a['salida']}"));
@@ -359,24 +387,27 @@ class AsistenciaModel
             $horaEntradaProgramadaSec = strtotime("$fechaHoy {$clase['entrada']}");
             $horaSalidaProgramadaSec = strtotime("$fechaHoy {$clase['salida']}");
             $ventanaInicioClase = date('Y-m-d H:i:s', $horaEntradaProgramadaSec - (15 * 60));
-            $finClase = date('Y-m-d H:i:s', $horaSalidaProgramadaSec);
+            $finClase = date('Y-m-d H:i:s', $horaSalidaProgramadaSec + 3600);
 
-            // Verificar si existe una sesión de jornada abierta en sesiones_jornada
-            $qSesion = $conexion->prepare(
-                "SELECT id_sesion, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado
-                 FROM sesiones_jornada
-                 WHERE ficha_id = :ficha_id
-                   AND fecha = :fecha
-                   AND (horario_id = :horario_id OR horario_id IS NULL)
-                 ORDER BY (CASE WHEN horario_id = :horario_id THEN 0 ELSE 1 END) ASC, hora_apertura_real DESC
-                 LIMIT 1"
-            );
-            $qSesion->execute([
-                ':ficha_id'   => $fichaId,
-                ':fecha'      => $fechaHoy,
-                ':horario_id' => $horarioId
-            ]);
-            $sesion = $qSesion->fetch(PDO::FETCH_ASSOC);
+            // Reutilizar $sesionAbierta si ya la consultamos, o buscar la sesión correspondiente
+            $sesion = $sesionAbierta;
+            if (!$sesion) {
+                $qSesion = $conexion->prepare(
+                    "SELECT id_sesion, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado
+                     FROM sesiones_jornada
+                     WHERE ficha_id = :ficha_id
+                       AND fecha = :fecha
+                       AND (horario_id = :horario_id OR horario_id IS NULL)
+                     ORDER BY (CASE WHEN horario_id = :horario_id THEN 0 ELSE 1 END) ASC, hora_apertura_real DESC
+                     LIMIT 1"
+                );
+                $qSesion->execute([
+                    ':ficha_id'   => $fichaId,
+                    ':fecha'      => $fechaHoy,
+                    ':horario_id' => $horarioId
+                ]);
+                $sesion = $qSesion->fetch(PDO::FETCH_ASSOC);
+            }
 
             $sesionId = null;
             if ($sesion) {
@@ -424,14 +455,27 @@ class AsistenciaModel
                 ];
             }
 
-            // Regla 3: Clasificación de puntualidad vs retardo según la hora programada de la clase
-            if ($horaActualSec <= $horaEntradaProgramadaSec) {
+            // Regla 3: Clasificación de puntualidad vs retardo
+            $esPuntual = false;
+            if ($sesion && !empty($sesion['hora_limite_puntualidad'])) {
+                // Si hay una sesión con hora límite de puntualidad explícita
+                $horaLimiteSec = strtotime($sesion['hora_limite_puntualidad']);
+                $esPuntual = ($horaActualSec <= $horaLimiteSec);
+            } else {
+                // Tolerancia estándar de 15 minutos tras la hora programada de inicio
+                $esPuntual = ($horaActualSec <= ($horaEntradaProgramadaSec + (15 * 60)));
+            }
+
+            if ($esPuntual) {
                 $estadoEntrada = 'PUNTUAL';
                 $minutosRetardo = 0;
                 $mensaje = 'Entrada registrada: PUNTUAL';
             } else {
                 $estadoEntrada = 'RETARDO';
-                $minutosRetardo = (int)round(($horaActualSec - $horaEntradaProgramadaSec) / 60);
+                $baseCalculo = ($sesion && !empty($sesion['hora_apertura_real']))
+                    ? strtotime($sesion['hora_apertura_real'])
+                    : $horaEntradaProgramadaSec;
+                $minutosRetardo = (int)round(($horaActualSec - $baseCalculo) / 60);
                 if ($minutosRetardo < 1) {
                     $minutosRetardo = 1;
                 }
@@ -439,7 +483,7 @@ class AsistenciaModel
             }
 
             $horaActualTime = date('H:i:s', strtotime($horaActualDatetime));
-            // Insertar asistencia válida
+            // Insertar asistencia válida con hora_entrada y hora_salida correctamente mapeadas
             $qInsert = $conexion->prepare(
                 "INSERT INTO asistencia (
                     fecha_asistencia, entrada, hora_entrada, estado_entrada, minutos_retardo,
@@ -479,7 +523,8 @@ class AsistenciaModel
                 ]
             ];
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
+            error_log("Error en AsistenciaModel::registrarPorRfid: " . $e->getMessage());
             return [
                 'http_code' => 500,
                 'success'   => false,

@@ -142,8 +142,11 @@ $cabecerasStr = implode("\r\n", $headers);
 // Despacho del correo
 $enviado = false;
 try {
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        // En Windows / XAMPP
+    if (file_exists(dirname(__DIR__) . '/config/mailer.php')) {
+        require_once dirname(__DIR__) . '/config/mailer.php';
+        $enviado = enviarCredencialesSena($correo, $nombre, $cc, $cc);
+    } elseif (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        // En Windows / XAMPP fallback
         $enviado = @mail($correo, $asunto, $cuerpoHtml, $cabecerasStr);
     } else {
         // En Linux / Servidor Hostinger con parámetro de remitente envelope

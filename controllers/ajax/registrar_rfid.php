@@ -83,8 +83,8 @@ try {
         exit;
     }
     
-    if (strpos((string)$aprendiz['codigo_rfid'], 'RFID') !== 0) {
-        echo json_encode(['success' => false, 'error' => 'El aprendiz ya posee un cdigo RFID fsico registrado y no puede ser reemplazado.']);
+    if (!empty($aprendiz['codigo_rfid']) && strpos((string)$aprendiz['codigo_rfid'], 'RFID') !== 0) {
+        echo json_encode(['success' => false, 'error' => 'El aprendiz ya posee un código RFID físico registrado y no puede ser reemplazado.']);
         exit;
     }
 

@@ -109,7 +109,7 @@ ob_start();
         </thead>
         <tbody>
           <?php foreach ($aprendicesInstructor as $aprendiz): 
-                $esTemporal = strpos($aprendiz['codigo_rfid'], 'RFID') === 0;
+                $esTemporal = empty($aprendiz['codigo_rfid']) || strpos((string)$aprendiz['codigo_rfid'], 'RFID') === 0;
           ?>
             <tr data-id-aprendiz="<?= htmlspecialchars((string)$aprendiz['id_aprendiz'], ENT_QUOTES, 'UTF-8') ?>">
               <td class="col-documento align-middle font-weight-bold"><?= htmlspecialchars((string)$aprendiz['documento'], ENT_QUOTES, 'UTF-8') ?></td>

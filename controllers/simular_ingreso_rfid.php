@@ -62,7 +62,7 @@ if (!hash_equals($_SESSION['token_csrf'] ?? '', $tokenRecibido)) {
 }
 
 // 5. Validar parametro ficha_id
-$fichaId = filter_input(INPUT_POST, 'ficha_id', FILTER_VALIDATE_INT);
+$fichaId = filter_input(INPUT_POST, 'ficha_id', FILTER_VALIDATE_INT) ?: (isset($_POST['ficha_id']) ? (int)$_POST['ficha_id'] : null);
 if (!$fichaId) {
     http_response_code(400);
     header('Content-Type: application/json');
@@ -95,7 +95,7 @@ try {
     }
 
     // 7. Validar que la jornada este actualmente abierta hoy
-    $horarioIdFiltro = filter_input(INPUT_POST, 'horario_id', FILTER_VALIDATE_INT) ?: null;
+    $horarioIdFiltro = (filter_input(INPUT_POST, 'horario_id', FILTER_VALIDATE_INT) ?: (isset($_POST['horario_id']) ? (int)$_POST['horario_id'] : null)) ?: null;
     $sqlSesion = "SELECT id_sesion, horario_id, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado
                   FROM sesiones_jornada
                   WHERE ficha_id = :ficha_id

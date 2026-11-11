@@ -187,7 +187,7 @@ try {
         $q = $conexion->prepare($sql);
         $q->execute($val);
         // Si es aprendiz, actualiza tabla aprendiz
-        if ($rol === 3) $conexion->prepare('UPDATE aprendiz SET codigo_rfid=?,fk_ficha=? WHERE fk_usuario=?')->execute([$rfid, $ficha, $id]);
+        if ($rol === 3) $conexion->prepare('UPDATE aprendiz SET codigo_rfid=?,fk_ficha=? WHERE fk_usuario=?')->execute([$rfid !== '' ? $rfid : null, $ficha, $id]);
     }
 
     // Confirma la transaccion
