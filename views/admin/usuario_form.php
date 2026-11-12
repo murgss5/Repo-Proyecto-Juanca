@@ -3,6 +3,8 @@ require_once dirname(__DIR__, 2) . '/includes/autenticacion.php';
 exigirRol(1);
 require_once dirname(__DIR__, 2) . '/includes/constantes.php';
 require_once dirname(__DIR__, 2) . '/config/conexion.php';
+require_once dirname(__DIR__, 2) . '/models/FichaModel.php';
+require_once dirname(__DIR__, 2) . '/models/AprendizModel.php';
 
 $rolGestionado = $rolGestionado ?? 3;
 $edicion = $edicion ?? false;
@@ -31,13 +33,7 @@ if ($edicion) {
         header('Location: ' . RUTA_BASE . 'views/admin/' . $modulo . '/index.php?error=' . urlencode('Identificador de usuario no válido.'));
         exit;
     }
-    $sql = 'SELECT u.id_usuario, u.nombre_usuario, u.identificacion, u.nombre, u.apellido, u.telefono, u.correo_electronico, ap.codigo_rfid, ap.fk_ficha AS id_ficha '
-         . 'FROM usuario u '
-         . ($rolGestionado === 3 ? 'INNER JOIN aprendiz ap ON ap.fk_usuario = u.id_usuario' : 'LEFT JOIN aprendiz ap ON 1=0')
-         . ' WHERE u.id_usuario = ? AND u.fk_rol = ?';
-    $q = $conexion->prepare($sql);
-    $q->execute([$id, $rolGestionado]);
-    $datos = $q->fetch();
+    $datos = AprendizModel::obtenerUsuarioConDetallePorId($id, $rolGestionado);
     if (!$datos) {
         header('Location: index.php?error=Usuario no encontrado.');
         exit;
@@ -45,7 +41,7 @@ if ($edicion) {
 }
 
 $fichas = $rolGestionado === 3
-    ? $conexion->query('SELECT id_ficha, nombre_programa FROM ficha ORDER BY id_ficha')->fetchAll()
+    ? FichaModel::obtenerFichasActivas()
     : [];
 
 $paginaTitulo = ($edicion ? 'Editar ' : 'Nuevo ') . ($rolGestionado === 3 ? 'Aprendiz' : 'Instructor');

@@ -11,6 +11,9 @@ exigirRol(1);
 // Carga constantes y conexión
 require_once dirname(__DIR__, 2) . '/includes/constantes.php';
 require_once dirname(__DIR__, 2) . '/config/conexion.php';
+require_once dirname(__DIR__, 2) . '/models/FichaModel.php';
+require_once dirname(__DIR__, 2) . '/models/InstructorModel.php';
+require_once dirname(__DIR__, 2) . '/models/HorarioModel.php';
 
 // Genera token CSRF si no existe
 if (empty($_SESSION['token_csrf'])) {
@@ -51,14 +54,10 @@ if ($edicion) {
         exit;
     }
 
-    $clave = $entidad === 'ficha' ? 'id_ficha' : 'id_horario';
-    try {
-        $q = $conexion->prepare('SELECT * FROM ' . $entidad . ' WHERE ' . $clave . ' = ?');
-        $q->execute([$id]);
-        $datos = $q->fetch();
-    } catch (PDOException $e) {
-        error_log("Error al consultar {$entidad} con ID {$id}: " . $e->getMessage());
-        $datos = false;
+    if ($entidad === 'ficha') {
+        $datos = FichaModel::obtenerPorId($id);
+    } else {
+        $datos = HorarioModel::obtenerPorId($id);
     }
 
     if (!$datos) {
@@ -72,43 +71,17 @@ $tieneHistorial = false;
 $totalSesionesHist = 0;
 $totalAsistenciasHist = 0;
 if ($edicion && $entidad === 'horario' && !empty($datos['id_horario'])) {
-    try {
-        $qHistS = $conexion->prepare('SELECT COUNT(*) FROM sesiones_jornada WHERE horario_id = ?');
-        $qHistS->execute([(int)$datos['id_horario']]);
-        $totalSesionesHist = (int)$qHistS->fetchColumn();
-    } catch (PDOException $e) {
-        $totalSesionesHist = 0;
-    }
-
-    try {
-        // Vinculación segura de asistencias mediante sesiones_jornada
-        $qHistA = $conexion->prepare('SELECT COUNT(*) FROM asistencia a INNER JOIN sesiones_jornada s ON a.fk_sesion_jornada = s.id_sesion WHERE s.horario_id = ?');
-        $qHistA->execute([(int)$datos['id_horario']]);
-        $totalAsistenciasHist = (int)$qHistA->fetchColumn();
-    } catch (PDOException $e) {
-        $totalAsistenciasHist = 0;
-    }
-
-    $tieneHistorial = ($totalSesionesHist > 0 || $totalAsistenciasHist > 0);
+    $infoHist = HorarioModel::tieneHistorialVinculado((int)$datos['id_horario']);
+    $totalSesionesHist = $infoHist['sesiones'];
+    $totalAsistenciasHist = $infoHist['asistencias'];
+    $tieneHistorial = $infoHist['tiene_historial'];
 }
 
-// Obtiene instructores activos para asignación
-$instructores = [];
-try {
-    $instructores = $conexion->query('SELECT id_usuario, nombre, apellido FROM usuario WHERE fk_rol = 2 ORDER BY nombre, apellido')->fetchAll();
-} catch (PDOException $e) {
-    $instructores = [];
-}
+// Obtiene instructores activos para asignación mediante InstructorModel
+$instructores = InstructorModel::obtenerInstructoresConFichas();
 
-// Obtiene fichas activas para asignación de horarios
-$fichas = [];
-if ($entidad === 'horario') {
-    try {
-        $fichas = $conexion->query('SELECT id_ficha, nombre_programa, ambiente_principal FROM ficha ORDER BY id_ficha')->fetchAll();
-    } catch (PDOException $e) {
-        $fichas = [];
-    }
-}
+// Obtiene fichas activas para asignación de horarios mediante FichaModel
+$fichas = ($entidad === 'horario') ? FichaModel::obtenerFichasActivas() : [];
 
 // Variables para layout institucional
 $tituloEntidad = $entidad === 'ficha' ? 'Ficha de Formación' : 'Horario de Formación';

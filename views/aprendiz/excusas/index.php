@@ -4,29 +4,12 @@
 require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(3);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
-require_once dirname(__DIR__, 3) . '/config/conexion.php';
+require_once dirname(__DIR__, 3) . '/models/ExcusaModel.php';
 
-$conexion = (new Conexion())->conectar();
+$idUsuarioAprendiz = (int)($_SESSION['aprendiz']['id_usuario'] ?? 0);
 
-// Consultar excusas del aprendiz 
-$consultaExcusas = $conexion->prepare(
-    "SELECT
-        e.id_excusa,
-        e.archivo,
-        e.observacion,
-        e.estado,
-        e.fecha_subida,
-        e.fecha_revision,
-        a.fecha_asistencia
-     FROM excusa e
-     INNER JOIN asistencia a ON a.id_asistencia = e.fk_asistencia
-     INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
-     WHERE ap.fk_usuario = :id_usuario
-     ORDER BY e.fecha_subida DESC, a.fecha_asistencia DESC"
-);
-$consultaExcusas->bindValue(':id_usuario', $_SESSION['aprendiz']['id_usuario'], PDO::PARAM_INT);
-$consultaExcusas->execute();
-$excusas = $consultaExcusas->fetchAll();
+// Consultar excusas del aprendiz mediante ExcusaModel
+$excusas = ExcusaModel::obtenerExcusas(null, $idUsuarioAprendiz, []);
 
 // Normalizar estados para visualización
 foreach ($excusas as &$excusa) {
@@ -35,12 +18,7 @@ foreach ($excusas as &$excusa) {
 unset($excusa);
 
 function claseEstadoExcusa($estado) {
-    switch ($estado) {
-        case 'Pendiente': return 'badge-warning';
-        case 'Aprobada':  return 'badge-success';
-        case 'Rechazada': return 'badge-danger';
-        default:          return 'badge-secondary';
-    }
+    return ExcusaModel::claseInsigniaEstado((string)$estado);
 }
 
 // --- Variables del layout ---

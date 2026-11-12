@@ -72,7 +72,8 @@ ob_start();
         </div>
 
         <!-- Formulario Principal de Subida -->
-        <form id="formImportarHorario" method="post" action="<?= RUTA_BASE ?>controllers/importar_horarios_excel.php" enctype="multipart/form-data">
+        <form id="formImportarHorario" method="post" action="<?= RUTA_BASE ?>controllers/HorarioController.php" enctype="multipart/form-data">
+            <input type="hidden" name="accion" value="importar">
             <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
 
             <!-- Selector de Archivo Estilizado (File Upload Moderno) -->

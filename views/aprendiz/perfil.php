@@ -13,37 +13,13 @@ require_once dirname(__DIR__) . '/../includes/autenticacion.php';
 exigirRol(3);
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
+require_once dirname(__DIR__) . '/../models/AprendizModel.php';
 
 asegurarSesionIniciada();
 
-$conexion = (new Conexion())->conectar();
-
-// Consulta completa de datos de usuario, aprendiz y ficha
-$consultaPerfil = $conexion->prepare(
-    'SELECT
-        usuario.id_usuario,
-        usuario.nombre,
-        usuario.apellido,
-        CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS nombre_completo,
-        usuario.tipo_documento,
-        usuario.identificacion AS documento,
-        usuario.telefono,
-        usuario.correo_electronico,
-        usuario.fecha_ultimo_cambio_clave,
-        aprendiz.codigo_rfid,
-        ficha.id_ficha,
-        ficha.nombre_programa,
-        ficha.jornada,
-        ficha.ambiente_principal
-     FROM usuario
-     INNER JOIN aprendiz ON aprendiz.fk_usuario = usuario.id_usuario
-     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-     WHERE usuario.id_usuario = :id_usuario
-     LIMIT 1'
-);
-$consultaPerfil->bindValue(':id_usuario', $_SESSION['aprendiz']['id_usuario'], PDO::PARAM_INT);
-$consultaPerfil->execute();
-$perfilAprendiz = $consultaPerfil->fetch(PDO::FETCH_ASSOC);
+// Consulta completa de datos de perfil mediante AprendizModel
+$idUsuario = (int)($_SESSION['aprendiz']['id_usuario'] ?? 0);
+$perfilAprendiz = AprendizModel::obtenerPerfil($idUsuario);
 
 // Variables del layout
 $paginaTitulo = 'Mi perfil';

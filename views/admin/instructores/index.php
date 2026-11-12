@@ -9,21 +9,15 @@ exigirRol(1);
 
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
 require_once dirname(__DIR__) . '/../../config/conexion.php';
+require_once dirname(__DIR__) . '/../../models/InstructorModel.php';
 
 // Genera token CSRF si no existe
 if (empty($_SESSION['token_csrf'])) {
     $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
 }
 
-$db = (new Conexion())->conectar();
-$instructores = $db->query(
-    "SELECT u.id_usuario, u.identificacion, CONCAT(u.nombre, CHAR(32), u.apellido) AS nombre, u.telefono, COUNT(f.id_ficha) AS fichas 
-     FROM usuario u 
-     LEFT JOIN ficha f ON f.fk_usuario = u.id_usuario 
-     WHERE u.fk_rol = 2 
-     GROUP BY u.id_usuario 
-     ORDER BY u.apellido, u.nombre"
-)->fetchAll();
+// Obtener listado de instructores mediante InstructorModel
+$instructores = InstructorModel::obtenerInstructoresConFichas();
 
 $paginaTitulo = 'Instructores';
 $menuActivo   = 'instructores';

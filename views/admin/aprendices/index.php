@@ -13,6 +13,8 @@ exigirRol(1);
 // Carga constantes y conexion a la base de datos
 require_once dirname(__DIR__) . '/../../includes/constantes.php';
 require_once dirname(__DIR__) . '/../../config/conexion.php';
+require_once dirname(__DIR__) . '/../../models/AprendizModel.php';
+require_once dirname(__DIR__) . '/../../models/FichaModel.php';
 
 // Variables para el layout
 $paginaTitulo = 'Aprendices';
@@ -34,48 +36,9 @@ try {
     $conexion->exec("ALTER TABLE aprendiz ADD COLUMN correo_enviado TINYINT(1) NOT NULL DEFAULT 0");
 } catch (\Throwable $e) {}
 
-// Obtiene las fichas para el filtro
-$consultaFichas = $conexion->query('SELECT id_ficha FROM ficha ORDER BY id_ficha');
-$fichasRegistradas = $consultaFichas->fetchAll();
-
-// Consulta los aprendices con sus datos relacionados y estado de correo
-try {
-    $consultaAprendices = $conexion->query(
-        'SELECT
-            aprendiz.id_aprendiz,
-            aprendiz.fk_usuario AS id_usuario,
-            usuario.identificacion AS documento,
-            CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS nombre,
-            usuario.telefono,
-            usuario.correo_electronico,
-            ficha.id_ficha,
-            aprendiz.codigo_rfid,
-            COALESCE(aprendiz.correo_enviado, 0) AS correo_enviado
-         FROM aprendiz
-         INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
-         INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-         ORDER BY usuario.apellido, usuario.nombre'
-    );
-    $aprendicesRegistrados = $consultaAprendices->fetchAll();
-} catch (\Throwable $e) {
-    $consultaAprendices = $conexion->query(
-        'SELECT
-            aprendiz.id_aprendiz,
-            aprendiz.fk_usuario AS id_usuario,
-            usuario.identificacion AS documento,
-            CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS nombre,
-            usuario.telefono,
-            usuario.correo_electronico,
-            ficha.id_ficha,
-            aprendiz.codigo_rfid,
-            0 AS correo_enviado
-         FROM aprendiz
-         INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
-         INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-         ORDER BY usuario.apellido, usuario.nombre'
-    );
-    $aprendicesRegistrados = $consultaAprendices->fetchAll();
-}
+// Obtiene las fichas y los aprendices mediante Modelos
+$fichasRegistradas = FichaModel::obtenerFichasActivas();
+$aprendicesRegistrados = AprendizModel::obtenerListadoAdmin();
 
 // Filtrar aprendices con correo válido pendientes de notificación
 $aprendicesPendientes = array_filter($aprendicesRegistrados, function($a) {
@@ -286,7 +249,8 @@ ob_start();
                 </button>
             </div>
 
-            <form action="<?= RUTA_BASE ?>controllers/enviar_correos_pendientes.php" method="post" id="formEnvioMasivoCorreos">
+            <form action="<?= RUTA_BASE ?>controllers/CorreoController.php" method="post" id="formEnvioMasivoCorreos">
+                <input type="hidden" name="accion" value="masivo_pendientes">
                 <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
 
                 <div class="modal-body p-4">

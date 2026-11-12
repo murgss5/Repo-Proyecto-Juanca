@@ -1,10 +1,27 @@
-# Bloqueo de acceso web a archivos confidenciales (.sql, .bak)
-<FilesMatch "\.(sql|bak)$">
+# =============================================================================
+# SEGURIDAD Y PROTECCIÓN DE ACCESO HTTP - APACHE
+# Sistema de Control de Ingreso y Asistencia de Aprendices - SENA
+# =============================================================================
+
+# Deshabilitar listado de directorios
+Options -Indexes
+
+# Bloqueo de acceso web a archivos confidenciales (.sql, .bak, .env, .lock, .log, composer.*)
+<FilesMatch "(\.(sql|bak|env|lock|log)|composer\.(json|lock))$">
     Order allow,deny
     Deny from all
 </FilesMatch>
 
-# Bloqueo de acceso a la carpeta completa de backups
+# Bloqueo de acceso a archivos y carpetas ocultas (.env, .git, etc.)
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Bloqueo de acceso directo a carpetas internas y confidenciales del sistema
 RewriteEngine On
-RewriteRule ^backups/ - [F]
+RewriteRule ^backups/ - [F,L]
+RewriteRule ^database/ - [F,L]
+RewriteRule ^config/ - [F,L]
+RewriteRule ^includes/ - [F,L]
 

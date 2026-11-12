@@ -349,4 +349,135 @@
     }
   });
 
+
+  // ============================================================
+  // UTILIDADES GLOBALES SENA: DATATABLES Y SWEETALERT2
+  // ============================================================
+
+  /**
+   * Inicializa DataTables con configuración institucional SENA estandarizada.
+   * @param {string|jQuery|HTMLElement} selector - Selector CSS o elemento jQuery de la tabla.
+   * @param {Object} [opcionesExtra={}] - Opciones de configuración adicionales.
+   * @returns {Object|null}
+   */
+  window.inicializarTablaSENA = function (selector, opcionesExtra) {
+    if (typeof $ === "undefined" || !$.fn.DataTable) {
+      console.warn("DataTables no está disponible en esta página.");
+      return null;
+    }
+
+    var $elem = $(selector);
+    if (!$elem.length) return null;
+
+    if ($.fn.DataTable.isDataTable($elem)) {
+      $elem.DataTable().destroy();
+    }
+
+    var mensajeVacio = $elem.data("empty-message") || "No se encontraron registros.";
+
+    var configuracionPorDefecto = {
+      responsive: true,
+      autoWidth: false,
+      pageLength: 10,
+      lengthMenu: [
+        [5, 10, 25, 50, 100, -1],
+        ["5 filas", "10 filas", "25 filas", "50 filas", "100 filas", "Mostrar todo"]
+      ],
+      order: [],
+      language: {
+        processing: "Procesando registros...",
+        search: '<i class="fas fa-search text-muted mr-1"></i> Buscar:',
+        lengthMenu: "Mostrar _MENU_",
+        info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+        infoEmpty: "Mostrando 0 a 0 de 0 registros",
+        infoFiltered: "(filtrado de _MAX_ registros en total)",
+        loadingRecords: "Cargando datos...",
+        zeroRecords: "No se encontraron resultados coincidentes",
+        emptyTable: mensajeVacio,
+        paginate: {
+          first: '<i class="fas fa-angle-double-left"></i>',
+          previous: '<i class="fas fa-chevron-left"></i>',
+          next: '<i class="fas fa-chevron-right"></i>',
+          last: '<i class="fas fa-angle-double-right"></i>'
+        }
+      }
+    };
+
+    var opcionesFinales = $.extend(true, {}, configuracionPorDefecto, opcionesExtra || {});
+    var tabla = $elem.DataTable(opcionesFinales);
+
+    // Conectar buscador personalizado (.buscador-tabla)
+    var buscador = $elem.closest(".card").find(".buscador-tabla");
+    if (buscador.length) {
+      buscador.off("keyup.sena input.sena").on("keyup.sena input.sena", function () {
+        tabla.search($(this).val()).draw();
+      });
+    }
+
+    // Conectar selectores de filtro (.filtro-tabla)
+    var filtros = $elem.closest(".card").find(".filtro-tabla");
+    filtros.each(function () {
+      var columna = parseInt($(this).data("col"), 10);
+      var exacto = $(this).data("exacto") === true || $(this).data("exacto") === "true";
+      $(this).off("change.sena").on("change.sena", function () {
+        var valor = $(this).val();
+        if (valor === "") {
+          tabla.column(columna).search("").draw();
+        } else if (exacto) {
+          var escapeRegex = function (texto) {
+            return texto.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+          };
+          tabla.column(columna).search("^" + escapeRegex(valor) + "$", true, false).draw();
+        } else {
+          tabla.column(columna).search(valor).draw();
+        }
+      });
+    });
+
+    return tabla;
+  };
+
+  /**
+   * Muestra un diálogo estandarizado de confirmación con SweetAlert2 para acciones institucionales SENA.
+   * @param {string} titulo - Título de la alerta.
+   * @param {string} texto - Descripción o advertencia del diálogo.
+   * @param {Function} callback - Función que se ejecuta si el usuario confirma.
+   * @param {Object} [opcionesExtra={}] - Parámetros adicionales de configuración.
+   */
+  window.confirmarAccionSENA = function (titulo, texto, callback, opcionesExtra) {
+    if (typeof Swal === "undefined") {
+      if (window.confirm(titulo + "\n\n" + texto)) {
+        if (typeof callback === "function") callback();
+      }
+      return;
+    }
+
+    var opcionesDefecto = {
+      title: titulo || "¿Está seguro de continuar?",
+      text: texto || "Esta acción no se puede deshacer.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#28a745",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: '<i class="fas fa-check mr-1"></i> Sí, confirmar',
+      cancelButtonText: '<i class="fas fa-times mr-1"></i> Cancelar',
+      reverseButtons: true,
+      customClass: {
+        confirmButton: "btn btn-success font-weight-bold px-3 py-2 shadow-sm mr-2",
+        cancelButton: "btn btn-secondary px-3 py-2 shadow-sm"
+      },
+      buttonsStyling: false
+    };
+
+    var configFinal = $.extend(true, {}, opcionesDefecto, opcionesExtra || {});
+
+    Swal.fire(configFinal).then(function (result) {
+      if (result.isConfirmed) {
+        if (typeof callback === "function") {
+          callback();
+        }
+      }
+    });
+  };
+
 })(jQuery);

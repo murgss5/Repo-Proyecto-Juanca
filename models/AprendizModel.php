@@ -454,4 +454,143 @@ class AprendizModel
             return ['success' => false, 'error' => 'Error al eliminar: ' . $e->getMessage()];
         }
     }
+
+
+    /**
+     * Obtiene el perfil completo de un aprendiz por su id_usuario.
+     *
+     * @param int $idUsuario
+     * @return array|null
+     */
+    public static function obtenerPerfil(int $idUsuario): ?array
+    {
+        try {
+            $conexion = (new Conexion())->conectar();
+            $stmt = $conexion->prepare(
+                "SELECT
+                    usuario.id_usuario,
+                    usuario.nombre,
+                    usuario.apellido,
+                    CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS nombre_completo,
+                    usuario.tipo_documento,
+                    usuario.identificacion AS documento,
+                    usuario.telefono,
+                    usuario.correo_electronico,
+                    usuario.fecha_ultimo_cambio_clave,
+                    aprendiz.codigo_rfid,
+                    ficha.id_ficha,
+                    ficha.nombre_programa,
+                    ficha.jornada,
+                    ficha.ambiente_principal
+                 FROM usuario
+                 INNER JOIN aprendiz ON aprendiz.fk_usuario = usuario.id_usuario
+                 INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
+                 WHERE usuario.id_usuario = :id_usuario
+                 LIMIT 1"
+            );
+            $stmt->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
+            $stmt->execute();
+            $perfil = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $perfil ?: null;
+        } catch (\Throwable $e) {
+            error_log('Error en AprendizModel::obtenerPerfil: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+
+    /**
+     * Obtiene el listado completo de aprendices para la vista administrativa.
+     *
+     * @return array
+     */
+    public static function obtenerListadoAdmin(): array
+    {
+        try {
+            $conexion = (new Conexion())->conectar();
+            $stmt = $conexion->query(
+                "SELECT
+                    aprendiz.id_aprendiz,
+                    aprendiz.fk_usuario AS id_usuario,
+                    usuario.identificacion AS documento,
+                    CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS nombre,
+                    usuario.telefono,
+                    usuario.correo_electronico,
+                    ficha.id_ficha,
+                    aprendiz.codigo_rfid,
+                    COALESCE(aprendiz.correo_enviado, 0) AS correo_enviado
+                 FROM aprendiz
+                 INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
+                 INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
+                 ORDER BY usuario.apellido, usuario.nombre"
+            );
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) {
+            error_log("Error en AprendizModel::obtenerListadoAdmin: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtiene el listado de aprendices pertenecientes a las fichas de un instructor.
+     *
+     * @param int $idInstructor
+     * @return array
+     */
+    public static function obtenerAprendicesInstructor(int $idInstructor): array
+    {
+        try {
+            $conexion = (new Conexion())->conectar();
+            $stmt = $conexion->prepare(
+                "SELECT
+                    aprendiz.id_aprendiz,
+                    usuario.tipo_documento,
+                    usuario.identificacion AS documento,
+                    CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS nombre,
+                    usuario.nombre AS solo_nombre,
+                    usuario.apellido AS solo_apellido,
+                    usuario.telefono,
+                    usuario.correo_electronico,
+                    aprendiz.codigo_rfid,
+                    ficha.id_ficha,
+                    ficha.nombre_programa
+                 FROM aprendiz
+                 INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
+                 INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
+                 WHERE ficha.fk_usuario = :id_instructor
+                 ORDER BY usuario.apellido, usuario.nombre"
+            );
+            $stmt->execute([':id_instructor' => $idInstructor]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) {
+            error_log("Error en AprendizModel::obtenerAprendicesInstructor: " . $e->getMessage());
+            return [];
+        }
+    }
+
+
+    /**
+     * Obtiene los datos detallados de un usuario para edición en formulario.
+     *
+     * @param int $idUsuario
+     * @param int $rol
+     * @return array|null
+     */
+    public static function obtenerUsuarioConDetallePorId(int $idUsuario, int $rol): ?array
+    {
+        try {
+            $conexion = (new Conexion())->conectar();
+            $sql = "SELECT u.id_usuario, u.nombre_usuario, u.identificacion, u.nombre, u.apellido, u.telefono, u.correo_electronico, ap.codigo_rfid, ap.fk_ficha AS id_ficha "
+                 . "FROM usuario u "
+                 . ($rol === 3 ? "INNER JOIN aprendiz ap ON ap.fk_usuario = u.id_usuario" : "LEFT JOIN aprendiz ap ON 1=0")
+                 . " WHERE u.id_usuario = ? AND u.fk_rol = ? LIMIT 1";
+            $stmt = $conexion->prepare($sql);
+            $stmt->execute([$idUsuario, $rol]);
+            $res = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $res ?: null;
+        } catch (\Throwable $e) {
+            error_log("Error en AprendizModel::obtenerUsuarioConDetallePorId: " . $e->getMessage());
+            return null;
+        }
+    }
 }

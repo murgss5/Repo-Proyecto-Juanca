@@ -8,61 +8,11 @@
 require_once __DIR__ . '/../../../includes/constantes.php';
 require_once __DIR__ . '/../../../includes/autenticacion.php';
 exigirRol(3);
-require_once __DIR__ . '/../../../config/conexion.php';
+require_once __DIR__ . '/../../../models/ExcusaModel.php';
 
-$conexion = (new Conexion())->conectar();
-
-// Cargar inasistencias del aprendiz que no tengan excusa
-// Se utiliza esquema resiliente para soportar tanto con fk_horario directo como a través de sesiones_jornada
-$inasistenciasDisponibles = [];
+// Cargar inasistencias del aprendiz que no tengan excusa mediante ExcusaModel
 $idUsuarioAprendiz = (int)($_SESSION['aprendiz']['id_usuario'] ?? 0);
-
-try {
-    $consultaInasistencias = $conexion->prepare(
-        "SELECT
-            a.id_asistencia,
-            a.fecha_asistencia,
-            h.entrada,
-            h.salida,
-            h.competencia
-         FROM asistencia a
-         INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
-         LEFT JOIN horario h ON h.id_horario = a.fk_horario
-         LEFT JOIN excusa e ON e.fk_asistencia = a.id_asistencia
-         WHERE ap.fk_usuario = :id_usuario
-         AND a.estado_entrada = 'INASISTENCIA'
-         AND e.id_excusa IS NULL
-         ORDER BY a.fecha_asistencia DESC, h.entrada ASC"
-    );
-    $consultaInasistencias->bindValue(':id_usuario', $idUsuarioAprendiz, PDO::PARAM_INT);
-    $consultaInasistencias->execute();
-    $inasistenciasDisponibles = $consultaInasistencias->fetchAll();
-} catch (PDOException $e) {
-    try {
-        $consultaInasistencias = $conexion->prepare(
-            "SELECT
-                a.id_asistencia,
-                a.fecha_asistencia,
-                h.entrada,
-                h.salida,
-                h.competencia
-             FROM asistencia a
-             INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
-             LEFT JOIN sesiones_jornada s ON s.id_sesion = a.fk_sesion_jornada
-             LEFT JOIN horario h ON h.id_horario = s.horario_id
-             LEFT JOIN excusa e ON e.fk_asistencia = a.id_asistencia
-             WHERE ap.fk_usuario = :id_usuario
-             AND a.estado_entrada = 'INASISTENCIA'
-             AND e.id_excusa IS NULL
-             ORDER BY a.fecha_asistencia DESC, a.id_asistencia DESC"
-        );
-        $consultaInasistencias->bindValue(':id_usuario', $idUsuarioAprendiz, PDO::PARAM_INT);
-        $consultaInasistencias->execute();
-        $inasistenciasDisponibles = $consultaInasistencias->fetchAll();
-    } catch (PDOException $e2) {
-        $inasistenciasDisponibles = [];
-    }
-}
+$inasistenciasDisponibles = ExcusaModel::obtenerInasistenciasPendientes($idUsuarioAprendiz);
 
 // Asegurar token CSRF para el formulario
 if (empty($_SESSION['csrf_token'])) {
@@ -118,7 +68,8 @@ ob_start();
                     <i class="fas fa-file-medical text-sena mr-1"></i> Formato digital
                 </span>
             </div>
-            <form action="<?= RUTA_BASE ?>controllers/subir_excusa.php" method="post" enctype="multipart/form-data">
+            <form action="<?= RUTA_BASE ?>controllers/ExcusaController.php" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="accion" value="subir">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
                 <div class="card-body p-4">
                     <?php if (empty($inasistenciasDisponibles)): ?>

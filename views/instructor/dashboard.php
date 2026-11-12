@@ -7,6 +7,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
 require_once dirname(__DIR__) . '/../models/HorarioModel.php';
 require_once dirname(__DIR__) . '/../models/AsistenciaModel.php';
+require_once dirname(__DIR__) . '/../models/DashboardModel.php';
 
 
 // --- Variables del layout ---
@@ -29,45 +30,20 @@ $totalAdvertencias = count(array_filter($aprendicesEnRiesgo, fn($a) => ($a['nive
 $criticosNotificables = count(array_filter($aprendicesEnRiesgo, fn($a) => !empty($a['puede_notificar'])));
 
 
-// Total fichas
-$consulta = $conexion->prepare('SELECT COUNT(*) FROM ficha WHERE fk_usuario = :id_instructor');
-$consulta->execute([':id_instructor' => $idInstructor]);
-$totalFichas = (int) $consulta->fetchColumn();
+// Métricas y datos analíticos del Dashboard del instructor mediante DashboardModel
+$datosDashboard = DashboardModel::obtenerDatosInstructor($idInstructor);
 
-// Total aprendices
-$consulta = $conexion->prepare('SELECT COUNT(*) FROM aprendiz INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor');
-$consulta->execute([':id_instructor' => $idInstructor]);
-$totalAprendices = (int) $consulta->fetchColumn();
+$totalFichas       = $datosDashboard['total_fichas'] ?? 0;
+$totalAprendices   = $datosDashboard['total_aprendices'] ?? 0;
+$presentesHoy      = $datosDashboard['presentes_hoy'] ?? 0;
+$excusasPendientes = $datosDashboard['excusas_pendientes'] ?? 0;
+$ultimosIngresosHoy = $datosDashboard['ultimos_ingresos'] ?? [];
 
-// Presentes hoy
-$consulta = $conexion->prepare("SELECT COUNT(*) FROM asistencia INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor AND asistencia.fecha_asistencia = CURDATE() AND asistencia.estado_entrada IN ('PUNTUAL', 'RETARDO')");
-$consulta->execute([':id_instructor' => $idInstructor]);
-$presentesHoy = (int) $consulta->fetchColumn();
-
-
-// Excusas pendientes
-$consulta = $conexion->prepare("SELECT COUNT(*) FROM excusa INNER JOIN asistencia ON excusa.fk_asistencia = asistencia.id_asistencia INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor AND excusa.estado = 'PENDIENTE'");
-$consulta->execute([':id_instructor' => $idInstructor]);
-$excusasPendientes = (int) $consulta->fetchColumn();
-
-// Últimos ingresos hoy
-$consulta = $conexion->prepare("SELECT DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora, CONCAT(usuario.nombre, ' ', usuario.apellido) AS aprendiz, ficha.id_ficha AS ficha FROM asistencia INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor AND asistencia.fecha_asistencia = CURDATE() AND asistencia.entrada IS NOT NULL ORDER BY asistencia.entrada DESC LIMIT 5");
-$consulta->execute([':id_instructor' => $idInstructor]);
-$ultimosIngresosHoy = $consulta->fetchAll();
-
-// Resumen semana para gráfica
 $resumenSemana = [
-    'labels' => ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
-    'puntuales' => array_fill(0, 6, 0),
-    'retardos' => array_fill(0, 6, 0),
+    'labels' => $datosDashboard['grafica_semana']['dias'] ?? ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+    'puntuales' => $datosDashboard['grafica_semana']['puntuales'] ?? array_fill(0, 6, 0),
+    'retardos' => $datosDashboard['grafica_semana']['retardos'] ?? array_fill(0, 6, 0),
 ];
-$consulta = $conexion->prepare("SELECT WEEKDAY(asistencia.fecha_asistencia) AS indice_dia, SUM(CASE WHEN asistencia.estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS puntuales, SUM(CASE WHEN asistencia.estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos FROM asistencia INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha WHERE ficha.fk_usuario = :id_instructor AND asistencia.fecha_asistencia >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) AND asistencia.fecha_asistencia < DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 6 DAY) GROUP BY WEEKDAY(asistencia.fecha_asistencia)");
-$consulta->execute([':id_instructor' => $idInstructor]);
-foreach ($consulta->fetchAll() as $dia) {
-    $indice = (int) $dia['indice_dia'];
-    $resumenSemana['puntuales'][$indice] = (int) $dia['puntuales'];
-    $resumenSemana['retardos'][$indice] = (int) $dia['retardos'];
-}
 
 // Fichas con horario hoy
 date_default_timezone_set('America/Bogota');
@@ -81,27 +57,12 @@ $diasMap = [
     'Saturday'  => 'Sábado',
     'Sunday'    => 'Domingo'
 ];
-$diasMapAlt = [
-    'Monday'    => 'Lunes',
-    'Tuesday'   => 'Martes',
-    'Wednesday' => 'Miercoles',
-    'Thursday'  => 'Jueves',
-    'Friday'    => 'Viernes',
-    'Saturday'  => 'Sabado',
-    'Sunday'    => 'Domingo'
-];
 $diaSemanaEs = $diasMap[$diaSemana] ?? $diaSemana;
-$diaSemanaAlt = $diasMapAlt[$diaSemana] ?? $diaSemana;
 $fechaHoy = date('Y-m-d');
-// Carga estricta por fecha exacta de hoy para evitar la duplicación de históricos
 $fichasConHorarioHoy = HorarioModel::obtenerHorariosHoyInstructor($idInstructor, $fechaHoy);
 
 // Jornadas de hoy
-$consulta = $conexion->prepare("SELECT s.id_sesion, s.ficha_id, s.horario_id, s.hora_apertura_real, s.hora_limite_puntualidad, s.hora_cierre_real, s.estado FROM sesiones_jornada s INNER JOIN horario h ON s.horario_id = h.id_horario AND (h.estado = 'Activo' OR h.estado IS NULL) WHERE s.instructor_id = :id_instructor AND s.fecha = CURDATE() AND s.estado IN ('abierta', 'cerrada_manual') ORDER BY s.hora_apertura_real DESC");
-$consulta->execute([':id_instructor' => $idInstructor]);
-$jornadas = $consulta->fetchAll();
-
-// Indexar jornadas por ficha y por horario
+$jornadas = $datosDashboard['jornadas'] ?? [];
 $jornadasPorFicha = [];
 $jornadasPorHorario = [];
 foreach ($jornadas as $j) {
@@ -135,39 +96,10 @@ ob_start();
 </div>
 <?php endif; ?>
 
-<?php if (!empty($aprendicesEnRiesgo)): ?>
-<!-- ==================== BANNER COMPACTO: ALERTAS DE DESERCIÓN ==================== -->
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="card border-0 shadow-sm" style="border-left: 5px solid #dc3545 !important;">
-      <div class="card-body py-3 px-4 d-flex flex-wrap justify-content-between align-items-center">
-        <div class="d-flex align-items-center mb-2 mb-md-0">
-          <div class="mr-3 text-danger d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: #fee2e2; border-radius: 8px;">
-            <i class="fas fa-exclamation-triangle fa-lg"></i>
-          </div>
-          <div>
-            <h5 class="font-weight-bold text-dark mb-0">Alertas Tempranas de Deserción (Reglamento SENA)</h5>
-            <small class="text-muted">
-              Se han detectado aprendices en riesgo por inasistencias en sus fichas según el Acuerdo 007/2012.
-            </small>
-          </div>
-        </div>
-        <div class="d-flex align-items-center flex-wrap">
-          <span class="badge badge-danger bg-danger text-white px-2 py-1 mr-2 mb-1" style="font-size: 0.85rem;">
-            <i class="fas fa-user-times mr-1"></i> <?= $totalCriticos ?> Críticos
-          </span>
-          <span class="badge badge-warning bg-warning text-dark px-2 py-1 mr-3 mb-1 font-weight-bold" style="font-size: 0.85rem;">
-            <i class="fas fa-exclamation-circle mr-1"></i> <?= $totalAdvertencias ?> Advertencias
-          </span>
-          <a href="<?= RUTA_BASE ?>views/instructor/alertas_desercion.php" class="btn btn-danger btn-sm shadow-sm font-weight-bold mb-1">
-            <i class="fas fa-external-link-alt mr-1"></i> Gestionar Alertas y Notificar
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<?php endif; ?>
+<?php
+$urlGestionar = RUTA_BASE . 'views/instructor/alertas_desercion.php';
+include __DIR__ . '/../components/banner_alerta_desercion.php';
+?>
 
 <!-- ==================== TARJETAS DE ESTADÍSTICAS (KPIs SaaS) ==================== -->
 <div class="row">
@@ -334,7 +266,8 @@ ob_start();
                                         </div>
                                     <?php endif; ?>
                                     <div class="d-flex gap-2">
-                                        <form method="post" action="<?= RUTA_BASE ?>controllers/abrir_jornada.php" class="flex-fill">
+                                        <form method="post" action="<?= RUTA_BASE ?>controllers/JornadaController.php" class="flex-fill">
+                                            <input type="hidden" name="accion" value="abrir">
                                             <input type="hidden" name="ficha_id" value="<?= htmlspecialchars($fichaId) ?>">
                                             <input type="hidden" name="horario_id" value="<?= htmlspecialchars($ficha['id_horario']) ?>">
                                             <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf'] ?? '') ?>">
@@ -345,7 +278,8 @@ ob_start();
                                                 <i class="fas fa-door-open mr-1"></i> Abrir
                                             </button>
                                         </form>
-                                        <form method="post" action="<?= RUTA_BASE ?>controllers/cerrar_jornada.php" class="flex-fill">
+                                        <form method="post" action="<?= RUTA_BASE ?>controllers/JornadaController.php" class="flex-fill">
+                                            <input type="hidden" name="accion" value="cerrar">
                                             <input type="hidden" name="ficha_id" value="<?= htmlspecialchars($fichaId) ?>">
                                             <input type="hidden" name="horario_id" value="<?= htmlspecialchars($ficha['id_horario']) ?>">
                                             <input type="hidden" name="sesion_id" value="<?= htmlspecialchars($jornada['id_sesion'] ?? '') ?>">
@@ -568,7 +502,7 @@ ob_start();
             }
             formData.append('token_csrf', tokenCsrf);
 
-            fetch(rutaBase + 'controllers/simular_ingreso_rfid.php', {
+            fetch(rutaBase + 'controllers/ajax/simular_ingreso_rfid.php', {
                 method: 'POST',
                 body: formData,
                 headers: {

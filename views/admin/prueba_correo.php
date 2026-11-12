@@ -131,7 +131,8 @@ ob_start();
                 </div>
 
                 <!-- Formulario -->
-                <form action="<?= RUTA_BASE ?>controllers/enviar_correo_prueba.php" method="post" id="formPruebaCorreo">
+                <form action="<?= RUTA_BASE ?>controllers/CorreoController.php" method="post" id="formPruebaCorreo">
+                    <input type="hidden" name="accion" value="prueba">
                     <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
 
                     <!-- Campo Cédula / Documento -->

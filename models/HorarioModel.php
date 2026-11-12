@@ -886,4 +886,53 @@ class HorarioModel
             ];
         }
     }
+
+
+    /**
+     * Obtiene un horario por su clave primaria id_horario.
+     *
+     * @param int $idHorario
+     * @return array|null
+     */
+    public static function obtenerPorId(int $idHorario): ?array
+    {
+        try {
+            $conexion = (new Conexion())->conectar();
+            $stmt = $conexion->prepare("SELECT * FROM horario WHERE id_horario = ? LIMIT 1");
+            $stmt->execute([$idHorario]);
+            $res = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $res ?: null;
+        } catch (\Throwable $e) {
+            error_log("Error en HorarioModel::obtenerPorId: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Consulta si un horario tiene sesiones o asistencias vinculadas.
+     *
+     * @param int $idHorario
+     * @return array
+     */
+    public static function tieneHistorialVinculado(int $idHorario): array
+    {
+        try {
+            $conexion = (new Conexion())->conectar();
+            $qS = $conexion->prepare("SELECT COUNT(*) FROM sesiones_jornada WHERE horario_id = ?");
+            $qS->execute([$idHorario]);
+            $sesiones = (int)$qS->fetchColumn();
+
+            $qA = $conexion->prepare("SELECT COUNT(*) FROM asistencia WHERE fk_horario = ?");
+            $qA->execute([$idHorario]);
+            $asistencias = (int)$qA->fetchColumn();
+
+            return [
+                'sesiones' => $sesiones,
+                'asistencias' => $asistencias,
+                'tiene_historial' => ($sesiones > 0 || $asistencias > 0)
+            ];
+        } catch (\Throwable $e) {
+            return ['sesiones' => 0, 'asistencias' => 0, 'tiene_historial' => false];
+        }
+    }
 }

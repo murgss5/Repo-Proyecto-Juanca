@@ -23,39 +23,9 @@ $miga = [
 
 $conexion = (new Conexion())->conectar();
 
-// Las fichas se consultan por separado para que el filtro muestre incluso las vacías.
-$consultaFichas = $conexion->prepare(
-    'SELECT id_ficha
-     FROM ficha
-     WHERE fk_usuario = :id_instructor
-     ORDER BY id_ficha'
-);
-$consultaFichas->bindValue(':id_instructor', $_SESSION['instructor']['id_usuario'], PDO::PARAM_INT);
-$consultaFichas->execute();
-$fichasInstructor = $consultaFichas->fetchAll();
-
-$consultaAprendices = $conexion->prepare(
-    'SELECT
-        aprendiz.id_aprendiz,
-        usuario.tipo_documento,
-        usuario.identificacion AS documento,
-        CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS nombre,
-        usuario.nombre AS solo_nombre,
-        usuario.apellido AS solo_apellido,
-        usuario.telefono,
-        usuario.correo_electronico,
-        aprendiz.codigo_rfid,
-        ficha.id_ficha,
-        ficha.nombre_programa
-     FROM aprendiz
-     INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
-     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-     WHERE ficha.fk_usuario = :id_instructor
-     ORDER BY usuario.apellido, usuario.nombre'
-);
-$consultaAprendices->bindValue(':id_instructor', $_SESSION['instructor']['id_usuario'], PDO::PARAM_INT);
-$consultaAprendices->execute();
-$aprendicesInstructor = $consultaAprendices->fetchAll();
+$idInstructor = (int)($_SESSION['instructor']['id_usuario'] ?? 0);
+$fichasInstructor = FichaModel::obtenerPorInstructor($idInstructor);
+$aprendicesInstructor = AprendizModel::obtenerAprendicesInstructor($idInstructor);
 
 ob_start();
 ?>

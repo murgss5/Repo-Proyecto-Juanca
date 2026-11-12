@@ -3,24 +3,14 @@ require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(1);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/config/conexion.php';
+require_once dirname(__DIR__, 3) . '/models/FichaModel.php';
 
 if (empty($_SESSION['token_csrf'])) {
     $_SESSION['token_csrf'] = bin2hex(random_bytes(32));
 }
 
-$conexion = (new Conexion())->conectar();
-
-// Consulta principal de fichas con agregados
-$fichas = $conexion->query(
-    "SELECT f.id_ficha, f.nombre_programa, f.jornada, f.ambiente_principal,
-            CONCAT(u.nombre, ' ', u.apellido) AS instructor,
-            COUNT(ap.id_aprendiz) AS aprendices
-     FROM ficha f
-     INNER JOIN usuario u ON u.id_usuario = f.fk_usuario
-     LEFT JOIN aprendiz ap ON ap.fk_ficha = f.id_ficha
-     GROUP BY f.id_ficha, f.nombre_programa, f.jornada, f.ambiente_principal, u.nombre, u.apellido
-     ORDER BY f.id_ficha DESC"
-)->fetchAll(PDO::FETCH_ASSOC);
+// Consulta principal de fichas con agregados mediante FichaModel
+$fichas = FichaModel::obtenerFichasConDetalle();
 
 // Cálculo de estadísticas superiores
 $totalFichas = count($fichas);
@@ -307,29 +297,16 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function() {
             var idFicha = this.getAttribute('data-id');
             var programa = this.getAttribute('data-nombre');
-            
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: '¿Eliminar ficha #' + idFicha + '?',
-                    text: 'Se eliminará la ficha "' + programa + '". Esta acción no se puede deshacer.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: '<i class="fas fa-trash mr-1"></i> Sí, eliminar',
-                    cancelButtonText: 'Cancelar'
-                }).then(function(result) {
-                    if (result.isConfirmed) {
-                        document.getElementById('eliminar_id_ficha').value = idFicha;
-                        document.getElementById('formEliminarFicha').submit();
-                    }
-                });
-            } else {
-                if (confirm('¿Está seguro de eliminar la ficha #' + idFicha + ' (' + programa + ')?')) {
+
+            window.confirmarAccionSENA(
+                '¿Eliminar ficha #' + idFicha + '?',
+                'Se eliminará la ficha "' + programa + '". Esta acción no se puede deshacer.',
+                function() {
                     document.getElementById('eliminar_id_ficha').value = idFicha;
                     document.getElementById('formEliminarFicha').submit();
-                }
-            }
+                },
+                { confirmButtonColor: '#d33', confirmButtonText: '<i class="fas fa-trash mr-1"></i> Sí, eliminar' }
+            );
         });
     });
 });

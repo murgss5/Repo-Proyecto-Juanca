@@ -13,6 +13,7 @@ exigirRol(1);
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
 require_once dirname(__DIR__) . '/../models/AsistenciaModel.php';
+require_once dirname(__DIR__) . '/../models/DashboardModel.php';
 
 // --- Variables del layout ---
 $paginaTitulo = 'Dashboard';
@@ -22,80 +23,31 @@ $miga = [
   ['label' => 'Dashboard'],
 ];
 
-$conexion = (new Conexion())->conectar();
-
 // Carga de alertas tempranas de deserción (Reglamento del Aprendiz SENA)
 $rolContexto = 'admin';
-$aprendicesEnRiesgo = AsistenciaModel::obtenerAprendicesEnRiesgo(null, 'admin', $conexion);
+$aprendicesEnRiesgo = AsistenciaModel::obtenerAprendicesEnRiesgo(null, 'admin');
 $totalCriticos = count(array_filter($aprendicesEnRiesgo, fn($a) => ($a['nivel_riesgo'] ?? '') === 'CRITICO'));
 $totalAdvertencias = count(array_filter($aprendicesEnRiesgo, fn($a) => ($a['nivel_riesgo'] ?? '') === 'ADVERTENCIA'));
 $criticosNotificables = count(array_filter($aprendicesEnRiesgo, fn($a) => !empty($a['puede_notificar'])));
 
-$totalAprendices = (int) $conexion->query('SELECT COUNT(*) FROM aprendiz')->fetchColumn();
-$totalFichas = (int) $conexion->query('SELECT COUNT(*) FROM ficha')->fetchColumn();
-$excusasPendientes = (int) $conexion->query("SELECT COUNT(*) FROM excusa WHERE estado = 'PENDIENTE'")->fetchColumn();
+// Métricas y datos analíticos del Dashboard centralizados en DashboardModel
+$datosDashboard = DashboardModel::obtenerDatosAdmin();
 
-$consultaHoy = $conexion->query(
-  "SELECT
-        SUM(CASE WHEN estado_entrada IN ('PUNTUAL', 'RETARDO') THEN 1 ELSE 0 END) AS presentes,
-        SUM(CASE WHEN estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos,
-        SUM(CASE WHEN estado_entrada = 'INASISTENCIA' THEN 1 ELSE 0 END) AS inasistencias,
-        SUM(CASE WHEN estado_salida = 'SALIDA_ANTICIPADA' THEN 1 ELSE 0 END) AS salidas_tempranas
-     FROM asistencia WHERE fecha_asistencia = CURDATE()"
-)->fetch();
-$presentesHoy = (int) ($consultaHoy['presentes'] ?? 0);
-$retardosHoy = (int) ($consultaHoy['retardos'] ?? 0);
-$inasistenciasHoy = (int) ($consultaHoy['inasistencias'] ?? 0);
-
-$graficaSemana = [
+$totalAprendices   = $datosDashboard['total_aprendices'] ?? 0;
+$totalFichas       = $datosDashboard['total_fichas'] ?? 0;
+$excusasPendientes = $datosDashboard['excusas_pendientes'] ?? 0;
+$presentesHoy      = $datosDashboard['presentes_hoy'] ?? 0;
+$retardosHoy       = $datosDashboard['retardos_hoy'] ?? 0;
+$inasistenciasHoy  = $datosDashboard['inasistencias_hoy'] ?? 0;
+$salidasTempranasHoy = $datosDashboard['salidas_tempranas_hoy'] ?? 0;
+$graficaSemana     = $datosDashboard['grafica_semana'] ?? [
   'labels' => ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
   'presentes' => array_fill(0, 6, 0),
   'retardos' => array_fill(0, 6, 0),
   'inasistencias' => array_fill(0, 6, 0),
 ];
-$consultaSemana = $conexion->query(
-  "SELECT
-        WEEKDAY(fecha_asistencia) AS dia,
-        SUM(CASE WHEN estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS presentes,
-        SUM(CASE WHEN estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos,
-        SUM(CASE WHEN estado_entrada = 'INASISTENCIA' THEN 1 ELSE 0 END) AS inasistencias
-     FROM asistencia
-     WHERE fecha_asistencia >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
-       AND fecha_asistencia < DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 6 DAY)
-     GROUP BY WEEKDAY(fecha_asistencia)"
-);
-foreach ($consultaSemana as $dia) {
-  $indice = (int) $dia['dia'];
-  $graficaSemana['presentes'][$indice] = (int) $dia['presentes'];
-  $graficaSemana['retardos'][$indice] = (int) $dia['retardos'];
-  $graficaSemana['inasistencias'][$indice] = (int) $dia['inasistencias'];
-}
-
-$consultaIngresos = $conexion->query(
-  "SELECT DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora,
-        CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
-        ficha.id_ficha, aprendiz.codigo_rfid
-     FROM asistencia
-     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
-     INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
-     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-     WHERE asistencia.fecha_asistencia = CURDATE() AND asistencia.entrada IS NOT NULL
-     ORDER BY asistencia.entrada DESC LIMIT 5"
-);
-$ultimosIngresos = $consultaIngresos->fetchAll();
-
-$consultaRetardos = $conexion->query(
-  "SELECT DATE_FORMAT(asistencia.entrada, '%H:%i') AS hora,
-        CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
-        ficha.id_ficha, asistencia.minutos_retardo
-     FROM asistencia
-     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
-     INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
-     INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-     WHERE asistencia.estado_entrada = 'RETARDO'
-     ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC LIMIT 5"
-);
-$retardosRecientes = $consultaRetardos->fetchAll();
+$ultimosIngresos   = $datosDashboard['ultimos_ingresos'] ?? [];
+$retardosRecientes = $datosDashboard['ultimos_retardos'] ?? [];
 
 $mesesEspanol = [
   1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
@@ -107,39 +59,10 @@ $mesActual = $mesesEspanol[(int) date('n')] . ' ' . date('Y');
 // --- Captura del contenido de la vista ---
 ob_start();
 ?>
-<?php if (!empty($aprendicesEnRiesgo)): ?>
-<!-- ==================== BANNER COMPACTO: ALERTAS DE DESERCIÓN ==================== -->
-<div class="row mb-4">
-  <div class="col-12">
-    <div class="card border-0 shadow-sm" style="border-left: 5px solid #dc3545 !important;">
-      <div class="card-body py-3 px-4 d-flex flex-wrap justify-content-between align-items-center">
-        <div class="d-flex align-items-center mb-2 mb-md-0">
-          <div class="mr-3 text-danger d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: #fee2e2; border-radius: 8px;">
-            <i class="fas fa-exclamation-triangle fa-lg"></i>
-          </div>
-          <div>
-            <h5 class="font-weight-bold text-dark mb-0">Alertas Tempranas de Deserción (Reglamento SENA)</h5>
-            <small class="text-muted">
-              Se han detectado aprendices en riesgo por inasistencias injustificadas según el Acuerdo 007/2012.
-            </small>
-          </div>
-        </div>
-        <div class="d-flex align-items-center flex-wrap">
-          <span class="badge badge-danger bg-danger text-white px-2 py-1 mr-2 mb-1" style="font-size: 0.85rem;">
-            <i class="fas fa-user-times mr-1"></i> <?= $totalCriticos ?> Críticos
-          </span>
-          <span class="badge badge-warning bg-warning text-dark px-2 py-1 mr-3 mb-1 font-weight-bold" style="font-size: 0.85rem;">
-            <i class="fas fa-exclamation-circle mr-1"></i> <?= $totalAdvertencias ?> Advertencias
-          </span>
-          <a href="<?= RUTA_BASE ?>views/admin/alertas_desercion.php" class="btn btn-danger btn-sm shadow-sm font-weight-bold mb-1">
-            <i class="fas fa-external-link-alt mr-1"></i> Gestionar Alertas y Notificar
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<?php endif; ?>
+<?php
+$urlGestionar = RUTA_BASE . 'views/admin/alertas_desercion.php';
+include __DIR__ . '/../components/banner_alerta_desercion.php';
+?>
 
 <!-- ==================== TARJETAS DE ESTADÍSTICAS (KPIs) ==================== -->
 <div class="row">

@@ -16,6 +16,7 @@ exigirRol(3);
 // Carga constantes y conexión a la base de datos
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
+require_once dirname(__DIR__) . '/../models/DashboardModel.php';
 
 asegurarSesionIniciada();
 
@@ -30,34 +31,14 @@ $miga = [
 $conexion = (new Conexion())->conectar();
 $idUsuario = (int)($_SESSION['aprendiz']['id_usuario'] ?? 0);
 
-// 1. Consulta información académica básica del aprendiz (programa y ficha)
-$consultaDatosAprendiz = $conexion->prepare(
-    "SELECT aprendiz.id_aprendiz, ficha.id_ficha, ficha.nombre_programa
-     FROM aprendiz
-     LEFT JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
-     WHERE aprendiz.fk_usuario = :id_usuario
-     LIMIT 1"
-);
-$consultaDatosAprendiz->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
-$consultaDatosAprendiz->execute();
-$datosAprendiz = $consultaDatosAprendiz->fetch(PDO::FETCH_ASSOC) ?: [];
+// Consulta de datos académicos, métricas y excusas del aprendiz centralizados en DashboardModel
+$datosDashboard = DashboardModel::obtenerDatosAprendiz($idUsuario);
 
-// 2. Consulta resumen de asistencia del mes actual
-$consultaResumen = $conexion->prepare(
-    "SELECT
-        SUM(CASE WHEN asistencia.estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS puntuales,
-        SUM(CASE WHEN asistencia.estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos,
-        SUM(CASE WHEN asistencia.estado_entrada = 'INASISTENCIA' THEN 1 ELSE 0 END) AS inasistencias,
-        SUM(CASE WHEN asistencia.estado_salida = 'SALIDA_ANTICIPADA' THEN 1 ELSE 0 END) AS salidas_tempranas
-     FROM asistencia
-     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
-     WHERE aprendiz.fk_usuario = :id_usuario
-       AND YEAR(asistencia.fecha_asistencia) = YEAR(CURDATE())
-       AND MONTH(asistencia.fecha_asistencia) = MONTH(CURDATE())"
-);
-$consultaResumen->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
-$consultaResumen->execute();
-$resumenMes = $consultaResumen->fetch(PDO::FETCH_ASSOC) ?: [];
+$datosAprendiz     = $datosDashboard['datos_aprendiz'] ?? [];
+$resumenMes        = $datosDashboard['resumen_mes'] ?? [];
+$excusasAprendiz   = $datosDashboard['excusas_recientes'] ?? [];
+$excusasPendientes = $datosDashboard['excusas_pendientes'] ?? 0;
+$mostrarInvitacionClave = !empty($datosDashboard['mostrar_invitacion_clave']);
 
 $puntualesMes        = (int)($resumenMes['puntuales'] ?? 0);
 $retardosMes         = (int)($resumenMes['retardos'] ?? 0);
@@ -65,48 +46,12 @@ $inasistenciasMes    = (int)($resumenMes['inasistencias'] ?? 0);
 $salidasTempranasMes = (int)($resumenMes['salidas_tempranas'] ?? 0);
 $totalRegistrosMes   = $puntualesMes + $retardosMes + $inasistenciasMes + $salidasTempranasMes;
 
-// Datos exportados para compatibilidad
 $datosGraficaAprendiz = [
     $puntualesMes,
     $retardosMes,
     $inasistenciasMes,
     $salidasTempranasMes,
 ];
-
-// 3. Consulta las últimas 5 excusas registradas del aprendiz
-$consultaExcusas = $conexion->prepare(
-    "SELECT asistencia.fecha_asistencia, excusa.fecha_subida, excusa.estado
-     FROM excusa
-     INNER JOIN asistencia ON excusa.fk_asistencia = asistencia.id_asistencia
-     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
-     WHERE aprendiz.fk_usuario = :id_usuario
-     ORDER BY excusa.fecha_subida DESC, excusa.id_excusa DESC
-     LIMIT 5"
-);
-$consultaExcusas->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
-$consultaExcusas->execute();
-$excusasAprendiz = $consultaExcusas->fetchAll(PDO::FETCH_ASSOC) ?: [];
-
-// 4. Consulta el total global de excusas pendientes (alcance real del sistema)
-$consultaExcusasPendientes = $conexion->prepare(
-    "SELECT COUNT(*)
-     FROM excusa
-     INNER JOIN asistencia ON excusa.fk_asistencia = asistencia.id_asistencia
-     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
-     WHERE aprendiz.fk_usuario = :id_usuario
-       AND excusa.estado = 'PENDIENTE'"
-);
-$consultaExcusasPendientes->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
-$consultaExcusasPendientes->execute();
-$excusasPendientes = (int)$consultaExcusasPendientes->fetchColumn();
-
-// 5. Consulta estado de invitación de cambio de contraseña
-$stmtInvitacion = $conexion->prepare(
-    "SELECT estado_invitacion_clave FROM usuario WHERE id_usuario = :id AND fk_rol = 3 LIMIT 1"
-);
-$stmtInvitacion->execute([':id' => $idUsuario]);
-$estadoInvitacion = $stmtInvitacion->fetchColumn() ?: 'MANTENIDA';
-$mostrarInvitacionClave = ($estadoInvitacion === 'PENDIENTE');
 
 // Formato en español del mes actual
 $nombresMeses = [

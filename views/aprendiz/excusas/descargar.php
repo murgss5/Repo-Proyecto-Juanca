@@ -1,98 +1,29 @@
 <?php
 /**
- * Descarga segura de excusas médicas (Aprendiz)
- * Valida que la excusa pertenezca al aprendiz autenticado antes de permitir la descarga.
+ * ============================================================
+ * DESCARGA SEGURA DE EXCUSA MÉDICA (APRENDIZ)
+ * Sistema de Control de Ingreso y Asistencia de Aprendices - SENA
+ * ============================================================
  */
 
-require_once __DIR__ . '/../../../includes/autenticacion.php';
+require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(3);
+require_once dirname(__DIR__, 3) . '/models/ExcusaModel.php';
 
-require_once __DIR__ . '/../../../config/conexion.php';
-
-// Validar id_excusa por GET
 $idExcusa = filter_input(INPUT_GET, 'id_excusa', FILTER_VALIDATE_INT);
 
 if ($idExcusa === false || $idExcusa === null) {
     http_response_code(400);
-    exit('ID de excusa no válido');
+    exit('ID de excusa no válido.');
 }
 
-$conexion = (new Conexion())->conectar();
+$idUsuarioAprendiz = (int)($_SESSION['aprendiz']['id_usuario'] ?? 0);
+$archivo = ExcusaModel::obtenerRutaDocumento($idExcusa, null, $idUsuarioAprendiz);
 
-try {
-    // Consultar que la excusa pertenezca al aprendiz autenticado
-    // y obtener el nombre del archivo almacenado
-    $consultaExcusa = $conexion->prepare(
-        "SELECT e.archivo
-         FROM excusa e
-         INNER JOIN asistencia a ON a.id_asistencia = e.fk_asistencia
-         INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
-         WHERE e.id_excusa = :id_excusa
-         AND ap.fk_usuario = :id_usuario
-         LIMIT 1"
-    );
-    $consultaExcusa->execute([
-        ':id_excusa' => $idExcusa,
-        ':id_usuario' => $_SESSION['aprendiz']['id_usuario'],
-    ]);
-
-    $excusa = $consultaExcusa->fetch();
-
-    if (!$excusa) {
-        http_response_code(404);
-        exit('Excusa no encontrada o no tiene permiso para descargarla');
-    }
-
-    $nombreArchivoBD = $excusa['archivo'];
-
-    // Construir ruta absoluta del archivo
-    // Usamos basename para evitar path traversal
-    $nombreSeguro = basename($nombreArchivoBD);
-    $rutaArchivo = __DIR__ . '/../../../uploads/excusas/' . $nombreSeguro;
-
-    // Validar que el archivo exista y esté dentro de la carpeta permitida
-    $rutaCarpetaPermitida = realpath(__DIR__ . '/../../../uploads/excusas');
-    $rutaArchivoReal = realpath($rutaArchivo);
-
-    if (!$rutaArchivoReal || !$rutaCarpetaPermitida) {
-        http_response_code(404);
-        exit('Archivo no encontrado');
-    }
-
-    // Verificar que el archivo está dentro de la carpeta permitida (evitar path traversal)
-    if (strpos($rutaArchivoReal, $rutaCarpetaPermitida) !== 0) {
-        http_response_code(403);
-        exit('Acceso denegado');
-    }
-
-    if (!file_exists($rutaArchivoReal) || !is_file($rutaArchivoReal)) {
-        http_response_code(404);
-        exit('Archivo no encontrado en el servidor');
-    }
-
-    // Obtener tipo MIME para la descarga
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mimeType = finfo_file($finfo, $rutaArchivoReal);
-    finfo_close($finfo);
-
-    // Enviar cabeceras para visualización o descarga
-    header('Content-Type: ' . $mimeType);
-    header('Content-Length: ' . filesize($rutaArchivoReal));
-    header('Content-Disposition: inline; filename="' . basename($nombreSeguro) . '"');
-    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-    header('Pragma: no-cache');
-    header('Expires: 0');
-
-    // Limpiar buffers de salida previos
-    while (ob_get_level()) {
-        ob_end_clean();
-    }
-
-    // Enviar archivo
-    readfile($rutaArchivoReal);
-    exit;
-
-} catch (PDOException $e) {
-    http_response_code(500);
-    exit('Error en la base de datos');
+if (!$archivo) {
+    http_response_code(404);
+    exit('Excusa no encontrada o no tiene permisos para descargarla.');
 }
+
+$inline = (isset($_GET['inline']) && (string)$_GET['inline'] === '1');
+ExcusaModel::servirArchivo($archivo, $inline);

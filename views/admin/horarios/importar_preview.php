@@ -109,7 +109,8 @@ ob_start();
 </div>
 
 <!-- formulario de confirmacion -->
-<form method="post" action="<?= RUTA_BASE ?>controllers/confirmar_importar_horarios.php" id="formConfirmar">
+<form method="post" action="<?= RUTA_BASE ?>controllers/HorarioController.php" id="formConfirmar">
+    <input type="hidden" name="accion" value="confirmar">
     <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
     <!-- tabla -->
     <div class="card">

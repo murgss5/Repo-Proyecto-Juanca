@@ -757,4 +757,160 @@ class AsistenciaModel
             return false;
         }
     }
+
+    /**
+     * Mapea los estados de entrada y salida de la base de datos a una etiqueta legible.
+     *
+     * @param string|null $estadoEntrada
+     * @param string|null $estadoSalida
+     * @return string
+     */
+    public static function formatearEstado(?string $estadoEntrada, ?string $estadoSalida = null): string
+    {
+        if ($estadoEntrada === 'INASISTENCIA') {
+            return 'Inasistencia';
+        }
+        if ($estadoEntrada === 'JUSTIFICADA') {
+            return 'Justificada';
+        }
+        if ($estadoSalida === 'SALIDA_ANTICIPADA') {
+            return 'Salida temprana';
+        }
+        if ($estadoEntrada === 'RETARDO') {
+            return 'Retardo';
+        }
+        return 'Presente';
+    }
+
+    /**
+     * Devuelve la clase de insignia de Bootstrap (AdminLTE) correspondiente al estado.
+     *
+     * @param string $estado
+     * @return string
+     */
+    public static function claseInsigniaEstado(string $estado): string
+    {
+        return match ($estado) {
+            'Presente', 'PUNTUAL'                  => 'badge-success',
+            'Retardo', 'RETARDO'                   => 'badge-warning',
+            'Salida temprana', 'SALIDA_ANTICIPADA' => 'badge-info',
+            'Inasistencia', 'INASISTENCIA'         => 'badge-danger',
+            'Justificada', 'JUSTIFICADA'           => 'badge-info',
+            default                                => 'badge-secondary',
+        };
+    }
+
+    /**
+     * Consulta el listado de asistencias con filtros dinámicos (Admin / Instructor).
+     *
+     * @param int|null $idInstructor Contexto opcional de instructor
+     * @param array $filtros Filtros: desde, hasta, ficha, estado
+     * @return array
+     */
+    public static function obtenerListadoAsistencias(?int $idInstructor = null, array $filtros = []): array
+    {
+        try {
+            $conexion = (new Conexion())->conectar();
+
+            $sql = "SELECT a.id_asistencia, a.fecha_asistencia, CONCAT(u.nombre, ' ', u.apellido) AS aprendiz,
+                    u.identificacion AS documento,
+                    f.id_ficha, f.nombre_programa, ap.codigo_rfid, 
+                    DATE_FORMAT(a.entrada, '%H:%i') AS entrada,
+                    DATE_FORMAT(a.salida, '%H:%i') AS salida, 
+                    a.hora_entrada, a.hora_salida,
+                    DATE_FORMAT(a.hora_salida, '%H:%i') AS hora_salida_fmt,
+                    a.estado_entrada, a.estado_salida, 
+                    COALESCE(a.minutos_retardo, 0) AS minutos_retardo,
+                    COALESCE(a.minutos_salida_anticipada, 0) AS minutos_salida_anticipada
+                    FROM asistencia a
+                    INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
+                    INNER JOIN usuario u ON u.id_usuario = ap.fk_usuario
+                    INNER JOIN ficha f ON f.id_ficha = ap.fk_ficha 
+                    WHERE 1=1";
+
+            $parametros = [];
+
+            if ($idInstructor !== null && $idInstructor > 0) {
+                $sql .= " AND f.fk_usuario = :id_instructor";
+                $parametros[':id_instructor'] = $idInstructor;
+            }
+
+            $fechaDesde = trim($filtros['desde'] ?? '');
+            $fechaHasta = trim($filtros['hasta'] ?? '');
+            $fichaId    = !empty($filtros['ficha']) ? (int)$filtros['ficha'] : null;
+            $estado     = trim($filtros['estado'] ?? '');
+
+            if ($fechaDesde !== '') {
+                $sql .= " AND a.fecha_asistencia >= :desde";
+                $parametros[':desde'] = $fechaDesde;
+            }
+            if ($fechaHasta !== '') {
+                $sql .= " AND a.fecha_asistencia <= :hasta";
+                $parametros[':hasta'] = $fechaHasta;
+            }
+            if ($fichaId !== null && $fichaId > 0) {
+                $sql .= " AND f.id_ficha = :ficha";
+                $parametros[':ficha'] = $fichaId;
+            }
+
+            if ($estado === 'Presente') {
+                $sql .= " AND a.estado_entrada = 'PUNTUAL' AND (a.estado_salida IS NULL OR a.estado_salida <> 'SALIDA_ANTICIPADA')";
+            } elseif ($estado === 'Retardo') {
+                $sql .= " AND a.estado_entrada = 'RETARDO' AND (a.estado_salida IS NULL OR a.estado_salida <> 'SALIDA_ANTICIPADA')";
+            } elseif ($estado === 'Salida temprana') {
+                $sql .= " AND a.estado_salida = 'SALIDA_ANTICIPADA'";
+            } elseif ($estado === 'Inasistencia') {
+                $sql .= " AND a.estado_entrada = 'INASISTENCIA'";
+            } elseif ($estado === 'Justificada') {
+                $sql .= " AND a.estado_entrada = 'JUSTIFICADA'";
+            }
+
+            $sql .= " ORDER BY a.fecha_asistencia DESC, a.entrada DESC, a.id_asistencia DESC";
+
+            $stmt = $conexion->prepare($sql);
+            $stmt->execute($parametros);
+            $asistencias = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($asistencias as &$asistencia) {
+                $asistencia['estado'] = self::formatearEstado($asistencia['estado_entrada'], $asistencia['estado_salida']);
+            }
+            unset($asistencia);
+
+            return $asistencias;
+
+        } catch (\Throwable $e) {
+            error_log("Error en AsistenciaModel::obtenerListadoAsistencias: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtiene el historial cronológico de asistencias de un aprendiz.
+     *
+     * @param int $idUsuarioAprendiz
+     * @return array
+     */
+    public static function obtenerHistorialAprendiz(int $idUsuarioAprendiz): array
+    {
+        try {
+            $conexion = (new Conexion())->conectar();
+            $stmt = $conexion->prepare(
+                "SELECT
+                    asistencia.fecha_asistencia,
+                    DATE_FORMAT(asistencia.entrada, '%H:%i') AS entrada,
+                    DATE_FORMAT(asistencia.salida, '%H:%i') AS salida,
+                    asistencia.estado_entrada,
+                    asistencia.estado_salida
+                 FROM asistencia
+                 INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
+                 WHERE aprendiz.fk_usuario = :id_usuario
+                 ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC"
+            );
+            $stmt->execute([':id_usuario' => $idUsuarioAprendiz]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable $e) {
+            error_log("Error en AsistenciaModel::obtenerHistorialAprendiz: " . $e->getMessage());
+            return [];
+        }
+    }
 }

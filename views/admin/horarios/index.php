@@ -32,8 +32,8 @@ if (!$fechaConsulta || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaConsulta)) {
 $estructuraSemana = HorarioModel::calcularEstructuraSemana($fechaConsulta, false);
 
 // Listados para filtros
-$fichasLista = $conexion->query('SELECT id_ficha, nombre_programa FROM ficha ORDER BY id_ficha ASC')->fetchAll();
-$instructoresLista = $conexion->query('SELECT id_usuario, nombre, apellido FROM usuario WHERE fk_rol = 2 ORDER BY nombre, apellido ASC')->fetchAll();
+$fichasLista = FichaModel::obtenerFichasActivas();
+$instructoresLista = InstructorModel::obtenerInstructoresConFichas();
 
 // Consulta de horarios con datos completos
 if ($vista === 'tabla') {
@@ -225,7 +225,8 @@ ob_start();
 <?php endif; ?>
 
 <!-- Formulario Oculto para Eliminación Segura de Horarios en Vista Tabla -->
-<form id="formEliminarHorarioTabla" method="post" action="<?= RUTA_BASE ?>controllers/admin/eliminar_horario.php" style="display: none;">
+<form id="formEliminarHorarioTabla" method="post" action="<?= RUTA_BASE ?>controllers/HorarioController.php" style="display: none;">
+    <input type="hidden" name="accion" value="eliminar">
     <input type="hidden" name="id_horario" id="eliminar_tabla_id_horario" value="">
     <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
     <input type="hidden" name="return_url" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">

@@ -1,28 +1,31 @@
 <?php
 /**
- * Exportación CSV de reporte de asistencias (Admin)
- * Genera un CSV con BOM UTF-8 para que Excel abra correctamente tildes y ñ.
+ * ============================================================
+ * EXPORTACIÓN CSV: REPORTES (ADMIN)
+ * Sistema de Control de Ingreso y Asistencia de Aprendices - SENA
+ * ============================================================
+ * Genera un CSV estructurado con BOM UTF-8 y protección contra
+ * inyección de fórmulas CSV mediante neutralizarFilaCsv().
+ * ============================================================
  */
 
-require_once __DIR__ . '/../../../includes/autenticacion.php';
+require_once dirname(__DIR__, 2) . '/../includes/autenticacion.php';
 exigirRol(1);
-require_once __DIR__ . '/../../../config/conexion.php';
+require_once dirname(__DIR__, 2) . '/../models/ReporteModel.php';
 
-// --- Obtener filtros GET (mismos que en index.php) ---
-$filtroFechaIni = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? $_GET['fecha_inicio'] : null;
-$filtroFechaFin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? $_GET['fecha_fin'] : null;
-$filtroFicha    = isset($_GET['ficha']) && $_GET['ficha'] !== '' ? $_GET['ficha'] : null;
-$filtroAprendiz = isset($_GET['aprendiz']) && $_GET['aprendiz'] !== '' ? trim($_GET['aprendiz']) : null;
+// Filtros GET
+$filtroFechaIni = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? $_GET['fecha_inicio'] : ($_GET['desde'] ?? null);
+$filtroFechaFin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? $_GET['fecha_fin'] : ($_GET['hasta'] ?? null);
+$filtroFicha    = isset($_GET['ficha']) && $_GET['ficha'] !== '' ? (int)$_GET['ficha'] : null;
+$filtroAprendiz = isset($_GET['aprendiz']) && trim($_GET['aprendiz']) !== '' ? trim($_GET['aprendiz']) : null;
 $filtroEntrada  = isset($_GET['estado_entrada']) && $_GET['estado_entrada'] !== '' ? $_GET['estado_entrada'] : null;
 $filtroSalida   = isset($_GET['estado_salida']) && $_GET['estado_salida'] !== '' ? $_GET['estado_salida'] : null;
 
-// Si se presionó el botón "Esta semana", calcular lunes y domingo de la semana actual
+// Rápido "Esta semana"
 if (isset($_GET['filtro_semana'])) {
     $hoy = new DateTime();
-    $inicioSemana = clone $hoy;
-    $inicioSemana->modify('monday this week');
-    $finSemana = clone $hoy;
-    $finSemana->modify('sunday this week');
+    $inicioSemana = (clone $hoy)->modify('monday this week');
+    $finSemana = (clone $hoy)->modify('sunday this week');
     $filtroFechaIni = $inicioSemana->format('Y-m-d');
     $filtroFechaFin = $finSemana->format('Y-m-d');
 }
@@ -34,8 +37,6 @@ if ($filtroFechaIni && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filtroFechaIni)) {
 if ($filtroFechaFin && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filtroFechaFin)) {
     $filtroFechaFin = null;
 }
-
-// Valores por defecto: mes actual
 if (!$filtroFechaIni) {
     $filtroFechaIni = date('Y-m-01');
 }
@@ -43,152 +44,71 @@ if (!$filtroFechaFin) {
     $filtroFechaFin = date('Y-m-t');
 }
 
-$conexion = (new Conexion())->conectar();
-
-// --- Construir consulta (igual que en index.php) ---
-$where = ["a.fecha_asistencia BETWEEN :fecha_ini AND :fecha_fin"];
-$params = [
-    ':fecha_ini' => $filtroFechaIni,
-    ':fecha_fin' => $filtroFechaFin,
+$filtros = [
+    'fecha_inicio'   => $filtroFechaIni,
+    'fecha_fin'      => $filtroFechaFin,
+    'ficha'          => $filtroFicha,
+    'aprendiz'       => $filtroAprendiz,
+    'estado_entrada' => $filtroEntrada,
+    'estado_salida'  => $filtroSalida,
 ];
 
-if ($filtroFicha) {
-    $where[] = "ap.fk_ficha = :ficha";
-    $params[':ficha'] = $filtroFicha;
-}
-if ($filtroAprendiz) {
-    $where[] = "(CONCAT(u.nombre, ' ', u.apellido) LIKE :aprendiz OR u.identificacion LIKE :aprendiz)";
-    $params[':aprendiz'] = "%{$filtroAprendiz}%";
-}
-if ($filtroEntrada) {
-    $where[] = "a.estado_entrada = :estado_entrada";
-    $params[':estado_entrada'] = $filtroEntrada;
-}
-if ($filtroSalida) {
-    $where[] = "a.estado_salida = :estado_salida";
-    $params[':estado_salida'] = $filtroSalida;
-}
+// Obtención de datos mediante ReporteModel
+$resumenAprendices = ReporteModel::obtenerResumenAsistencias(null, $filtros);
+$detalleAsistencias = ReporteModel::obtenerDetalleAsistencias(null, $filtros);
+$totales = ReporteModel::calcularTotalesKPIs($resumenAprendices);
 
-$whereSql = 'WHERE ' . implode(' AND ', $where);
-
-// Consulta de resumen por aprendiz
-$sqlResumen = "
-    SELECT
-        CONCAT(u.nombre, CHAR(32), u.apellido) AS aprendiz,
-        u.identificacion,
-        f.nombre_programa,
-        f.jornada,
-        f.id_ficha,
-        SUM(CASE WHEN a.estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS puntuales,
-        SUM(CASE WHEN a.estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos,
-        SUM(CASE WHEN a.estado_entrada = 'RETARDO' THEN COALESCE(a.minutos_retardo, 0) ELSE 0 END) AS total_min_retardo,
-        SUM(CASE WHEN a.estado_entrada IN ('INASISTENCIA', 'JUSTIFICADA') THEN 1 ELSE 0 END) AS inasistencias,
-        SUM(CASE WHEN a.estado_salida = 'SALIDA_ANTICIPADA' THEN 1 ELSE 0 END) AS salidas_anticipadas,
-        SUM(CASE WHEN a.estado_salida = 'SALIDA_ANTICIPADA' THEN COALESCE(a.minutos_salida_anticipada, 0) ELSE 0 END) AS total_min_salida_anticipada,
-        SUM(CASE WHEN e.estado = 'APROBADA' THEN 1 ELSE 0 END) AS excusas_aprobadas,
-        SUM(CASE WHEN e.estado = 'PENDIENTE' THEN 1 ELSE 0 END) AS excusas_pendientes,
-        SUM(CASE WHEN e.estado = 'RECHAZADA' THEN 1 ELSE 0 END) AS excusas_rechazadas,
-        SUM(CASE WHEN (a.estado_entrada = 'JUSTIFICADA' OR (a.estado_entrada = 'INASISTENCIA' AND e.estado = 'APROBADA')) THEN 1 ELSE 0 END) AS inasistencias_justificadas
-    FROM asistencia a
-    INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
-    INNER JOIN usuario u ON u.id_usuario = ap.fk_usuario
-    INNER JOIN ficha f ON f.id_ficha = ap.fk_ficha
-    LEFT JOIN excusa e ON e.fk_asistencia = a.id_asistencia
-    {$whereSql}
-    GROUP BY ap.id_aprendiz, u.nombre, u.apellido, u.identificacion, f.id_ficha, f.nombre_programa, f.jornada
-    ORDER BY u.apellido, u.nombre
-";
-
-$consultaResumen = $conexion->prepare($sqlResumen);
-$consultaResumen->execute($params);
-$resumenAprendices = $consultaResumen->fetchAll();
-
-// Consulta de detalle
-$sqlDetalle = "
-    SELECT
-        a.fecha_asistencia,
-        CONCAT(u.nombre, CHAR(32), u.apellido) AS aprendiz,
-        u.identificacion,
-        f.id_ficha,
-        f.nombre_programa,
-        a.entrada,
-        a.salida,
-        a.estado_entrada,
-        a.estado_salida,
-        a.minutos_retardo,
-        a.minutos_salida_anticipada,
-        e.estado AS estado_excusa
-    FROM asistencia a
-    INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
-    INNER JOIN usuario u ON u.id_usuario = ap.fk_usuario
-    INNER JOIN ficha f ON f.id_ficha = ap.fk_ficha
-    LEFT JOIN excusa e ON e.fk_asistencia = a.id_asistencia
-    {$whereSql}
-    ORDER BY a.fecha_asistencia DESC, u.apellido, u.nombre
-";
-
-$consultaDetalle = $conexion->prepare($sqlDetalle);
-$consultaDetalle->execute($params);
-$detalleAsistencias = $consultaDetalle->fetchAll();
-
-// --- Generar CSV ---
-// Cabeceras para descarga
-$fechaReporte = date('Ymd_His');
-$nombreArchivo = "reporte_asistencia_{$fechaReporte}.csv";
-
-header('Content-Type: text/csv; charset=utf-8');
-header('Content-Disposition: attachment; filename="' . $nombreArchivo . '"');
-header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+// Encabezados HTTP para descarga de archivo CSV
+header('Content-Type: text/csv; charset=UTF-8');
+header('Content-Disposition: attachment; filename="reporte_asistencia_admin_' . date('Ymd_His') . '.csv"');
+header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
 
-// Abrir salida
 $output = fopen('php://output', 'w');
 
-// BOM UTF-8 para Excel
+// BOM UTF-8 para visualización adecuada de tildes en Excel
 fwrite($output, "\xEF\xBB\xBF");
 
 // --- Hoja 1: Resumen por aprendiz ---
-fputcsv($output, neutralizarFilaCsv(['REPORTE DE ASISTENCIA - RESUMEN POR APRENDIZ']));
+fputcsv($output, neutralizarFilaCsv(['REPORTE DE ASISTENCIA - RESUMEN POR APRENDIZ (SENA)']));
 fputcsv($output, neutralizarFilaCsv(['Fecha inicial', $filtroFechaIni]));
 fputcsv($output, neutralizarFilaCsv(['Fecha final', $filtroFechaFin]));
 fputcsv($output, neutralizarFilaCsv(['Generado', date('d/m/Y H:i:s')]));
-fputcsv($output, []); // línea vacía
+fputcsv($output, []);
 
-// Encabezados del resumen
 fputcsv($output, neutralizarFilaCsv([
     'Aprendiz',
     'Identificación',
     'Programa',
     'Jornada',
     'Ficha',
-    'Asistencias puntuales',
+    'Puntuales',
     'Retardos',
-    'Minutos de retardo',
-    'Inasistencias totales',
-    'Inasistencias justificadas (exc. aprobada)',
-    'Inasistencias NO justificadas',
+    'Total min. retardo',
+    'Inasistencias',
+    'Inasistencias justificadas',
+    'Inasistencias injustificadas',
     'Salidas anticipadas',
-    'Minutos salida anticipada',
+    'Total min. salida ant.',
     'Excusas aprobadas',
     'Excusas pendientes',
     'Excusas rechazadas'
 ]));
 
 foreach ($resumenAprendices as $row) {
-    $inasistenciasNoJust = (int)$row['inasistencias'] - (int)$row['inasistencias_justificadas'];
     fputcsv($output, neutralizarFilaCsv([
         $row['aprendiz'],
         $row['identificacion'],
         $row['nombre_programa'],
         $row['jornada'],
         $row['id_ficha'],
-        (int)$row['puntuales'],
+        (int)($row['puntuales'] ?? 0),
         (int)$row['retardos'],
         (int)$row['total_min_retardo'],
         (int)$row['inasistencias'],
         (int)$row['inasistencias_justificadas'],
-        $inasistenciasNoJust,
+        (int)$row['inasistencias_no_justificadas'],
         (int)$row['salidas_anticipadas'],
         (int)$row['total_min_salida_anticipada'],
         (int)$row['excusas_aprobadas'],
@@ -198,32 +118,6 @@ foreach ($resumenAprendices as $row) {
 }
 
 // Totales
-$totales = [
-    'total_aprendices' => count($resumenAprendices),
-    'total_retardos' => 0,
-    'total_min_retardo' => 0,
-    'total_inasistencias' => 0,
-    'total_inasistencias_justificadas' => 0,
-    'total_salidas_anticipadas' => 0,
-    'total_min_salida_anticipada' => 0,
-    'total_excusas_aprobadas' => 0,
-    'total_excusas_pendientes' => 0,
-    'total_excusas_rechazadas' => 0,
-];
-
-foreach ($resumenAprendices as $row) {
-    $totales['total_retardos'] += (int)$row['retardos'];
-    $totales['total_min_retardo'] += (int)$row['total_min_retardo'];
-    $totales['total_inasistencias'] += (int)$row['inasistencias'];
-    $totales['total_inasistencias_justificadas'] += (int)$row['inasistencias_justificadas'];
-    $totales['total_salidas_anticipadas'] += (int)$row['salidas_anticipadas'];
-    $totales['total_min_salida_anticipada'] += (int)$row['total_min_salida_anticipada'];
-    $totales['total_excusas_aprobadas'] += (int)$row['excusas_aprobadas'];
-    $totales['total_excusas_pendientes'] += (int)$row['excusas_pendientes'];
-    $totales['total_excusas_rechazadas'] += (int)$row['excusas_rechazadas'];
-}
-$totales['total_inasistencias_no_justificadas'] = $totales['total_inasistencias'] - $totales['total_inasistencias_justificadas'];
-
 fputcsv($output, []);
 fputcsv($output, neutralizarFilaCsv(['TOTALES']));
 fputcsv($output, neutralizarFilaCsv([
@@ -232,14 +126,14 @@ fputcsv($output, neutralizarFilaCsv([
     '',
     '',
     '',
-    '',
+    $totales['total_puntuales'],
     $totales['total_retardos'],
     $totales['total_min_retardo'],
     $totales['total_inasistencias'],
-    $totales['total_inasistencias_justificadas'],
-    $totales['total_inasistencias_no_justificadas'],
-    $totales['total_salidas_anticipadas'],
-    $totales['total_min_salida_anticipada'],
+    $totales['total_justificadas'],
+    $totales['total_no_justificadas'],
+    $totales['total_salidas_ant'],
+    $totales['total_min_salida_ant'],
     $totales['total_excusas_aprobadas'],
     $totales['total_excusas_pendientes'],
     $totales['total_excusas_rechazadas']

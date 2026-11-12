@@ -311,7 +311,7 @@ ob_start();
             <h6 class="card-title text-info font-weight-bold mb-0" style="font-size: 0.95rem;">
               <i class="fas fa-info-circle mr-1"></i> Formato requerido
             </h6>
-            <a href="<?= RUTA_BASE ?>controllers/descargar_plantilla_aprendices.php" class="btn btn-outline-success btn-sm py-1 px-2" style="font-size: 0.82rem;">
+            <a href="<?= RUTA_BASE ?>controllers/PlantillaController.php?accion=aprendices" class="btn btn-outline-success btn-sm py-1 px-2" style="font-size: 0.82rem;">
               <i class="fas fa-download mr-1"></i> Descargar Plantilla Excel (.xlsx)
             </a>
           </div>

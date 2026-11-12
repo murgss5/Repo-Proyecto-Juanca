@@ -1,270 +1,81 @@
 <?php
 /**
- * Reporte de asistencias para las fichas del instructor autenticado.
+ * ============================================================
+ * VISTA: REPORTES (INSTRUCTOR)
+ * Sistema de Control de Ingreso y Asistencia de Aprendices - SENA
+ * ============================================================
+ * Vista delegada en el modelo ReporteModel y el componente
+ * unificado modulo_reportes.php (Arquitectura MVC Estricta).
+ * ============================================================
  */
 
-// Carga la autenticacion y verifica que sea instructor
-require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
+require_once dirname(__DIR__, 2) . '/includes/autenticacion.php';
 exigirRol(2);
-// Carga constantes y conexion a la base de datos
-require_once dirname(__DIR__, 3) . '/includes/constantes.php';
-require_once dirname(__DIR__, 3) . '/config/conexion.php';
+require_once dirname(__DIR__, 2) . '/includes/constantes.php';
+require_once dirname(__DIR__, 2) . '/models/ReporteModel.php';
 
-/**
- * Valida que una fecha tenga formato Y-m-d correcto.
- * @param string $fecha Fecha a validar
- * @return bool True si es valida, false si no
- */
-function fechaReporteValida(string $fecha): bool
-{
-    $fechaConvertida = DateTime::createFromFormat('Y-m-d', $fecha);
+$idInstructor = (int)($_SESSION['instructor']['id_usuario'] ?? 0);
 
-    return $fechaConvertida !== false && $fechaConvertida->format('Y-m-d') === $fecha;
-}
+// Filtros GET
+$filtroFechaIni = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? $_GET['fecha_inicio'] : ($_GET['desde'] ?? null);
+$filtroFechaFin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? $_GET['fecha_fin'] : ($_GET['hasta'] ?? null);
+$filtroFicha    = isset($_GET['ficha']) && $_GET['ficha'] !== '' ? (int)$_GET['ficha'] : null;
+$filtroAprendiz = isset($_GET['aprendiz']) && trim($_GET['aprendiz']) !== '' ? trim($_GET['aprendiz']) : null;
+$filtroEntrada  = isset($_GET['estado_entrada']) && $_GET['estado_entrada'] !== '' ? $_GET['estado_entrada'] : null;
+$filtroSalida   = isset($_GET['estado_salida']) && $_GET['estado_salida'] !== '' ? $_GET['estado_salida'] : null;
 
-/**
- * Devuelve la clase CSS para el badge segun el estado de asistencia.
- * @param string $estado Estado de la asistencia
- * @return string Clase CSS correspondiente
- */
-function claseEstadoReporte(string $estado): string
-{
-    return match ($estado) {
-        'Presente' => 'badge-success',
-        'Retardo' => 'badge-warning',
-        'Salida temprana' => 'badge-info',
-        'Inasistencia' => 'badge-danger',
-        'Justificada' => 'badge-info',
-        default => 'badge-secondary',
-    };
-}
-
-// Obtiene los filtros desde GET
-$fechaDesde = trim($_GET['desde'] ?? '');
-$fechaHasta = trim($_GET['hasta'] ?? '');
-$fichaSeleccionada = filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: '';
-
-// Si se presiono el boton "Esta semana", calcular lunes y domingo de la semana actual
+// Rápido "Esta semana"
 if (isset($_GET['filtro_semana'])) {
     $hoy = new DateTime();
-    $inicioSemana = clone $hoy;
-    $inicioSemana->modify('monday this week');
-    $finSemana = clone $hoy;
-    $finSemana->modify('sunday this week');
-    $fechaDesde = $inicioSemana->format('Y-m-d');
-    $fechaHasta = $finSemana->format('Y-m-d');
+    $inicioSemana = (clone $hoy)->modify('monday this week');
+    $finSemana = (clone $hoy)->modify('sunday this week');
+    $filtroFechaIni = $inicioSemana->format('Y-m-d');
+    $filtroFechaFin = $finSemana->format('Y-m-d');
 }
 
-// Valida formato de fechas
-if ($fechaDesde !== '' && !fechaReporteValida($fechaDesde)) {
-    $fechaDesde = '';
+// Validar formato de fechas
+if ($filtroFechaIni && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filtroFechaIni)) {
+    $filtroFechaIni = null;
 }
-if ($fechaHasta !== '' && !fechaReporteValida($fechaHasta)) {
-    $fechaHasta = '';
+if ($filtroFechaFin && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filtroFechaFin)) {
+    $filtroFechaFin = null;
+}
+if (!$filtroFechaIni) {
+    $filtroFechaIni = date('Y-m-01');
+}
+if (!$filtroFechaFin) {
+    $filtroFechaFin = date('Y-m-t');
 }
 
-// Conecta a la base de datos
-$conexion = (new Conexion())->conectar();
+$filtros = [
+    'fecha_inicio'   => $filtroFechaIni,
+    'fecha_fin'      => $filtroFechaFin,
+    'ficha'          => $filtroFicha,
+    'aprendiz'       => $filtroAprendiz,
+    'estado_entrada' => $filtroEntrada,
+    'estado_salida'  => $filtroSalida,
+];
 
-// Obtiene las fichas del instructor para el filtro
-$consultaFichas = $conexion->prepare('SELECT id_ficha FROM ficha WHERE fk_usuario = :id_instructor ORDER BY id_ficha');
-$consultaFichas->execute([':id_instructor' => $_SESSION['instructor']['id_usuario']]);
-$fichasInstructor = $consultaFichas->fetchAll();
+// Obtención de datos mediante ReporteModel contextualizados al instructor
+$fichas  = ReporteModel::obtenerFichas($idInstructor);
+$resumen = ReporteModel::obtenerResumenAsistencias($idInstructor, $filtros);
+$detalle = ReporteModel::obtenerDetalleAsistencias($idInstructor, $filtros);
+$kpis    = ReporteModel::calcularTotalesKPIs($resumen);
 
-// Construye la consulta SQL base
-$sqlReporte = "SELECT
-    asistencia.fecha_asistencia,
-    CONCAT(usuario.nombre, CHAR(32), usuario.apellido) AS aprendiz,
-    ficha.id_ficha,
-    DATE_FORMAT(asistencia.entrada, '%H:%i') AS entrada,
-    DATE_FORMAT(asistencia.salida, '%H:%i') AS salida,
-    asistencia.estado_entrada,
-    asistencia.estado_salida,
-    asistencia.minutos_retardo
- FROM asistencia
- INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
- INNER JOIN usuario ON aprendiz.fk_usuario = usuario.id_usuario
- INNER JOIN ficha ON aprendiz.fk_ficha = ficha.id_ficha
- WHERE ficha.fk_usuario = :id_instructor";
+// Parámetros para el componente
+$origen = 'instructor';
+$urlExportarCsv = 'exportar_csv.php';
 
-if ($fechaDesde !== '') {
-    $sqlReporte .= ' AND asistencia.fecha_asistencia >= :fecha_desde';
-}
-if ($fechaHasta !== '') {
-    $sqlReporte .= ' AND asistencia.fecha_asistencia <= :fecha_hasta';
-}
-if ($fichaSeleccionada !== '') {
-    $sqlReporte .= ' AND ficha.id_ficha = :id_ficha';
-}
-$sqlReporte .= ' ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC';
-
-$consultaReporte = $conexion->prepare($sqlReporte);
-$consultaReporte->bindValue(':id_instructor', $_SESSION['instructor']['id_usuario'], PDO::PARAM_INT);
-if ($fechaDesde !== '') {
-    $consultaReporte->bindValue(':fecha_desde', $fechaDesde, PDO::PARAM_STR);
-}
-if ($fechaHasta !== '') {
-    $consultaReporte->bindValue(':fecha_hasta', $fechaHasta, PDO::PARAM_STR);
-}
-if ($fichaSeleccionada !== '') {
-    $consultaReporte->bindValue(':id_ficha', $fichaSeleccionada, PDO::PARAM_INT);
-}
-$consultaReporte->execute();
-$registrosReporte = $consultaReporte->fetchAll();
-
-$totales = ['retardos' => 0, 'inasistencias' => 0, 'salidas_tempranas' => 0, 'justificadas' => 0];
-foreach ($registrosReporte as &$registro) {
-    if ($registro['estado_entrada'] === 'INASISTENCIA') {
-        $registro['estado'] = 'Inasistencia';
-        $totales['inasistencias']++;
-    } elseif ($registro['estado_entrada'] === 'JUSTIFICADA') {
-        $registro['estado'] = 'Justificada';
-        $totales['justificadas']++;
-    } elseif ($registro['estado_salida'] === 'SALIDA_ANTICIPADA') {
-        $registro['estado'] = 'Salida temprana';
-        $totales['salidas_tempranas']++;
-    } elseif ($registro['estado_entrada'] === 'RETARDO') {
-        $registro['estado'] = 'Retardo';
-        $totales['retardos']++;
-    } else {
-        $registro['estado'] = 'Presente';
-    }
-}
-unset($registro);
-
-$paginaTitulo = 'Reportes de mis fichas';
-$menuActivo = 'reportes';
+// Variables de layout
+$paginaTitulo = 'Reportes de Asistencia';
+$menuActivo   = 'reportes';
 $miga = [
     ['label' => 'Inicio', 'url' => RUTA_BASE . 'views/instructor/dashboard.php'],
     ['label' => 'Reportes'],
 ];
 
 ob_start();
-?>
-<style>
-.table.align-middle td, .table.align-middle th {
-  vertical-align: middle;
-}
-</style>
-
-<div class="card card-outline card-success shadow-sm mb-4 no-print">
-  <div class="card-header">
-    <h3 class="card-title font-weight-bold"><i class="fas fa-chart-bar mr-2 text-sena"></i> Reporte de asistencias</h3>
-  </div>
-  <div class="card-body">
-    <form method="get" class="row">
-      <div class="col-md-3 col-sm-6 mb-2">
-        <label class="small text-muted font-weight-bold">Fecha inicial</label>
-        <input type="date" name="desde" class="form-control form-control-sm" value="<?= htmlspecialchars($fechaDesde) ?>">
-      </div>
-      <div class="col-md-3 col-sm-6 mb-2">
-        <label class="small text-muted font-weight-bold">Fecha final</label>
-        <input type="date" name="hasta" class="form-control form-control-sm" value="<?= htmlspecialchars($fechaHasta) ?>">
-      </div>
-      <div class="col-md-3 col-sm-6 mb-2">
-        <label class="small text-muted font-weight-bold">Ficha</label>
-        <select name="ficha" class="form-control form-control-sm">
-          <option value="">Todas mis fichas</option>
-          <?php foreach ($fichasInstructor as $ficha): ?>
-            <option value="<?= htmlspecialchars($ficha['id_ficha']) ?>" <?= (string) $fichaSeleccionada === (string) $ficha['id_ficha'] ? 'selected' : '' ?>>Ficha #<?= htmlspecialchars($ficha['id_ficha']) ?></option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="col-md-3 col-sm-6 mb-2 d-flex align-items-end">
-        <button type="submit" class="btn btn-success btn-sm shadow-sm mr-2 flex-fill">
-          <i class="fas fa-play mr-1"></i> Generar reporte
-        </button>
-        <button type="submit" name="filtro_semana" value="1" class="btn btn-info btn-sm shadow-sm text-nowrap" title="Filtrar por la semana actual">
-          <i class="fas fa-calendar-week mr-1"></i> Esta semana
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<div class="row mb-1">
-  <div class="col-lg-4 col-md-6 mb-3">
-    <div class="info-box info-box-amarillo shadow-sm mb-0">
-      <span class="info-box-icon"><i class="fas fa-clock"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Total de retardos</span>
-        <span class="info-box-number"><?= $totales['retardos'] ?></span>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-4 col-md-6 mb-3">
-    <div class="info-box info-box-rojo shadow-sm mb-0">
-      <span class="info-box-icon"><i class="fas fa-user-slash"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Total de inasistencias</span>
-        <span class="info-box-number"><?= $totales['inasistencias'] ?></span>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-4 col-md-6 mb-3">
-    <div class="info-box info-box-azul shadow-sm mb-0">
-      <span class="info-box-icon"><i class="fas fa-sign-out-alt"></i></span>
-      <div class="info-box-content">
-        <span class="info-box-text">Salidas tempranas</span>
-        <span class="info-box-number"><?= $totales['salidas_tempranas'] ?></span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="card card-outline card-success shadow-sm">
-  <div class="card-header">
-    <h3 class="card-title font-weight-bold"><i class="fas fa-table mr-2 text-sena"></i> Resultados</h3>
-    <div class="card-tools no-print">
-      <div class="btn-group btn-group-sm" role="group">
-        <a href="<?= RUTA_BASE ?>views/instructor/reportes/exportar_csv.php?<?= http_build_query($_GET) ?>" class="btn btn-success shadow-sm">
-          <i class="fas fa-file-excel mr-1"></i> Exportar CSV
-        </a>
-        <button type="button" class="btn btn-danger shadow-sm" onclick="window.print()">
-          <i class="fas fa-file-pdf mr-1"></i> Imprimir / PDF
-        </button>
-      </div>
-    </div>
-  </div>
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-hover table-striped align-middle tabla-datos">
-        <thead class="thead-light">
-          <tr>
-            <th>Fecha</th>
-            <th>Aprendiz</th>
-            <th>Ficha</th>
-            <th>Entrada</th>
-            <th>Salida</th>
-            <th>Estado</th>
-            <th>Min. retardo</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($registrosReporte as $registro): ?>
-            <tr>
-              <td><?= htmlspecialchars($registro['fecha_asistencia']) ?></td>
-              <td><?= htmlspecialchars($registro['aprendiz']) ?></td>
-              <td><span class="badge badge-success px-2 py-1">Ficha #<?= htmlspecialchars((string)$registro['id_ficha']) ?></span></td>
-              <td><?= htmlspecialchars($registro['entrada'] ?? '--') ?></td>
-              <td><?= htmlspecialchars($registro['salida'] ?? '--') ?></td>
-              <td><span class="badge badge-estado <?= claseEstadoReporte($registro['estado']) ?> px-2 py-1"><?= htmlspecialchars($registro['estado']) ?></span></td>
-              <td><?= $registro['minutos_retardo'] > 0 ? htmlspecialchars((string)$registro['minutos_retardo']) . ' min' : '0' ?></td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<style media="print">
-  .no-print, .main-header, .main-sidebar, .content-header, .main-footer { display: none !important; }
-  .content-wrapper { margin-left: 0 !important; }
-  .card { border: none !important; box-shadow: none !important; }
-  .table { font-size: 11px !important; }
-  @page { margin: 1cm; }
-</style>
-<?php
+require_once dirname(__DIR__, 2) . '/components/modulo_reportes.php';
 $contenido = ob_get_clean();
-include __DIR__ . '/../../layouts/layout_instructor.php';
+
+require_once dirname(__DIR__, 2) . '/layouts/layout_instructor.php';

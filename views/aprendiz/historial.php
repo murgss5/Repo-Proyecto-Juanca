@@ -15,6 +15,7 @@ exigirRol(3);
 
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
+require_once dirname(__DIR__) . '/../models/AsistenciaModel.php';
 
 asegurarSesionIniciada();
 
@@ -26,25 +27,10 @@ $miga = [
     ['label' => 'Mi historial'],
 ];
 
-$conexion = (new Conexion())->conectar();
 $idUsuario = (int)($_SESSION['aprendiz']['id_usuario'] ?? 0);
 
-// Consulta cronológica de asistencias del aprendiz autenticado
-$consultaHistorial = $conexion->prepare(
-    "SELECT
-        asistencia.fecha_asistencia,
-        DATE_FORMAT(asistencia.entrada, '%H:%i') AS entrada,
-        DATE_FORMAT(asistencia.salida, '%H:%i') AS salida,
-        asistencia.estado_entrada,
-        asistencia.estado_salida
-     FROM asistencia
-     INNER JOIN aprendiz ON asistencia.fk_aprendiz = aprendiz.id_aprendiz
-     WHERE aprendiz.fk_usuario = :id_usuario
-     ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC"
-);
-$consultaHistorial->bindValue(':id_usuario', $idUsuario, PDO::PARAM_INT);
-$consultaHistorial->execute();
-$historialAprendiz = $consultaHistorial->fetchAll(PDO::FETCH_ASSOC) ?: [];
+// Consulta cronológica de asistencias mediante AsistenciaModel
+$historialAprendiz = AsistenciaModel::obtenerHistorialAprendiz($idUsuario);
 
 // Conteo acumulado real del historial
 $totalRetardos = 0;

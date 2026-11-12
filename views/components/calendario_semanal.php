@@ -297,7 +297,8 @@ $mapaSlugDia = [1 => 'lun', 2 => 'mar', 3 => 'mie', 4 => 'jue', 5 => 'vie', 6 =>
 
 <?php if ($rolActualId === 1): ?>
 <!-- Formulario Oculto para Eliminación Segura de Horarios desde el Calendario -->
-<form id="formEliminarHorarioCalendario" method="post" action="<?= RUTA_BASE ?>controllers/admin/eliminar_horario.php" style="display: none;">
+<form id="formEliminarHorarioCalendario" method="post" action="<?= RUTA_BASE ?>controllers/HorarioController.php" style="display: none;">
+    <input type="hidden" name="accion" value="eliminar">
     <input type="hidden" name="id_horario" id="eliminar_calendario_id_horario" value="">
     <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf'] ?? '') ?>">
     <input type="hidden" name="return_url" id="eliminar_calendario_return_url" value="">

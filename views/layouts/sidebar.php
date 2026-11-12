@@ -86,7 +86,7 @@ if ($rolActualId === 1) {
         // ['tipo' => 'enlace', 'clave' => 'configuracion', 'icono' => 'fa-cog', 'texto' => 'Configuración', 'url' => '#'],
         ['tipo' => 'enlace', 'clave' => 'prueba_rfid', 'icono' => 'fa-id-badge', 'texto' => 'Prueba lector RFID', 'url' => RUTA_BASE . 'views/admin/prueba_rfid.php'],
         ['tipo' => 'enlace', 'clave' => 'prueba_correo', 'icono' => 'fa-paper-plane', 'texto' => 'Prueba de correo', 'url' => RUTA_BASE . 'views/admin/prueba_correo.php'],
-        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/logout.php'],
+        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/AuthController.php?accion=logout'],
     ];
 } elseif ($rolActualId === 2) {
     $itemsMenu = [
@@ -100,7 +100,7 @@ if ($rolActualId === 1) {
         ['tipo' => 'enlace', 'clave' => 'reportes', 'icono' => 'fa-chart-bar', 'texto' => 'Reportes', 'url' => RUTA_BASE . 'views/instructor/reportes/index.php'],
         ['tipo' => 'enlace', 'clave' => 'alertas_desercion', 'icono' => 'fa-exclamation-triangle', 'texto' => 'Alertas de Deserción', 'url' => RUTA_BASE . 'views/instructor/alertas_desercion.php', 'badge' => $badgeCriticos],
         ['tipo' => 'header', 'texto' => 'SISTEMA'],
-        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/logout.php'],
+        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/AuthController.php?accion=logout'],
     ];
 } else {
     $itemsMenu = [
@@ -112,7 +112,7 @@ if ($rolActualId === 1) {
         ['tipo' => 'enlace', 'clave' => 'excusas', 'icono' => 'fa-file-medical', 'texto' => 'Mis excusas', 'url' => RUTA_BASE . 'views/aprendiz/excusas/index.php'],
         ['tipo' => 'enlace', 'clave' => 'subir-excusa', 'icono' => 'fa-cloud-upload-alt', 'texto' => 'Subir excusa', 'url' => RUTA_BASE . 'views/aprendiz/excusas/create.php'],
         ['tipo' => 'header', 'texto' => 'SISTEMA'],
-        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/logout.php'],
+        ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/AuthController.php?accion=logout'],
     ];
 }
 

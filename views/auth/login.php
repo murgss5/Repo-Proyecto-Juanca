@@ -81,8 +81,9 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
         </noscript>
       <?php endif; ?>
 
-      <!-- Formulario de login que envia a controllers/login.php -->
-      <form id="formLogin" action="<?= RUTA_BASE ?>controllers/login.php" method="post" autocomplete="off" novalidate>
+      <!-- Formulario de login que envia a controllers/AuthController.php -->
+      <form id="formLogin" action="<?= RUTA_BASE ?>controllers/AuthController.php" method="post" autocomplete="off" novalidate>
+        <input type="hidden" name="accion" value="login">
         <div class="form-group mb-3">
           <label for="nombre_usuario" class="font-weight-bold text-dark small">Usuario o número de cédula <span class="text-danger">*</span></label>
           <div class="input-group">

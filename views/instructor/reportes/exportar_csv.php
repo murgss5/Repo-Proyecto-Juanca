@@ -1,75 +1,183 @@
 <?php
 /**
- * Exporta en CSV los registros visibles en el reporte del instructor.
- * La consulta limita siempre los resultados a sus propias fichas.
+ * ============================================================
+ * EXPORTACIÓN CSV: REPORTES (INSTRUCTOR)
+ * Sistema de Control de Ingreso y Asistencia de Aprendices - SENA
+ * ============================================================
+ * Genera un CSV estructurado con BOM UTF-8 y protección contra
+ * inyección de fórmulas CSV mediante neutralizarFilaCsv(),
+ * filtrado por las fichas asignadas al instructor.
+ * ============================================================
  */
-require_once __DIR__ . '/../../../includes/autenticacion.php';
+
+require_once dirname(__DIR__, 2) . '/../includes/autenticacion.php';
 exigirRol(2);
-require_once __DIR__ . '/../../../config/conexion.php';
+require_once dirname(__DIR__, 2) . '/../models/ReporteModel.php';
 
-function fechaExportacionValida(string $fecha): bool
-{
-    $convertida = DateTime::createFromFormat('Y-m-d', $fecha);
-    return $convertida !== false && $convertida->format('Y-m-d') === $fecha;
-}
+$idInstructor = (int)($_SESSION['instructor']['id_usuario'] ?? 0);
 
-$fechaDesde = trim($_GET['desde'] ?? '');
-$fechaHasta = trim($_GET['hasta'] ?? '');
-$fichaSeleccionada = filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: '';
+// Filtros GET
+$filtroFechaIni = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? $_GET['fecha_inicio'] : ($_GET['desde'] ?? null);
+$filtroFechaFin = isset($_GET['fecha_fin']) && $_GET['fecha_fin'] !== '' ? $_GET['fecha_fin'] : ($_GET['hasta'] ?? null);
+$filtroFicha    = isset($_GET['ficha']) && $_GET['ficha'] !== '' ? (int)$_GET['ficha'] : null;
+$filtroAprendiz = isset($_GET['aprendiz']) && trim($_GET['aprendiz']) !== '' ? trim($_GET['aprendiz']) : null;
+$filtroEntrada  = isset($_GET['estado_entrada']) && $_GET['estado_entrada'] !== '' ? $_GET['estado_entrada'] : null;
+$filtroSalida   = isset($_GET['estado_salida']) && $_GET['estado_salida'] !== '' ? $_GET['estado_salida'] : null;
 
-// Si se presionó el botón "Esta semana", calcular lunes y domingo de la semana actual
+// Rápido "Esta semana"
 if (isset($_GET['filtro_semana'])) {
     $hoy = new DateTime();
-    $inicioSemana = clone $hoy;
-    $inicioSemana->modify('monday this week');
-    $finSemana = clone $hoy;
-    $finSemana->modify('sunday this week');
-    $fechaDesde = $inicioSemana->format('Y-m-d');
-    $fechaHasta = $finSemana->format('Y-m-d');
+    $inicioSemana = (clone $hoy)->modify('monday this week');
+    $finSemana = (clone $hoy)->modify('sunday this week');
+    $filtroFechaIni = $inicioSemana->format('Y-m-d');
+    $filtroFechaFin = $finSemana->format('Y-m-d');
 }
 
-if ($fechaDesde !== '' && !fechaExportacionValida($fechaDesde)) $fechaDesde = '';
-if ($fechaHasta !== '' && !fechaExportacionValida($fechaHasta)) $fechaHasta = '';
+// Validar formato de fechas
+if ($filtroFechaIni && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filtroFechaIni)) {
+    $filtroFechaIni = null;
+}
+if ($filtroFechaFin && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $filtroFechaFin)) {
+    $filtroFechaFin = null;
+}
+if (!$filtroFechaIni) {
+    $filtroFechaIni = date('Y-m-01');
+}
+if (!$filtroFechaFin) {
+    $filtroFechaFin = date('Y-m-t');
+}
 
-$conexion = (new Conexion())->conectar();
-$sql = "SELECT a.fecha_asistencia, CONCAT(u.nombre, ' ', u.apellido) AS aprendiz,
-    u.identificacion, f.id_ficha, f.nombre_programa, a.entrada, a.salida,
-    a.estado_entrada, a.estado_salida, a.minutos_retardo, a.minutos_salida_anticipada
-    FROM asistencia a
-    INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
-    INNER JOIN usuario u ON u.id_usuario = ap.fk_usuario
-    INNER JOIN ficha f ON f.id_ficha = ap.fk_ficha
-    WHERE f.fk_usuario = :id_instructor";
-$parametros = [':id_instructor' => $_SESSION['instructor']['id_usuario']];
-if ($fechaDesde !== '') { $sql .= ' AND a.fecha_asistencia >= :fecha_desde'; $parametros[':fecha_desde'] = $fechaDesde; }
-if ($fechaHasta !== '') { $sql .= ' AND a.fecha_asistencia <= :fecha_hasta'; $parametros[':fecha_hasta'] = $fechaHasta; }
-if ($fichaSeleccionada !== '') { $sql .= ' AND f.id_ficha = :id_ficha'; $parametros[':id_ficha'] = $fichaSeleccionada; }
-$sql .= ' ORDER BY a.fecha_asistencia DESC, u.apellido, u.nombre';
-$consulta = $conexion->prepare($sql);
-$consulta->execute($parametros);
+$filtros = [
+    'fecha_inicio'   => $filtroFechaIni,
+    'fecha_fin'      => $filtroFechaFin,
+    'ficha'          => $filtroFicha,
+    'aprendiz'       => $filtroAprendiz,
+    'estado_entrada' => $filtroEntrada,
+    'estado_salida'  => $filtroSalida,
+];
 
-header('Content-Type: text/csv; charset=utf-8');
+// Obtención de datos mediante ReporteModel contextualizados al instructor
+$resumenAprendices = ReporteModel::obtenerResumenAsistencias($idInstructor, $filtros);
+$detalleAsistencias = ReporteModel::obtenerDetalleAsistencias($idInstructor, $filtros);
+$totales = ReporteModel::calcularTotalesKPIs($resumenAprendices);
+
+// Encabezados HTTP para descarga de archivo CSV
+header('Content-Type: text/csv; charset=UTF-8');
 header('Content-Disposition: attachment; filename="reporte_mis_fichas_' . date('Ymd_His') . '.csv"');
-header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Cache-Control: max-age=0, no-cache, no-store, must-revalidate');
 header('Pragma: no-cache');
 header('Expires: 0');
-$salida = fopen('php://output', 'w');
-fwrite($salida, "\xEF\xBB\xBF");
-fputcsv($salida, neutralizarFilaCsv(['REPORTE DE ASISTENCIAS - MIS FICHAS']));
-fputcsv($salida, neutralizarFilaCsv(['Generado', date('d/m/Y H:i:s')]));
-fputcsv($salida, neutralizarFilaCsv(['Fecha inicial', $fechaDesde ?: 'Sin filtro']));
-fputcsv($salida, neutralizarFilaCsv(['Fecha final', $fechaHasta ?: 'Sin filtro']));
-fputcsv($salida, []);
-fputcsv($salida, neutralizarFilaCsv(['Fecha', 'Aprendiz', 'Identificación', 'Ficha', 'Programa', 'Entrada', 'Salida', 'Estado entrada', 'Estado salida', 'Minutos retardo', 'Minutos salida anticipada']));
-while ($fila = $consulta->fetch()) {
-    fputcsv($salida, neutralizarFilaCsv([
-        date('d/m/Y', strtotime($fila['fecha_asistencia'])), $fila['aprendiz'], $fila['identificacion'],
-        $fila['id_ficha'], $fila['nombre_programa'],
-        $fila['entrada'] ? date('H:i', strtotime($fila['entrada'])) : '',
-        $fila['salida'] ? date('H:i', strtotime($fila['salida'])) : '',
-        $fila['estado_entrada'], $fila['estado_salida'], (int) $fila['minutos_retardo'],
-        (int) $fila['minutos_salida_anticipada'],
+
+$output = fopen('php://output', 'w');
+
+// BOM UTF-8 para visualización adecuada de tildes en Excel
+fwrite($output, "\xEF\xBB\xBF");
+
+// --- Hoja 1: Resumen por aprendiz ---
+fputcsv($output, neutralizarFilaCsv(['REPORTE DE ASISTENCIA - MIS FICHAS (SENA)']));
+fputcsv($output, neutralizarFilaCsv(['Fecha inicial', $filtroFechaIni]));
+fputcsv($output, neutralizarFilaCsv(['Fecha final', $filtroFechaFin]));
+fputcsv($output, neutralizarFilaCsv(['Generado', date('d/m/Y H:i:s')]));
+fputcsv($output, []);
+
+fputcsv($output, neutralizarFilaCsv([
+    'Aprendiz',
+    'Identificación',
+    'Programa',
+    'Jornada',
+    'Ficha',
+    'Puntuales',
+    'Retardos',
+    'Total min. retardo',
+    'Inasistencias',
+    'Inasistencias justificadas',
+    'Inasistencias injustificadas',
+    'Salidas anticipadas',
+    'Total min. salida ant.',
+    'Excusas aprobadas',
+    'Excusas pendientes',
+    'Excusas rechazadas'
+]));
+
+foreach ($resumenAprendices as $row) {
+    fputcsv($output, neutralizarFilaCsv([
+        $row['aprendiz'],
+        $row['identificacion'],
+        $row['nombre_programa'],
+        $row['jornada'],
+        $row['id_ficha'],
+        (int)($row['puntuales'] ?? 0),
+        (int)$row['retardos'],
+        (int)$row['total_min_retardo'],
+        (int)$row['inasistencias'],
+        (int)$row['inasistencias_justificadas'],
+        (int)$row['inasistencias_no_justificadas'],
+        (int)$row['salidas_anticipadas'],
+        (int)$row['total_min_salida_anticipada'],
+        (int)$row['excusas_aprobadas'],
+        (int)$row['excusas_pendientes'],
+        (int)$row['excusas_rechazadas']
     ]));
 }
-fclose($salida);
+
+// Totales
+fputcsv($output, []);
+fputcsv($output, neutralizarFilaCsv(['TOTALES']));
+fputcsv($output, neutralizarFilaCsv([
+    'TOTAL',
+    '',
+    '',
+    '',
+    '',
+    $totales['total_puntuales'],
+    $totales['total_retardos'],
+    $totales['total_min_retardo'],
+    $totales['total_inasistencias'],
+    $totales['total_justificadas'],
+    $totales['total_no_justificadas'],
+    $totales['total_salidas_ant'],
+    $totales['total_min_salida_ant'],
+    $totales['total_excusas_aprobadas'],
+    $totales['total_excusas_pendientes'],
+    $totales['total_excusas_rechazadas']
+]));
+
+// --- Hoja 2: Detalle de asistencias ---
+fputcsv($output, []);
+fputcsv($output, neutralizarFilaCsv(['DETALLE DE ASISTENCIAS']));
+fputcsv($output, []);
+
+fputcsv($output, neutralizarFilaCsv([
+    'Fecha',
+    'Aprendiz',
+    'Identificación',
+    'Ficha',
+    'Programa',
+    'Hora entrada',
+    'Hora salida',
+    'Estado entrada',
+    'Estado salida',
+    'Minutos retardo',
+    'Minutos salida anticipada',
+    'Estado excusa'
+]));
+
+foreach ($detalleAsistencias as $row) {
+    fputcsv($output, neutralizarFilaCsv([
+        date('d/m/Y', strtotime($row['fecha_asistencia'])),
+        $row['aprendiz'],
+        $row['identificacion'],
+        $row['id_ficha'],
+        $row['nombre_programa'],
+        $row['entrada'] ? date('H:i', strtotime($row['entrada'])) : '',
+        $row['salida'] ? date('H:i', strtotime($row['salida'])) : '',
+        $row['estado_entrada'],
+        $row['estado_salida'],
+        (int)$row['minutos_retardo'],
+        (int)$row['minutos_salida_anticipada'],
+        $row['estado_excusa'] ? ucfirst(strtolower($row['estado_excusa'])) : ''
+    ]));
+}
+
+fclose($output);
 exit;

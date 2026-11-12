@@ -1,14 +1,19 @@
 <?php
 /**
- * Controlador: Simular ingreso RFID del siguiente aprendiz
- * Herramienta temporal de pruebas para el panel del Instructor.
+ * =============================================================================
+ * ENDPOINT AJAX: Simular Ingreso RFID del Siguiente Aprendiz
+ * Sistema de Control de Ingreso y Asistencia de Aprendices - SENA
+ * =============================================================================
+ * Herramienta de pruebas para el panel del Instructor.
  * Permite simular una a una las entradas de aprendices con RFID asignado
  * para una jornada que se encuentre actualmente abierta.
+ * =============================================================================
  */
-require_once __DIR__ . '/../includes/constantes.php';
-require_once __DIR__ . '/../includes/autenticacion.php';
-require_once __DIR__ . '/../config/conexion.php';
-require_once __DIR__ . '/../models/AsistenciaModel.php';
+
+require_once __DIR__ . '/../../includes/constantes.php';
+require_once __DIR__ . '/../../includes/autenticacion.php';
+require_once __DIR__ . '/../../config/conexion.php';
+require_once __DIR__ . '/../../models/AsistenciaModel.php';
 
 exigirRol(2);
 
@@ -21,52 +26,47 @@ date_default_timezone_set('America/Bogota');
 // 1. Solo peticiones POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Metodo no permitido']);
+    echo json_encode(['success' => false, 'message' => 'Método no permitido'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// 2. Validar que el modo de pruebas este habilitado en el servidor
+// 2. Validar que el modo de pruebas esté habilitado en el servidor
 if (!defined('MODO_PRUEBAS_RFID') || !MODO_PRUEBAS_RFID) {
     http_response_code(403);
-    header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
-        'message' => 'El modo de pruebas para simular ingresos RFID esta deshabilitado en el servidor'
-    ]);
+        'message' => 'El modo de pruebas para simular ingresos RFID está deshabilitado en el servidor'
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// 3. Validar sesion y rol Instructor (rol 2)
+// 3. Validar sesión y rol Instructor (rol 2)
 if (empty($_SESSION['instructor']['id_usuario'])) {
     http_response_code(403);
-    header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
-        'message' => 'Acceso denegado: se requiere sesion activa con rol Instructor'
-    ]);
+        'message' => 'Acceso denegado: se requiere sesión activa con rol Instructor'
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // 4. Validar token CSRF (POST o Header)
 $tokenRecibido = $_POST['token_csrf'] ?? '';
 if ($tokenRecibido === '') {
-    $headers = getallheaders();
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
     $tokenRecibido = $headers['X-CSRF-Token'] ?? $headers['X-Csrf-Token'] ?? '';
 }
 if (!hash_equals($_SESSION['token_csrf'] ?? '', $tokenRecibido)) {
     http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Token CSRF invalido']);
+    echo json_encode(['success' => false, 'message' => 'Token CSRF inválido'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// 5. Validar parametro ficha_id
+// 5. Validar parámetro ficha_id
 $fichaId = filter_input(INPUT_POST, 'ficha_id', FILTER_VALIDATE_INT) ?: (isset($_POST['ficha_id']) ? (int)$_POST['ficha_id'] : null);
 if (!$fichaId) {
     http_response_code(400);
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Parametro ficha_id es requerido']);
+    echo json_encode(['success' => false, 'message' => 'Parámetro ficha_id es requerido'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -86,15 +86,14 @@ try {
     ]);
     if (!$q->fetch()) {
         http_response_code(403);
-        header('Content-Type: application/json');
         echo json_encode([
             'success' => false,
-            'message' => 'No tiene autorizacion para gestionar esta ficha'
-        ]);
+            'message' => 'No tiene autorización para gestionar esta ficha'
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    // 7. Validar que la jornada este actualmente abierta hoy
+    // 7. Validar que la jornada esté actualmente abierta hoy
     $horarioIdFiltro = (filter_input(INPUT_POST, 'horario_id', FILTER_VALIDATE_INT) ?: (isset($_POST['horario_id']) ? (int)$_POST['horario_id'] : null)) ?: null;
     $sqlSesion = "SELECT id_sesion, horario_id, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado
                   FROM sesiones_jornada
@@ -116,15 +115,14 @@ try {
 
     $q = $conexion->prepare($sqlSesion);
     $q->execute($paramsSesion);
-    $sesion = $q->fetch();
+    $sesion = $q->fetch(PDO::FETCH_ASSOC);
 
     if (!$sesion || $sesion['hora_cierre_real'] !== null) {
         http_response_code(400);
-        header('Content-Type: application/json');
         echo json_encode([
             'success' => false,
-            'message' => 'La jornada no esta abierta para esta ficha. El instructor debe abrirla primero.'
-        ]);
+            'message' => 'La jornada no está abierta para esta ficha. El instructor debe abrirla primero.'
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -143,16 +141,15 @@ try {
 
     if ($totalConRfid === 0) {
         http_response_code(200);
-        header('Content-Type: application/json');
         echo json_encode([
             'success' => false,
             'message' => 'No hay aprendices con tarjeta RFID asignada en esta ficha',
             'pendientes_restantes' => 0
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    // 9. Buscar aprendices de la ficha con RFID que NO hayan registrado ingreso en esta sesion/horario
+    // 9. Buscar aprendices de la ficha con RFID que NO hayan registrado ingreso en esta sesión/horario
     $q = $conexion->prepare(
         "SELECT a.id_aprendiz, a.codigo_rfid, u.nombre, u.apellido
          FROM aprendiz a
@@ -176,38 +173,35 @@ try {
         ':fecha'      => $fechaHoy,
         ':horario_id' => $horarioIdSesion
     ]);
-    $pendientes = $q->fetchAll();
+    $pendientes = $q->fetchAll(PDO::FETCH_ASSOC);
 
     if (empty($pendientes)) {
         http_response_code(200);
-        header('Content-Type: application/json');
         echo json_encode([
             'success' => false,
             'message' => 'No quedan aprendices con RFID pendientes de ingreso',
             'pendientes_restantes' => 0
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    // 10. Seleccionar el siguiente pendiente (estable por id_aprendiz ASC)
+    // 10. Seleccionar el siguiente pendiente
     $siguiente = $pendientes[0];
     $pendientesRestantes = count($pendientes) - 1;
 
-    // 11. Procesar entrada utilizando la logica real compartida (estrictamente 'entrada')
+    // 11. Procesar entrada utilizando la lógica real compartida
     $resultado = AsistenciaModel::registrarPorRfid($siguiente['codigo_rfid'], 'entrada', $conexion, $fichaId);
 
     if (!$resultado['success']) {
         http_response_code($resultado['http_code'] ?? 400);
-        header('Content-Type: application/json');
         echo json_encode([
             'success' => false,
             'message' => $resultado['message'] ?? 'No fue posible registrar el ingreso'
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    // 12. Devolver respuesta estructurada sin exponer el codigo RFID completo
-    header('Content-Type: application/json');
+    // 12. Devolver respuesta estructurada sin exponer el código RFID completo
     echo json_encode([
         'success' => true,
         'message' => 'Ingreso registrado correctamente',
@@ -218,17 +212,15 @@ try {
             'minutos_retardo'      => $resultado['data']['minutos_retardo'] ?? 0,
             'pendientes_restantes' => $pendientesRestantes
         ]
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 
 } catch (Throwable $e) {
     error_log("Error al simular ingreso RFID: " . $e->getMessage());
     http_response_code(500);
-    header('Content-Type: application/json');
     echo json_encode([
         'success' => false,
         'message' => 'No fue posible completar la simulación de ingreso. Inténtalo nuevamente.'
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
-
