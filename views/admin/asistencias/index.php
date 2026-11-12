@@ -15,6 +15,7 @@ function claseEstadoAsistenciaAdmin(string $estado): string
     return match ($estado) {
         'Presente' => 'badge-success', 'Retardo' => 'badge-warning',
         'Salida temprana' => 'badge-info', 'Inasistencia' => 'badge-danger',
+        'Justificada' => 'badge-info',
         default => 'badge-secondary',
     };
 }
@@ -24,7 +25,7 @@ $fechaDesde = trim($_GET['desde'] ?? '');
 $fechaHasta = trim($_GET['hasta'] ?? '');
 $fichaSeleccionada = filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: '';
 $estadoSeleccionado = $_GET['estado'] ?? '';
-$estadosPermitidos = ['Presente', 'Retardo', 'Salida temprana', 'Inasistencia'];
+$estadosPermitidos = ['Presente', 'Retardo', 'Salida temprana', 'Inasistencia', 'Justificada'];
 
 if ($fechaDesde !== '' && !fechaFiltroValida($fechaDesde)) $fechaDesde = '';
 if ($fechaHasta !== '' && !fechaFiltroValida($fechaHasta)) $fechaHasta = '';
@@ -46,10 +47,11 @@ if ($estadoSeleccionado === 'Presente') $sql .= " AND a.estado_entrada = 'PUNTUA
 elseif ($estadoSeleccionado === 'Retardo') $sql .= " AND a.estado_entrada = 'RETARDO' AND (a.estado_salida IS NULL OR a.estado_salida <> 'SALIDA_ANTICIPADA')";
 elseif ($estadoSeleccionado === 'Salida temprana') $sql .= " AND a.estado_salida = 'SALIDA_ANTICIPADA'";
 elseif ($estadoSeleccionado === 'Inasistencia') $sql .= " AND a.estado_entrada = 'INASISTENCIA'";
+elseif ($estadoSeleccionado === 'Justificada') $sql .= " AND a.estado_entrada = 'JUSTIFICADA'";
 $sql .= ' ORDER BY a.fecha_asistencia DESC, a.entrada DESC, a.id_asistencia DESC';
 $consulta = $conexion->prepare($sql); $consulta->execute($parametros); $asistencias = $consulta->fetchAll();
 foreach ($asistencias as &$asistencia) {
-    $asistencia['estado'] = $asistencia['estado_entrada'] === 'INASISTENCIA' ? 'Inasistencia' : ($asistencia['estado_salida'] === 'SALIDA_ANTICIPADA' ? 'Salida temprana' : ($asistencia['estado_entrada'] === 'RETARDO' ? 'Retardo' : 'Presente'));
+    $asistencia['estado'] = $asistencia['estado_entrada'] === 'INASISTENCIA' ? 'Inasistencia' : ($asistencia['estado_entrada'] === 'JUSTIFICADA' ? 'Justificada' : ($asistencia['estado_salida'] === 'SALIDA_ANTICIPADA' ? 'Salida temprana' : ($asistencia['estado_entrada'] === 'RETARDO' ? 'Retardo' : 'Presente')));
 }
 unset($asistencia);
 

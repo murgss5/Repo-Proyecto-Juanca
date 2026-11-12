@@ -202,16 +202,16 @@ ob_start();
                                         <a class="btn btn-warning" href="<?= RUTA_BASE ?>views/admin/horarios/edit.php?id=<?= $h['id_horario'] ?>&vista=tabla" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <form class="d-inline" method="post" action="<?= RUTA_BASE ?>controllers/gestionar_academico.php" onsubmit="return confirm('¿Eliminar este horario?');">
-                                            <input type="hidden" name="entidad" value="horario">
-                                            <input type="hidden" name="accion" value="eliminar">
-                                            <input type="hidden" name="vista" value="tabla">
-                                            <input type="hidden" name="id_horario" value="<?= $h['id_horario'] ?>">
-                                            <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
-                                            <button type="submit" class="btn btn-danger" title="Eliminar" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-danger btn-eliminar-horario-tabla" 
+                                                data-id="<?= $h['id_horario'] ?>"
+                                                data-ficha="<?= htmlspecialchars((string)$h['id_ficha']) ?>"
+                                                data-programa="<?= htmlspecialchars($h['nombre_programa'], ENT_QUOTES, 'UTF-8') ?>"
+                                                data-dia="<?= htmlspecialchars($h['dia_semana'], ENT_QUOTES, 'UTF-8') ?>"
+                                                data-horario="<?= htmlspecialchars(substr($h['entrada'], 0, 5)) ?> &ndash; <?= htmlspecialchars(substr($h['salida'], 0, 5)) ?>"
+                                                data-instructor="<?= htmlspecialchars($h['instructor_nombre'] ?? 'No asignado', ENT_QUOTES, 'UTF-8') ?>"
+                                                title="Eliminar horario">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -223,6 +223,86 @@ ob_start();
         </div>
     </div>
 <?php endif; ?>
+
+<!-- Formulario Oculto para Eliminación Segura de Horarios en Vista Tabla -->
+<form id="formEliminarHorarioTabla" method="post" action="<?= RUTA_BASE ?>controllers/admin/eliminar_horario.php" style="display: none;">
+    <input type="hidden" name="id_horario" id="eliminar_tabla_id_horario" value="">
+    <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
+    <input type="hidden" name="return_url" value="<?= htmlspecialchars($_SERVER['REQUEST_URI'] ?? '') ?>">
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var btnsEliminarTabla = document.querySelectorAll('.btn-eliminar-horario-tabla');
+    btnsEliminarTabla.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var idHorario = this.getAttribute('data-id');
+            var ficha = this.getAttribute('data-ficha');
+            var programa = this.getAttribute('data-programa');
+            var dia = this.getAttribute('data-dia');
+            var horario = this.getAttribute('data-horario');
+            var instructor = this.getAttribute('data-instructor');
+
+            var infoFicha = '#' + ficha + (programa ? ' - ' + programa : '');
+            var diaHorario = dia + ' (' + horario + ')';
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: '¿Eliminar este bloque horario?',
+                    html: '<div class="text-left p-3 bg-light rounded border mb-3 small" style="line-height: 1.6;">' +
+                          '<div><strong class="text-dark">Ficha:</strong> ' + infoFicha + '</div>' +
+                          '<div><strong class="text-dark">Día y Hora:</strong> ' + diaHorario + '</div>' +
+                          '<div><strong class="text-dark">Instructor:</strong> ' + instructor + '</div>' +
+                          '</div>' +
+                          '<p class="text-danger small font-weight-bold mb-0">' +
+                          '<i class="fas fa-exclamation-triangle mr-1"></i> Esta acción eliminará el horario y limpiará en cascada las sesiones asociadas para evitar registros huérfanos.' +
+                          '</p>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-arrow-right mr-1"></i> Continuar',
+                    cancelButtonText: 'Cancelar',
+                    reverseButtons: true
+                }).then(function(result1) {
+                    if (result1.isConfirmed) {
+                        // Doble confirmación de seguridad estricta
+                        Swal.fire({
+                            title: '¿Confirmación definitiva?',
+                            text: 'El bloque desaparecerá de forma permanente de los calendarios y del panel de apertura de jornada de los instructores. ¿Está totalmente seguro de proceder?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: '<i class="fas fa-trash-alt mr-1"></i> Sí, eliminar definitivamente',
+                            cancelButtonText: 'Regresar',
+                            reverseButtons: true
+                        }).then(function(result2) {
+                            if (result2.isConfirmed) {
+                                var form = document.getElementById('formEliminarHorarioTabla');
+                                if (form) {
+                                    document.getElementById('eliminar_tabla_id_horario').value = idHorario;
+                                    form.submit();
+                                }
+                            }
+                        });
+                    }
+                });
+            } else {
+                if (confirm('¿Está seguro de eliminar el horario de ' + diaHorario + ' para la ficha ' + infoFicha + '?')) {
+                    if (confirm('CONFIRMACIÓN DEFINITIVA: ¿Desea proceder con la eliminación?')) {
+                        var form = document.getElementById('formEliminarHorarioTabla');
+                        if (form) {
+                            document.getElementById('eliminar_tabla_id_horario').value = idHorario;
+                            form.submit();
+                        }
+                    }
+                }
+            }
+        });
+    });
+});
+</script>
 
 <?php
 $contenido = ob_get_clean();

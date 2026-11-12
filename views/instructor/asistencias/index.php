@@ -38,7 +38,7 @@ $fechaDesde = trim($_GET['desde'] ?? '');
 $fechaHasta = trim($_GET['hasta'] ?? '');
 $fichaSeleccionada = filter_input(INPUT_GET, 'ficha', FILTER_VALIDATE_INT) ?: '';
 $estadoSeleccionado = $_GET['estado'] ?? '';
-$estadosPermitidos = ['Presente', 'Retardo', 'Salida temprana', 'Inasistencia'];
+$estadosPermitidos = ['Presente', 'Retardo', 'Salida temprana', 'Inasistencia', 'Justificada'];
 
 function esFechaValida(string $fecha): bool
 {
@@ -114,6 +114,8 @@ if ($estadoSeleccionado === 'Presente') {
     $sqlAsistencias .= " AND asistencia.estado_salida = 'SALIDA_ANTICIPADA'";
 } elseif ($estadoSeleccionado === 'Inasistencia') {
     $sqlAsistencias .= " AND asistencia.estado_entrada = 'INASISTENCIA'";
+} elseif ($estadoSeleccionado === 'Justificada') {
+    $sqlAsistencias .= " AND asistencia.estado_entrada = 'JUSTIFICADA'";
 }
 
 $sqlAsistencias .= ' ORDER BY asistencia.fecha_asistencia DESC, asistencia.entrada DESC, asistencia.id_asistencia DESC';
@@ -126,6 +128,8 @@ $asistenciasInstructor = $consulta->fetchAll();
 foreach ($asistenciasInstructor as &$asistencia) {
     if ($asistencia['estado_entrada'] === 'INASISTENCIA') {
         $asistencia['estado'] = 'Inasistencia';
+    } elseif ($asistencia['estado_entrada'] === 'JUSTIFICADA') {
+        $asistencia['estado'] = 'Justificada';
     } elseif ($asistencia['estado_salida'] === 'SALIDA_ANTICIPADA') {
         $asistencia['estado'] = 'Salida temprana';
     } elseif ($asistencia['estado_entrada'] === 'RETARDO') {
@@ -147,6 +151,8 @@ function claseEstadoAsistencia($estado)
             return 'badge-info';
         case 'Inasistencia':
             return 'badge-danger';
+        case 'Justificada':
+            return 'badge-info';
         default:
             return 'badge-secondary';
     }
@@ -319,6 +325,8 @@ ob_start();
                                     <?php if ($asistencia['estado_salida'] === 'SALIDA_ANTICIPADA'): ?>
                                         <span class="badge badge-info ml-1" title="Salida anticipada (<?= (int)$asistencia['minutos_salida_anticipada'] ?> min)">Anticipada</span>
                                     <?php endif; ?>
+                                <?php elseif ($asistencia['estado_entrada'] === 'JUSTIFICADA'): ?>
+                                    <span class="badge badge-info text-white px-2 py-1"><i class="fas fa-check-circle mr-1"></i>Excusa aprobada</span>
                                 <?php elseif ($esInasistencia): ?>
                                     <span class="text-muted font-italic">No asistió</span>
                                 <?php elseif (!empty($asistencia['entrada'])): ?>
@@ -348,7 +356,7 @@ ob_start();
 
                             <!-- Acciones: Botón de Edición Rápida de Salida -->
                             <td class="text-center align-middle col-acciones">
-                                <?php if (!$esInasistencia): ?>
+                                <?php if (!$esInasistencia && $asistencia['estado_entrada'] !== 'JUSTIFICADA'): ?>
                                     <button type="button" 
                                             class="btn btn-warning btn-sm shadow-sm btn-ajustar-salida" 
                                             data-id="<?= htmlspecialchars((string)$asistencia['id_asistencia']) ?>"

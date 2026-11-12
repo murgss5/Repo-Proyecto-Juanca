@@ -532,4 +532,229 @@ class AsistenciaModel
             ];
         }
     }
+
+    /**
+     * Obtiene la lista de aprendices en riesgo preventivo o crítico de deserción
+     * según los criterios del Reglamento del Aprendiz SENA:
+     * - Advertencia Preventiva ('ADVERTENCIA'): 2 inasistencias consecutivas injustificadas.
+     *   (Una asistencia puntual, retardo o inasistencia con excusa aprobada rompe la racha).
+     * - Riesgo Crítico de Deserción ('CRITICO'): 3 o más inasistencias consecutivas injustificadas,
+     *   O 5 o más inasistencias injustificadas acumuladas en los últimos 30 días.
+     *
+     * Si $rol === 'instructor' y se especifica $idUsuario, filtra únicamente los aprendices
+     * pertenecientes a las fichas asignadas a ese instructor. Si es 'admin', evalúa todas las fichas.
+     *
+     * @param int|null $idUsuario ID de usuario del instructor para filtrado contextual
+     * @param string $rol 'admin' o 'instructor'
+     * @param PDO|null $conexion Conexión PDO opcional
+     * @return array Lista de aprendices en riesgo ordenados por criticidad
+     */
+    public static function obtenerAprendicesEnRiesgo(?int $idUsuario = null, string $rol = 'admin', ?PDO $conexion = null): array
+    {
+        if ($conexion === null) {
+            $conexion = (new Conexion())->conectar();
+        }
+
+        try {
+            // Asegurar que la columna de control exista en la tabla
+            try {
+                $conexion->exec("ALTER TABLE aprendiz ADD COLUMN ultima_alerta_desercion DATE NULL DEFAULT NULL");
+            } catch (\Throwable $e) {}
+
+            $whereFiltro = '';
+            $params = [];
+
+            if (strtolower($rol) === 'instructor' && $idUsuario !== null && $idUsuario > 0) {
+                $whereFiltro = 'WHERE (f.fk_usuario = :id_instructor OR f.id_ficha IN (SELECT fk_ficha FROM horario WHERE instructor_id = :id_instructor_h))';
+                $params[':id_instructor'] = $idUsuario;
+                $params[':id_instructor_h'] = $idUsuario;
+            }
+
+            $sql = "
+                SELECT 
+                    ap.id_aprendiz,
+                    ap.fk_ficha,
+                    ap.codigo_rfid,
+                    ap.ultima_alerta_desercion,
+                    f.id_ficha,
+                    f.nombre_programa,
+                    f.jornada,
+                    u.id_usuario,
+                    u.identificacion,
+                    u.nombre,
+                    u.apellido,
+                    u.correo_electronico,
+                    u.telefono
+                FROM aprendiz ap
+                INNER JOIN usuario u ON ap.fk_usuario = u.id_usuario
+                INNER JOIN ficha f ON ap.fk_ficha = f.id_ficha
+                $whereFiltro
+                ORDER BY f.id_ficha ASC, u.apellido ASC, u.nombre ASC
+            ";
+
+            $stmt = $conexion->prepare($sql);
+            $stmt->execute($params);
+            $aprendices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($aprendices)) {
+                return [];
+            }
+
+            // Consulta de historial por aprendiz con estado de excusa
+            $stmtHistorial = $conexion->prepare("
+                SELECT 
+                    a.id_asistencia,
+                    a.fecha_asistencia,
+                    a.entrada,
+                    a.estado_entrada,
+                    e.estado AS estado_excusa
+                FROM asistencia a
+                LEFT JOIN excusa e ON e.fk_asistencia = a.id_asistencia
+                WHERE a.fk_aprendiz = :aprendiz_id
+                ORDER BY a.fecha_asistencia DESC, a.id_asistencia DESC
+            ");
+
+            $fechaLimite30Dias = date('Y-m-d', strtotime('-30 days'));
+            $fechaHoy = date('Y-m-d');
+            $aprendicesEnRiesgo = [];
+
+            foreach ($aprendices as $ap) {
+                $idAprendiz = (int)$ap['id_aprendiz'];
+                $stmtHistorial->execute([':aprendiz_id' => $idAprendiz]);
+                $historial = $stmtHistorial->fetchAll(PDO::FETCH_ASSOC);
+
+                $consecutivas = 0;
+                $rachaActiva = true;
+                $fallas30Dias = 0;
+                $tieneExcusaPendiente = false;
+                $excusasPendientesCount = 0;
+
+                foreach ($historial as $reg) {
+                    $estado = strtoupper(trim($reg['estado_entrada'] ?? ''));
+                    $estadoExcusa = strtoupper(trim($reg['estado_excusa'] ?? ''));
+                    $fechaAsistencia = $reg['fecha_asistencia'] ?? '';
+
+                    $esInasistenciaInjustificada = ($estado === 'INASISTENCIA' && $estadoExcusa !== 'APROBADA');
+
+                    // Verificar si existe excusa médica PENDIENTE asociada a faltas recientes
+                    if ($estado === 'INASISTENCIA' && $estadoExcusa === 'PENDIENTE') {
+                        if ($rachaActiva || $fechaAsistencia >= $fechaLimite30Dias) {
+                            $tieneExcusaPendiente = true;
+                            $excusasPendientesCount++;
+                        }
+                    }
+
+                    // Contabilizar racha consecutiva de inasistencias injustificadas
+                    if ($rachaActiva) {
+                        if ($esInasistenciaInjustificada) {
+                            $consecutivas++;
+                        } else {
+                            // Cualquier asistencia puntual, retardo o inasistencia justificada rompe la racha consecutiva
+                            $rachaActiva = false;
+                        }
+                    }
+
+                    // Contabilizar fallas injustificadas en los últimos 30 días
+                    if ($esInasistenciaInjustificada && $fechaAsistencia >= $fechaLimite30Dias) {
+                        $fallas30Dias++;
+                    }
+                }
+
+                $nivelRiesgo = null;
+                if ($consecutivas >= 3 || $fallas30Dias >= 5) {
+                    $nivelRiesgo = 'CRITICO';
+                } elseif ($consecutivas === 2) {
+                    $nivelRiesgo = 'ADVERTENCIA';
+                }
+
+                if ($nivelRiesgo !== null) {
+                    $nombreCompleto = trim(($ap['nombre'] ?? '') . ' ' . ($ap['apellido'] ?? ''));
+                    $ultimaAlerta = $ap['ultima_alerta_desercion'] ?? null;
+                    $notificadoHoy = ($ultimaAlerta === $fechaHoy);
+                    $correo = trim($ap['correo_electronico'] ?? '');
+                    $tieneCorreoValido = ($correo !== '' && filter_var($correo, FILTER_VALIDATE_EMAIL));
+
+                    $aprendicesEnRiesgo[] = [
+                        'id_aprendiz'             => $idAprendiz,
+                        'id_usuario'              => (int)$ap['id_usuario'],
+                        'nombre'                  => $ap['nombre'] ?? '',
+                        'apellido'                => $ap['apellido'] ?? '',
+                        'nombre_completo'         => $nombreCompleto ?: 'Aprendiz',
+                        'identificacion'          => $ap['identificacion'] ?? '',
+                        'correo_electronico'      => $correo,
+                        'telefono'                => $ap['telefono'] ?? '',
+                        'id_ficha'                => (int)$ap['id_ficha'],
+                        'nombre_programa'         => $ap['nombre_programa'] ?? '',
+                        'jornada'                 => $ap['jornada'] ?? '',
+                        'fallas_consecutivas'     => $consecutivas,
+                        'fallas_30_dias'          => $fallas30Dias,
+                        'nivel_riesgo'            => $nivelRiesgo,
+                        'nivel_texto'             => ($nivelRiesgo === 'CRITICO') ? 'Riesgo de Deserción' : 'Advertencia Preventiva',
+                        'badge_clase'             => ($nivelRiesgo === 'CRITICO') ? 'badge-danger bg-danger text-white' : 'badge-warning bg-warning text-dark',
+                        'tiene_excusa_pendiente'  => $tieneExcusaPendiente,
+                        'excusas_pendientes_count'=> $excusasPendientesCount,
+                        'ultima_alerta_desercion' => $ultimaAlerta,
+                        'notificado_hoy'          => $notificadoHoy,
+                        'puede_notificar'         => ($nivelRiesgo === 'CRITICO' && $tieneCorreoValido && !$notificadoHoy),
+                    ];
+                }
+            }
+
+            // Ordenar: primero los de riesgo CRITICO, luego por mayor número de consecutivas y fallas en 30 días
+            usort($aprendicesEnRiesgo, function ($a, $b) {
+                if ($a['nivel_riesgo'] === 'CRITICO' && $b['nivel_riesgo'] !== 'CRITICO') {
+                    return -1;
+                }
+                if ($a['nivel_riesgo'] !== 'CRITICO' && $b['nivel_riesgo'] === 'CRITICO') {
+                    return 1;
+                }
+                if ($a['fallas_consecutivas'] !== $b['fallas_consecutivas']) {
+                    return $b['fallas_consecutivas'] <=> $a['fallas_consecutivas'];
+                }
+                return $b['fallas_30_dias'] <=> $a['fallas_30_dias'];
+            });
+
+            return $aprendicesEnRiesgo;
+
+        } catch (\Throwable $e) {
+            error_log("Error en AsistenciaModel::obtenerAprendicesEnRiesgo: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Registra la fecha actual como la última notificación de alerta de deserción
+     * enviada a un aprendiz para evitar duplicidad de envíos en el mismo día.
+     *
+     * @param int $idAprendiz Identificador del aprendiz
+     * @param PDO|null $conexion Conexión PDO opcional
+     * @return bool Retorna true si se actualizó el registro satisfactoriamente
+     */
+    public static function registrarNotificacionDesercion(int $idAprendiz, ?PDO $conexion = null): bool
+    {
+        if ($idAprendiz <= 0) {
+            return false;
+        }
+
+        if ($conexion === null) {
+            $conexion = (new Conexion())->conectar();
+        }
+
+        try {
+            // Asegurar que la columna exista
+            try {
+                $conexion->exec("ALTER TABLE aprendiz ADD COLUMN ultima_alerta_desercion DATE NULL DEFAULT NULL");
+            } catch (\Throwable $e) {}
+
+            $stmt = $conexion->prepare("
+                UPDATE aprendiz 
+                SET ultima_alerta_desercion = CURDATE() 
+                WHERE id_aprendiz = :id_aprendiz
+            ");
+            return $stmt->execute([':id_aprendiz' => $idAprendiz]);
+        } catch (\Throwable $e) {
+            error_log("Error en AsistenciaModel::registrarNotificacionDesercion: " . $e->getMessage());
+            return false;
+        }
+    }
 }

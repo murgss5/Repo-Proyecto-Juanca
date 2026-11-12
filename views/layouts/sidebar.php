@@ -32,6 +32,24 @@ if ($rolActualId === 2) {
     $iconoRol = 'fa-graduation-cap';
 }
 
+// Contador dinámico para el badge de Alertas de Deserción
+$badgeCriticos = '';
+if (in_array($rolActualId, [1, 2], true)) {
+    require_once dirname(__DIR__, 2) . '/models/AsistenciaModel.php';
+    $idInstFiltro = ($rolActualId === 2) ? (int)($usuarioData['id_usuario'] ?? 0) : null;
+    $rolFiltro = ($rolActualId === 2) ? 'instructor' : 'admin';
+    if (isset($GLOBALS['TOTAL_CRITICOS_DESERCION'])) {
+        $totalCriticosSidebar = (int)$GLOBALS['TOTAL_CRITICOS_DESERCION'];
+    } else {
+        $aprendicesRiesgoSidebar = AsistenciaModel::obtenerAprendicesEnRiesgo($idInstFiltro, $rolFiltro);
+        $totalCriticosSidebar = count(array_filter($aprendicesRiesgoSidebar, fn($a) => ($a['nivel_riesgo'] ?? '') === 'CRITICO'));
+        $GLOBALS['TOTAL_CRITICOS_DESERCION'] = $totalCriticosSidebar;
+    }
+    if ($totalCriticosSidebar > 0) {
+        $badgeCriticos = '<span class="badge badge-danger bg-danger right">' . $totalCriticosSidebar . '</span>';
+    }
+}
+
 // ------------------------------------------------------------
 // Definición del menú por rol real
 // ------------------------------------------------------------
@@ -62,6 +80,7 @@ if ($rolActualId === 1) {
         ['tipo' => 'enlace', 'clave' => 'asistencias', 'icono' => 'fa-clipboard-check', 'texto' => 'Asistencias', 'url' => RUTA_BASE . 'views/admin/asistencias/index.php'],
         ['tipo' => 'enlace', 'clave' => 'excusas', 'icono' => 'fa-file-medical', 'texto' => 'Excusas médicas', 'url' => RUTA_BASE . 'views/admin/excusas/index.php'],
         ['tipo' => 'enlace', 'clave' => 'reportes', 'icono' => 'fa-chart-bar', 'texto' => 'Reportes', 'url' => RUTA_BASE . 'views/admin/reportes/index.php'],
+        ['tipo' => 'enlace', 'clave' => 'alertas_desercion', 'icono' => 'fa-exclamation-triangle', 'texto' => 'Alertas de Deserción', 'url' => RUTA_BASE . 'views/admin/alertas_desercion.php', 'badge' => $badgeCriticos],
         ['tipo' => 'header', 'texto' => 'SISTEMA'],
         // Se conserva como referencia de la plantilla AdminLTE. No hay módulo de configuración en este proyecto.
         // ['tipo' => 'enlace', 'clave' => 'configuracion', 'icono' => 'fa-cog', 'texto' => 'Configuración', 'url' => '#'],
@@ -79,6 +98,7 @@ if ($rolActualId === 1) {
         ['tipo' => 'enlace', 'clave' => 'asistencias', 'icono' => 'fa-clipboard-check', 'texto' => 'Asistencias', 'url' => RUTA_BASE . 'views/instructor/asistencias/index.php'],
         ['tipo' => 'enlace', 'clave' => 'excusas', 'icono' => 'fa-file-medical', 'texto' => 'Excusas médicas', 'url' => RUTA_BASE . 'views/instructor/excusas/index.php'],
         ['tipo' => 'enlace', 'clave' => 'reportes', 'icono' => 'fa-chart-bar', 'texto' => 'Reportes', 'url' => RUTA_BASE . 'views/instructor/reportes/index.php'],
+        ['tipo' => 'enlace', 'clave' => 'alertas_desercion', 'icono' => 'fa-exclamation-triangle', 'texto' => 'Alertas de Deserción', 'url' => RUTA_BASE . 'views/instructor/alertas_desercion.php', 'badge' => $badgeCriticos],
         ['tipo' => 'header', 'texto' => 'SISTEMA'],
         ['tipo' => 'enlace', 'clave' => 'logout', 'icono' => 'fa-sign-out-alt', 'texto' => 'Cerrar sesión', 'url' => RUTA_BASE . 'controllers/logout.php'],
     ];
@@ -157,6 +177,7 @@ if (!function_exists('menuActivo')) {
                   <i class="nav-icon fas <?= $item['icono'] ?>"></i>
                   <p>
                     <?= htmlspecialchars($item['texto']) ?>
+                    <?php if (!empty($item['badge'])): ?><?= $item['badge'] ?><?php endif; ?>
                     <?php if ($tieneHijos): ?><i class="right fas fa-angle-left"></i><?php endif; ?>
                   </p>
                 </a>

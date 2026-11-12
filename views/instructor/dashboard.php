@@ -6,6 +6,7 @@ exigirRol(2);
 require_once dirname(__DIR__) . '/../includes/constantes.php';
 require_once dirname(__DIR__) . '/../config/conexion.php';
 require_once dirname(__DIR__) . '/../models/HorarioModel.php';
+require_once dirname(__DIR__) . '/../models/AsistenciaModel.php';
 
 
 // --- Variables del layout ---
@@ -19,6 +20,13 @@ $miga = [
 // Instructor autenticado
 $idInstructor = (int)($_SESSION['instructor']['id_usuario'] ?? 0);
 $conexion = (new Conexion())->conectar();
+
+// Carga de alertas tempranas de deserción para fichas del instructor
+$rolContexto = 'instructor';
+$aprendicesEnRiesgo = AsistenciaModel::obtenerAprendicesEnRiesgo($idInstructor, 'instructor', $conexion);
+$totalCriticos = count(array_filter($aprendicesEnRiesgo, fn($a) => ($a['nivel_riesgo'] ?? '') === 'CRITICO'));
+$totalAdvertencias = count(array_filter($aprendicesEnRiesgo, fn($a) => ($a['nivel_riesgo'] ?? '') === 'ADVERTENCIA'));
+$criticosNotificables = count(array_filter($aprendicesEnRiesgo, fn($a) => !empty($a['puede_notificar'])));
 
 
 // Total fichas
@@ -89,7 +97,7 @@ $fechaHoy = date('Y-m-d');
 $fichasConHorarioHoy = HorarioModel::obtenerHorariosHoyInstructor($idInstructor, $fechaHoy);
 
 // Jornadas de hoy
-$consulta = $conexion->prepare("SELECT id_sesion, ficha_id, horario_id, hora_apertura_real, hora_limite_puntualidad, hora_cierre_real, estado FROM sesiones_jornada WHERE instructor_id = :id_instructor AND fecha = CURDATE() AND estado IN ('abierta', 'cerrada_manual') ORDER BY hora_apertura_real DESC");
+$consulta = $conexion->prepare("SELECT s.id_sesion, s.ficha_id, s.horario_id, s.hora_apertura_real, s.hora_limite_puntualidad, s.hora_cierre_real, s.estado FROM sesiones_jornada s INNER JOIN horario h ON s.horario_id = h.id_horario AND (h.estado = 'Activo' OR h.estado IS NULL) WHERE s.instructor_id = :id_instructor AND s.fecha = CURDATE() AND s.estado IN ('abierta', 'cerrada_manual') ORDER BY s.hora_apertura_real DESC");
 $consulta->execute([':id_instructor' => $idInstructor]);
 $jornadas = $consulta->fetchAll();
 
@@ -124,6 +132,40 @@ ob_start();
             </button>
         </div>
     </div>
+</div>
+<?php endif; ?>
+
+<?php if (!empty($aprendicesEnRiesgo)): ?>
+<!-- ==================== BANNER COMPACTO: ALERTAS DE DESERCIÓN ==================== -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-sm" style="border-left: 5px solid #dc3545 !important;">
+      <div class="card-body py-3 px-4 d-flex flex-wrap justify-content-between align-items-center">
+        <div class="d-flex align-items-center mb-2 mb-md-0">
+          <div class="mr-3 text-danger d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: #fee2e2; border-radius: 8px;">
+            <i class="fas fa-exclamation-triangle fa-lg"></i>
+          </div>
+          <div>
+            <h5 class="font-weight-bold text-dark mb-0">Alertas Tempranas de Deserción (Reglamento SENA)</h5>
+            <small class="text-muted">
+              Se han detectado aprendices en riesgo por inasistencias en sus fichas según el Acuerdo 007/2012.
+            </small>
+          </div>
+        </div>
+        <div class="d-flex align-items-center flex-wrap">
+          <span class="badge badge-danger bg-danger text-white px-2 py-1 mr-2 mb-1" style="font-size: 0.85rem;">
+            <i class="fas fa-user-times mr-1"></i> <?= $totalCriticos ?> Críticos
+          </span>
+          <span class="badge badge-warning bg-warning text-dark px-2 py-1 mr-3 mb-1 font-weight-bold" style="font-size: 0.85rem;">
+            <i class="fas fa-exclamation-circle mr-1"></i> <?= $totalAdvertencias ?> Advertencias
+          </span>
+          <a href="<?= RUTA_BASE ?>views/instructor/alertas_desercion.php" class="btn btn-danger btn-sm shadow-sm font-weight-bold mb-1">
+            <i class="fas fa-external-link-alt mr-1"></i> Gestionar Alertas y Notificar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 <?php endif; ?>
 

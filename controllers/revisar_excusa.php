@@ -74,6 +74,45 @@ try {
         ':decision' => $decision,
     ]);
 
+    // Sincronización en tabla asistencia y reseteo de alerta en aprendiz
+    if ($decision === 'APROBADA') {
+        // 1. Actualizar el registro correspondiente en la tabla asistencia a JUSTIFICADA
+        $stmtAsist = $conexion->prepare("
+            UPDATE asistencia 
+            SET estado_entrada = 'JUSTIFICADA' 
+            WHERE id_asistencia = (SELECT fk_asistencia FROM excusa WHERE id_excusa = :id_excusa)
+        ");
+        $stmtAsist->execute([':id_excusa' => $idExcusa]);
+
+        // 2. Resetear última alerta de deserción para que futuras reincidencias permitan notificar de nuevo sin bloqueo
+        $stmtAprendiz = $conexion->prepare("
+            SELECT a.fk_aprendiz 
+            FROM asistencia a 
+            INNER JOIN excusa e ON e.fk_asistencia = a.id_asistencia 
+            WHERE e.id_excusa = :id_excusa 
+            LIMIT 1
+        ");
+        $stmtAprendiz->execute([':id_excusa' => $idExcusa]);
+        $idAprendizExcusa = (int)$stmtAprendiz->fetchColumn();
+
+        if ($idAprendizExcusa > 0) {
+            $stmtResetAlerta = $conexion->prepare("
+                UPDATE aprendiz 
+                SET ultima_alerta_desercion = NULL 
+                WHERE id_aprendiz = :id_aprendiz
+            ");
+            $stmtResetAlerta->execute([':id_aprendiz' => $idAprendizExcusa]);
+        }
+    } elseif ($decision === 'RECHAZADA') {
+        // En caso de rechazo, asegurar que continúe figurando como inasistencia injustificada
+        $stmtAsist = $conexion->prepare("
+            UPDATE asistencia 
+            SET estado_entrada = 'INASISTENCIA' 
+            WHERE id_asistencia = (SELECT fk_asistencia FROM excusa WHERE id_excusa = :id_excusa)
+        ");
+        $stmtAsist->execute([':id_excusa' => $idExcusa]);
+    }
+
     volverAExcusas('mensaje', 'La excusa fue ' . strtolower($decision) . ' correctamente.');
 } catch (PDOException $error) {
     volverAExcusas('error', 'No fue posible revisar la excusa. Puede que ya haya sido procesada.');

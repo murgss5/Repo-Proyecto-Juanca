@@ -34,6 +34,7 @@ function claseEstadoReporte(string $estado): string
         'Retardo' => 'badge-warning',
         'Salida temprana' => 'badge-info',
         'Inasistencia' => 'badge-danger',
+        'Justificada' => 'badge-info',
         default => 'badge-secondary',
     };
 }
@@ -111,11 +112,14 @@ if ($fichaSeleccionada !== '') {
 $consultaReporte->execute();
 $registrosReporte = $consultaReporte->fetchAll();
 
-$totales = ['retardos' => 0, 'inasistencias' => 0, 'salidas_tempranas' => 0];
+$totales = ['retardos' => 0, 'inasistencias' => 0, 'salidas_tempranas' => 0, 'justificadas' => 0];
 foreach ($registrosReporte as &$registro) {
     if ($registro['estado_entrada'] === 'INASISTENCIA') {
         $registro['estado'] = 'Inasistencia';
         $totales['inasistencias']++;
+    } elseif ($registro['estado_entrada'] === 'JUSTIFICADA') {
+        $registro['estado'] = 'Justificada';
+        $totales['justificadas']++;
     } elseif ($registro['estado_salida'] === 'SALIDA_ANTICIPADA') {
         $registro['estado'] = 'Salida temprana';
         $totales['salidas_tempranas']++;

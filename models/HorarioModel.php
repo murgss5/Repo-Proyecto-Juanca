@@ -809,4 +809,81 @@ class HorarioModel
 
         return $resultado;
     }
+
+    /**
+     * Elimina un horario de formacion y realiza la limpieza en cascada de sus sesiones asociadas,
+     * desvinculando registros de asistencia huerfanos para garantizar integridad referencial y
+     * coherencia inmediata en los paneles de los instructores.
+     *
+     * @param int $idHorario ID del horario a eliminar
+     * @return array ['success' => bool, 'mensaje' => string, 'sesiones_eliminadas' => int]
+     */
+    public static function eliminarHorario(int $idHorario): array
+    {
+        if ($idHorario <= 0) {
+            return [
+                'success' => false,
+                'mensaje' => 'Identificador de horario no valido.'
+            ];
+        }
+
+        $conexion = (new Conexion())->conectar();
+
+        try {
+            $conexion->beginTransaction();
+
+            // 1. Verificar existencia del horario
+            $stmt = $conexion->prepare("SELECT id_horario, fk_ficha, dia_semana, entrada, salida FROM horario WHERE id_horario = ?");
+            $stmt->execute([$idHorario]);
+            $horario = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$horario) {
+                $conexion->rollBack();
+                return [
+                    'success' => false,
+                    'mensaje' => 'El horario especificado no existe o ya fue eliminado.'
+                ];
+            }
+
+            // 2. Identificar sesiones asociadas a este horario
+            $stmtSes = $conexion->prepare("SELECT id_sesion FROM sesiones_jornada WHERE horario_id = ?");
+            $stmtSes->execute([$idHorario]);
+            $sesionIds = $stmtSes->fetchAll(PDO::FETCH_COLUMN);
+
+            $sesionesEliminadas = count($sesionIds);
+
+            // 3. Desvincular asistencias que apunten a estas sesiones para preservar el historial sin registros huerfanos
+            if (!empty($sesionIds)) {
+                $placeholders = implode(',', array_fill(0, count($sesionIds), '?'));
+                $stmtAst = $conexion->prepare("UPDATE asistencia SET fk_sesion_jornada = NULL WHERE fk_sesion_jornada IN ($placeholders)");
+                $stmtAst->execute($sesionIds);
+
+                // 4. Eliminar las sesiones de jornada vinculadas a este horario
+                $stmtDelSes = $conexion->prepare("DELETE FROM sesiones_jornada WHERE horario_id = ?");
+                $stmtDelSes->execute([$idHorario]);
+            }
+
+            // 5. Eliminar el bloque de horario principal
+            $stmtDelHor = $conexion->prepare("DELETE FROM horario WHERE id_horario = ?");
+            $stmtDelHor->execute([$idHorario]);
+
+            $conexion->commit();
+
+            return [
+                'success' => true,
+                'mensaje' => 'El bloque de horario fue eliminado exitosamente.',
+                'sesiones_eliminadas' => $sesionesEliminadas,
+                'horario' => $horario
+            ];
+        } catch (PDOException $e) {
+            if ($conexion->inTransaction()) {
+                $conexion->rollBack();
+            }
+            error_log("Error en HorarioModel::eliminarHorario [ID {$idHorario}]: " . $e->getMessage());
+            return [
+                'success' => false,
+                'mensaje' => 'No fue posible eliminar el horario debido a un error de base de datos.'
+            ];
+        }
+    }
 }

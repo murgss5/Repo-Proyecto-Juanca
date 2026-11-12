@@ -102,13 +102,13 @@ $sqlResumen = "
         SUM(CASE WHEN a.estado_entrada = 'PUNTUAL' THEN 1 ELSE 0 END) AS puntuales,
         SUM(CASE WHEN a.estado_entrada = 'RETARDO' THEN 1 ELSE 0 END) AS retardos,
         SUM(CASE WHEN a.estado_entrada = 'RETARDO' THEN COALESCE(a.minutos_retardo, 0) ELSE 0 END) AS total_min_retardo,
-        SUM(CASE WHEN a.estado_entrada = 'INASISTENCIA' THEN 1 ELSE 0 END) AS inasistencias,
+        SUM(CASE WHEN a.estado_entrada IN ('INASISTENCIA', 'JUSTIFICADA') THEN 1 ELSE 0 END) AS inasistencias,
         SUM(CASE WHEN a.estado_salida = 'SALIDA_ANTICIPADA' THEN 1 ELSE 0 END) AS salidas_anticipadas,
         SUM(CASE WHEN a.estado_salida = 'SALIDA_ANTICIPADA' THEN COALESCE(a.minutos_salida_anticipada, 0) ELSE 0 END) AS total_min_salida_anticipada,
         SUM(CASE WHEN e.estado = 'APROBADA' THEN 1 ELSE 0 END) AS excusas_aprobadas,
         SUM(CASE WHEN e.estado = 'PENDIENTE' THEN 1 ELSE 0 END) AS excusas_pendientes,
         SUM(CASE WHEN e.estado = 'RECHAZADA' THEN 1 ELSE 0 END) AS excusas_rechazadas,
-        SUM(CASE WHEN a.estado_entrada = 'INASISTENCIA' AND e.estado = 'APROBADA' THEN 1 ELSE 0 END) AS inasistencias_justificadas
+        SUM(CASE WHEN (a.estado_entrada = 'JUSTIFICADA' OR (a.estado_entrada = 'INASISTENCIA' AND e.estado = 'APROBADA')) THEN 1 ELSE 0 END) AS inasistencias_justificadas
     FROM asistencia a
     INNER JOIN aprendiz ap ON ap.id_aprendiz = a.fk_aprendiz
     INNER JOIN usuario u ON u.id_usuario = ap.fk_usuario
@@ -263,6 +263,7 @@ ob_start();
                         <option value="PUNTUAL" <?= $filtroEntrada === 'PUNTUAL' ? 'selected' : '' ?>>Puntual</option>
                         <option value="RETARDO" <?= $filtroEntrada === 'RETARDO' ? 'selected' : '' ?>>Retardo</option>
                         <option value="INASISTENCIA" <?= $filtroEntrada === 'INASISTENCIA' ? 'selected' : '' ?>>Inasistencia</option>
+                        <option value="JUSTIFICADA" <?= $filtroEntrada === 'JUSTIFICADA' ? 'selected' : '' ?>>Justificada</option>
                     </select>
                 </div>
                 <div class="col-md-3 col-sm-6 mb-3">

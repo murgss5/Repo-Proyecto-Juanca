@@ -112,30 +112,13 @@ try {
     if ($accion === 'eliminar') {
         if (!$id) volverAcademico($modulo, 'error', 'Horario no válido.', $vista);
 
-        // Verificar integridad referencial antes de eliminar
-        $chkAst = $conexion->prepare('SELECT COUNT(*) FROM asistencia a INNER JOIN sesiones_jornada s ON a.fk_sesion_jornada = s.id_sesion WHERE s.horario_id = ?');
-        $chkAst->execute([$id]);
-        $cantAst = (int)$chkAst->fetchColumn();
+        require_once __DIR__ . '/../models/HorarioModel.php';
+        $resultado = HorarioModel::eliminarHorario($id);
 
-        $chkSes = $conexion->prepare('SELECT COUNT(*) FROM sesiones_jornada WHERE horario_id = ?');
-        $chkSes->execute([$id]);
-        $cantSes = (int)$chkSes->fetchColumn();
-
-        if ($cantAst > 0 || $cantSes > 0) {
-            $detalles = [];
-            if ($cantAst > 0) $detalles[] = "$cantAst registro(s) de asistencia";
-            if ($cantSes > 0) $detalles[] = "$cantSes sesión(es) de jornada";
-            volverAcademico($modulo, 'error', 'No se puede eliminar el horario porque tiene ' . implode(' y ', $detalles) . ' asociados. Puede cambiar su estado a Inactivo.', $vista);
-        }
-
-        try {
-            $q = $conexion->prepare('DELETE FROM horario WHERE id_horario=?');
-            $q->execute([$id]);
-            if (!$q->rowCount()) volverAcademico($modulo, 'error', 'El horario no existe.', $vista);
-            volverAcademico($modulo, 'mensaje', 'Horario eliminado correctamente.', $vista);
-        } catch (PDOException $e) {
-            error_log("Error al eliminar horario [ID: {$id}]: " . $e->getMessage());
-            volverAcademico($modulo, 'error', 'No se puede eliminar el horario debido a restricciones de integridad referencial. Puede cambiar su estado a Inactivo.', $vista);
+        if ($resultado['success']) {
+            volverAcademico($modulo, 'mensaje', $resultado['mensaje'] ?? 'Horario eliminado correctamente.', $vista);
+        } else {
+            volverAcademico($modulo, 'error', $resultado['mensaje'] ?? 'No fue posible eliminar el horario.', $vista);
         }
     }
 

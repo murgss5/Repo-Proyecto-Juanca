@@ -274,19 +274,40 @@ $mapaSlugDia = [1 => 'lun', 2 => 'mar', 3 => 'mie', 4 => 'jue', 5 => 'vie', 6 =>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer d-flex justify-content-between align-items-center">
                 <?php if ($rolActualId === 1): ?>
-                    <a href="#" id="modalBtnEditarHorario" class="btn btn-warning btn-sm mr-auto">
-                        <i class="fas fa-edit"></i> Editar horario
-                    </a>
+                    <div class="d-flex align-items-center" style="gap: 8px;">
+                        <a href="#" id="modalBtnEditarHorario" class="btn btn-warning btn-sm shadow-sm" title="Editar este horario">
+                            <i class="fas fa-edit mr-1"></i> Editar
+                        </a>
+                        <button type="button" class="btn btn-danger btn-sm shadow-sm" id="modalBtnEliminarHorario" title="Eliminar bloque de horario">
+                            <i class="fas fa-trash-alt mr-1"></i> Eliminar horario
+                        </button>
+                    </div>
+                <?php else: ?>
+                    <div></div>
                 <?php endif; ?>
-                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-secondary btn-sm shadow-sm" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i> Cerrar
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+<?php if ($rolActualId === 1): ?>
+<!-- Formulario Oculto para Eliminación Segura de Horarios desde el Calendario -->
+<form id="formEliminarHorarioCalendario" method="post" action="<?= RUTA_BASE ?>controllers/admin/eliminar_horario.php" style="display: none;">
+    <input type="hidden" name="id_horario" id="eliminar_calendario_id_horario" value="">
+    <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf'] ?? '') ?>">
+    <input type="hidden" name="return_url" id="eliminar_calendario_return_url" value="">
+</form>
+<?php endif; ?>
+
 <script>
+// Referencia global al evento seleccionado en el modal
+window.eventoSeleccionadoActual = null;
+
 // Manejo del selector de fecha libre (salto rápido a cualquier semana/día)
 document.addEventListener('DOMContentLoaded', function() {
     var filtroFecha = document.getElementById('filtro_fecha');
@@ -299,6 +320,78 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = url.toString();
         });
     }
+
+    // Botón de eliminación en el modal con doble confirmación SweetAlert2
+    var btnEliminarModal = document.getElementById('modalBtnEliminarHorario');
+    if (btnEliminarModal) {
+        btnEliminarModal.addEventListener('click', function() {
+            var ev = window.eventoSeleccionadoActual;
+            if (!ev || !ev.id_horario) return;
+
+            var idHorario = ev.id_horario;
+            var infoFicha = '#' + (ev.id_ficha || '') + (ev.nombre_programa ? ' - ' + ev.nombre_programa : '');
+            var diaHorario = (ev.dia_semana || '') + ' (' + (ev.hora_inicio_ampm || '') + ' - ' + (ev.hora_fin_ampm || '') + ')';
+            var instructor = ev.instructor || 'No asignado';
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: '¿Eliminar este bloque horario?',
+                    html: '<div class="text-left p-3 bg-light rounded border mb-3 small" style="line-height: 1.6;">' +
+                          '<div><strong class="text-dark">Ficha:</strong> ' + infoFicha + '</div>' +
+                          '<div><strong class="text-dark">Día y Hora:</strong> ' + diaHorario + '</div>' +
+                          '<div><strong class="text-dark">Instructor:</strong> ' + instructor + '</div>' +
+                          '</div>' +
+                          '<p class="text-danger small font-weight-bold mb-0">' +
+                          '<i class="fas fa-exclamation-triangle mr-1"></i> Esta acción eliminará el horario y limpiará en cascada las sesiones asociadas para evitar registros huérfanos.' +
+                          '</p>',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: '<i class="fas fa-arrow-right mr-1"></i> Continuar',
+                    cancelButtonText: 'Cancelar',
+                    reverseButtons: true
+                }).then(function(result1) {
+                    if (result1.isConfirmed) {
+                        // Doble confirmación de seguridad estricta
+                        Swal.fire({
+                            title: '¿Confirmación definitiva?',
+                            text: 'El bloque desaparecerá de forma permanente de los calendarios y del panel de apertura de jornada de los instructores. ¿Está totalmente seguro de proceder?',
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: '<i class="fas fa-trash-alt mr-1"></i> Sí, eliminar definitivamente',
+                            cancelButtonText: 'Regresar',
+                            reverseButtons: true
+                        }).then(function(result2) {
+                            if (result2.isConfirmed) {
+                                $('#modalDetalleClase').modal('hide');
+                                var form = document.getElementById('formEliminarHorarioCalendario');
+                                if (form) {
+                                    document.getElementById('eliminar_calendario_id_horario').value = idHorario;
+                                    document.getElementById('eliminar_calendario_return_url').value = window.location.href;
+                                    form.submit();
+                                }
+                            }
+                        });
+                    }
+                });
+            } else {
+                if (confirm('¿Está seguro de eliminar el horario de ' + diaHorario + ' para la ficha ' + infoFicha + '? Esta acción limpiará en cascada las sesiones asociadas.')) {
+                    if (confirm('CONFIRMACIÓN DEFINITIVA: ¿Desea proceder con la eliminación?')) {
+                        $('#modalDetalleClase').modal('hide');
+                        var form = document.getElementById('formEliminarHorarioCalendario');
+                        if (form) {
+                            document.getElementById('eliminar_calendario_id_horario').value = idHorario;
+                            document.getElementById('eliminar_calendario_return_url').value = window.location.href;
+                            form.submit();
+                        }
+                    }
+                }
+            }
+        });
+    }
 });
 
 function mostrarDetalleClase(elemento) {
@@ -306,6 +399,7 @@ function mostrarDetalleClase(elemento) {
         const raw = elemento.getAttribute('data-evento');
         if (!raw) return;
         const ev = JSON.parse(raw);
+        window.eventoSeleccionadoActual = ev;
 
         document.getElementById('modalDetallePrograma').textContent = ev.titulo_bloque || ev.nombre_programa || 'Formación SENA';
         document.getElementById('modalDetalleFicha').textContent = '#' + ev.id_ficha + (ev.nombre_programa ? ' (' + ev.nombre_programa + ')' : '');
