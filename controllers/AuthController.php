@@ -51,7 +51,7 @@ switch ($accion) {
  */
 function procesarLogin(): void
 {
-    require_once __DIR__ . '/../includes/RateLimiter.php';
+    require_once __DIR__ . '/../models/LoginAttemptModel.php';
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header('Location: ' . RUTA_BASE . 'views/auth/login.php');
@@ -67,17 +67,17 @@ function procesarLogin(): void
     }
 
     $conexion = (new Conexion())->conectar();
-    $rateLimiter = new RateLimiter($conexion);
-    $ipCliente = $rateLimiter->obtenerIpCliente();
+    $ipCliente = LoginAttemptModel::obtenerIpCliente();
 
-    // Comprobación de límites e intentos progresivos
-    $estadoIntento = $rateLimiter->verificarIntento($identificador, $ipCliente);
-    if (!$estadoIntento['permitido']) {
-        $motivo = $estadoIntento['motivo'];
-        $segundosRestantes = (int)($estadoIntento['segundos_restantes'] ?? 0);
-        error_log("Acceso rechazado por limitacion de intentos [IP: {$ipCliente}, Cuenta: {$identificador}, Motivo: {$motivo}, Espera: {$segundosRestantes}s]");
+    // 1. Comprobación previa de bloqueo temporal (5 intentos fallidos / 10 minutos)
+    $bloqueo = LoginAttemptModel::verificarBloqueo($identificador, $ipCliente);
+    if ($bloqueo !== null) {
+        $segundosRestantes = (int)$bloqueo['segundos_restantes'];
+        $minutosRestantes = (int)$bloqueo['minutos_restantes'];
         $_SESSION['login_bloqueo_segundos'] = $segundosRestantes;
-        header('Location: ' . RUTA_BASE . 'views/auth/login.php?error=limite');
+        $_SESSION['login_bloqueo_minutos'] = $minutosRestantes;
+        error_log("Acceso rechazado por limitacion de intentos [IP: {$ipCliente}, Cuenta: {$identificador}, Restante: {$segundosRestantes}s]");
+        header('Location: ' . RUTA_BASE . 'views/auth/login.php?error=bloqueado&segundos=' . $segundosRestantes);
         exit;
     }
 
@@ -97,8 +97,16 @@ function procesarLogin(): void
     if (count($usuarios) > 1) {
         $correlacionId = bin2hex(random_bytes(8));
         error_log("Ambigüedad de autenticación [Correlación ID: {$correlacionId}]: múltiples cuentas detectadas.");
-        $rateLimiter->registrarFallo($identificador, $ipCliente, 'AMBIGUEDAD_CUENTAS');
-        header('Location: ' . RUTA_BASE . 'views/auth/login.php?error=credenciales');
+        $fallo = LoginAttemptModel::registrarFallo($identificador, $ipCliente);
+        if ($fallo['bloqueado']) {
+            $_SESSION['login_bloqueo_segundos'] = (int)$fallo['segundos_restantes'];
+            $_SESSION['login_bloqueo_minutos'] = (int)$fallo['minutos_restantes'];
+            header('Location: ' . RUTA_BASE . 'views/auth/login.php?error=bloqueado&segundos=' . (int)$fallo['segundos_restantes']);
+        } else {
+            $_SESSION['login_intentos_restantes'] = (int)$fallo['intentos_restantes'];
+            $_SESSION['login_intentos_actuales'] = (int)$fallo['intentos'];
+            header('Location: ' . RUTA_BASE . 'views/auth/login.php?error=credenciales&restantes=' . (int)$fallo['intentos_restantes']);
+        }
         exit;
     }
 
@@ -114,17 +122,31 @@ function procesarLogin(): void
             $contrasenaValida = hash_equals($usuario['contrasena'], $contrasena);
         }
     } else {
-        RateLimiter::mitigarEnumeracionTiempo($contrasena);
+        LoginAttemptModel::mitigarEnumeracionTiempo($contrasena);
     }
 
     if (!$usuario || !$contrasenaValida) {
-        $rateLimiter->registrarFallo($identificador, $ipCliente, $usuario ? 'CREDENCIALES_INVALIDAS' : 'USUARIO_INEXISTENTE');
-        header('Location: ' . RUTA_BASE . 'views/auth/login.php?error=credenciales');
+        $fallo = LoginAttemptModel::registrarFallo($identificador, $ipCliente);
+        if ($fallo['bloqueado']) {
+            $_SESSION['login_bloqueo_segundos'] = (int)$fallo['segundos_restantes'];
+            $_SESSION['login_bloqueo_minutos'] = (int)$fallo['minutos_restantes'];
+            header('Location: ' . RUTA_BASE . 'views/auth/login.php?error=bloqueado&segundos=' . (int)$fallo['segundos_restantes']);
+        } else {
+            $_SESSION['login_intentos_restantes'] = (int)$fallo['intentos_restantes'];
+            $_SESSION['login_intentos_actuales'] = (int)$fallo['intentos'];
+            header('Location: ' . RUTA_BASE . 'views/auth/login.php?error=credenciales&restantes=' . (int)$fallo['intentos_restantes']);
+        }
         exit;
     }
 
-    // Autenticación correcta
-    $rateLimiter->registrarExito($identificador, $ipCliente);
+    // Autenticación correcta: limpiar intentos fallidos de inmediato
+    LoginAttemptModel::limpiarIntentos($identificador, $ipCliente);
+    unset(
+        $_SESSION['login_bloqueo_segundos'],
+        $_SESSION['login_bloqueo_minutos'],
+        $_SESSION['login_intentos_restantes'],
+        $_SESSION['login_intentos_actuales']
+    );
 
     // Migración automática de contraseñas de texto plano a hash
     $infoHash = password_get_info($usuario['contrasena']);

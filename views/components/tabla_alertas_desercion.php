@@ -226,7 +226,7 @@ ksort($fichasOpciones);
     <!-- Tabla DataTables -->
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table id="tablaAlertasDesercion" class="table table-hover align-middle mb-0" style="width: 100%;">
+            <table id="tablaAlertasDesercion" class="table table-hover align-middle mb-0" style="width: 100%;" data-empty-message="¡Excelente! No se registran aprendices en riesgo preventivo o crítico de deserción.">
                 <thead class="thead-light">
                     <tr>
                         <th class="font-weight-bold text-muted small text-uppercase py-3 px-3">Aprendiz</th>
@@ -241,15 +241,7 @@ ksort($fichasOpciones);
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (empty($aprendicesEnRiesgo)): ?>
-                        <tr>
-                            <td colspan="9" class="text-center py-5 text-muted">
-                                <i class="fas fa-check-circle text-success fa-3x mb-3 d-block"></i>
-                                <strong>¡Excelente! No se registran aprendices en riesgo preventivo o crítico de deserción.</strong>
-                            </td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($aprendicesEnRiesgo as $ap): ?>
+                    <?php foreach ($aprendicesEnRiesgo as $ap): ?>
                             <tr>
                                 <!-- Aprendiz -->
                                 <td class="px-3 py-3">
@@ -367,7 +359,6 @@ ksort($fichasOpciones);
                                 </td>
                             </tr>
                         <?php endforeach; ?>
-                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -384,8 +375,9 @@ window.addEventListener('load', function () {
     var tokenCsrf = '<?= htmlspecialchars($_SESSION['token_csrf']) ?>';
     var origenContexto = '<?= htmlspecialchars($origen) ?>';
 
-    // Inicialización de DataTables
-    var tabla = $('#tablaAlertasDesercion').DataTable({
+    // Inicialización de DataTables blindada anti-duplicados y conteo exacto
+    var opcionesAlertas = {
+        destroy: true,
         responsive: true,
         autoWidth: false,
         pageLength: 10,
@@ -396,7 +388,7 @@ window.addEventListener('load', function () {
             { targets: [8], orderable: false, searchable: false }
         ],
         language: {
-            emptyTable: "No se encontraron aprendices en riesgo con los criterios seleccionados",
+            emptyTable: "¡Excelente! No se registran aprendices en riesgo preventivo o crítico de deserción.",
             info: "Mostrando _START_ a _END_ de _TOTAL_ aprendices en riesgo",
             infoEmpty: "Mostrando 0 a 0 de 0 aprendices",
             infoFiltered: "(filtrado de _MAX_ registros en total)",
@@ -412,7 +404,12 @@ window.addEventListener('load', function () {
                 previous: "&laquo;"
             }
         }
-    });
+    };
+
+    if ($.fn.DataTable.isDataTable('#tablaAlertasDesercion')) {
+        $('#tablaAlertasDesercion').DataTable().destroy();
+    }
+    var tabla = $('#tablaAlertasDesercion').DataTable(opcionesAlertas);
 
     // Enlace de Filtros Personalizados
     if (tabla) {

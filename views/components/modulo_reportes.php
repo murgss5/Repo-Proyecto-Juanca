@@ -179,7 +179,7 @@ $enlaceDescargaCsv = $urlExportarCsv . ($queryCsv ? '?' . $queryCsv : '');
             <!-- Pestaña 1: Resumen por Aprendiz -->
             <div class="tab-pane fade show active" id="tab-resumen" role="tabpanel" aria-labelledby="tab-resumen-link">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover text-center align-middle" id="tablaResumenReporte" style="width: 100%;">
+                    <table class="table table-bordered table-hover text-center align-middle" id="tablaResumenReporte" style="width: 100%;" data-empty-message="No se encontraron registros de resumen con los filtros seleccionados.">
                         <thead class="thead-light">
                             <tr>
                                 <th class="text-left">Aprendiz</th>
@@ -233,7 +233,7 @@ $enlaceDescargaCsv = $urlExportarCsv . ($queryCsv ? '?' . $queryCsv : '');
             <!-- Pestaña 2: Detalle Registro a Registro -->
             <div class="tab-pane fade" id="tab-detalle" role="tabpanel" aria-labelledby="tab-detalle-link">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover text-center align-middle" id="tablaDetalleReporte" style="width: 100%;">
+                    <table class="table table-bordered table-hover text-center align-middle" id="tablaDetalleReporte" style="width: 100%;" data-empty-message="No se encontraron asistencias detalladas con los filtros seleccionados.">
                         <thead class="thead-light">
                             <tr>
                                 <th>Fecha</th>
@@ -294,18 +294,39 @@ $enlaceDescargaCsv = $urlExportarCsv . ($queryCsv ? '?' . $queryCsv : '');
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    if (typeof window.inicializarTablaSENA === 'function') {
-        window.inicializarTablaSENA('#tablaResumenReporte');
+(function() {
+    function iniciarTablasReporte() {
+        if (typeof window.inicializarTablaSENA === 'function') {
+            window.inicializarTablaSENA('#tablaResumenReporte');
+        } else if (window.jQuery && $.fn.DataTable) {
+            if ($.fn.DataTable.isDataTable('#tablaResumenReporte')) {
+                $('#tablaResumenReporte').DataTable().destroy();
+            }
+            $('#tablaResumenReporte').DataTable({ destroy: true });
+        }
         
         // Inicializar la tabla de detalle cuando se activa la pestaña para asegurar render responsive
-        $('a[data-toggle="pill"]').on('shown.bs.tab', function (e) {
-            if (e.target.id === 'tab-detalle-link' && !$.fn.DataTable.isDataTable('#tablaDetalleReporte')) {
-                window.inicializarTablaSENA('#tablaDetalleReporte');
-            } else if ($.fn.DataTable.isDataTable('#tablaDetalleReporte')) {
-                $('#tablaDetalleReporte').DataTable().columns.adjust().responsive.recalc();
-            }
-        });
+        if (window.jQuery) {
+            $('a[data-toggle="pill"]').off('shown.bs.tab.reporte').on('shown.bs.tab.reporte', function (e) {
+                if (e.target.id === 'tab-detalle-link') {
+                    if (!$.fn.DataTable.isDataTable('#tablaDetalleReporte')) {
+                        if (typeof window.inicializarTablaSENA === 'function') {
+                            window.inicializarTablaSENA('#tablaDetalleReporte');
+                        } else {
+                            $('#tablaDetalleReporte').DataTable({ destroy: true });
+                        }
+                    } else {
+                        $('#tablaDetalleReporte').DataTable().columns.adjust().responsive.recalc();
+                    }
+                }
+            });
+        }
     }
-});
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciarTablasReporte);
+    } else {
+        iniciarTablasReporte();
+    }
+})();
 </script>

@@ -176,7 +176,7 @@ foreach ($excusas as $exc) {
 
     <div class="card-body p-4">
         <div class="table-responsive">
-            <table class="table table-hover table-bordered text-nowrap tabla-datos mb-0" id="tablaExcusasPrincipal" data-empty-message="No se encontraron excusas médicas con los filtros actuales.">
+            <table class="table table-hover table-bordered text-nowrap mb-0" id="tablaExcusasPrincipal" data-empty-message="No se encontraron excusas médicas con los filtros actuales.">
                 <thead class="thead-light">
                     <tr>
                         <th style="width: 50px;">ID</th>
@@ -456,12 +456,29 @@ foreach ($excusas as $exc) {
 <?php endif; ?>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    if (typeof window.inicializarTablaSENA === 'function') {
-        window.inicializarTablaSENA('#tablaExcusasPrincipal', {
-            order: [[0, 'desc']]
-        });
+(function() {
+    function iniciarTablaExcusas() {
+        if (typeof window.inicializarTablaSENA === 'function') {
+            window.inicializarTablaSENA('#tablaExcusasPrincipal', {
+                order: [[0, 'desc']]
+            });
+        } else if (window.jQuery && $.fn.DataTable) {
+            if ($.fn.DataTable.isDataTable('#tablaExcusasPrincipal')) {
+                $('#tablaExcusasPrincipal').DataTable().destroy();
+            }
+            $('#tablaExcusasPrincipal').DataTable({
+                destroy: true,
+                order: [[0, 'desc']]
+            });
+        }
     }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciarTablaExcusas);
+    } else {
+        iniciarTablaExcusas();
+    }
+})();
 
     // Previsualización de Documentos
     var btnsPreview = document.querySelectorAll('.btn-preview-excusa');

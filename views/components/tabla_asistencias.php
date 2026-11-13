@@ -130,7 +130,7 @@ $urlLimpiar        = $origen === 'admin' ? RUTA_BASE . 'views/admin/asistencias/
 
         <!-- Tabla Responsiva de Asistencias -->
         <div class="table-responsive">
-            <table class="table table-hover table-striped text-nowrap tabla-datos mb-0" id="tablaAsistenciasPrincipal" data-empty-message="No se encontraron registros de asistencia con los filtros seleccionados.">
+            <table class="table table-hover table-striped text-nowrap mb-0" id="tablaAsistenciasPrincipal" data-empty-message="No se encontraron registros de asistencia con los filtros seleccionados.">
                 <thead class="thead-light">
                     <tr>
                         <th class="col-documento" style="width: 105px;">Fecha</th>
@@ -342,12 +342,29 @@ $urlLimpiar        = $origen === 'admin' ? RUTA_BASE . 'views/admin/asistencias/
 <?php endif; ?>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof window.inicializarTablaSENA === 'function') {
-        window.inicializarTablaSENA('#tablaAsistenciasPrincipal', {
-            order: [[0, 'desc']]
-        });
+(function() {
+    function iniciarTablaAsistencias() {
+        if (typeof window.inicializarTablaSENA === 'function') {
+            window.inicializarTablaSENA('#tablaAsistenciasPrincipal', {
+                order: [[0, 'desc']]
+            });
+        } else if (window.jQuery && $.fn.DataTable) {
+            if ($.fn.DataTable.isDataTable('#tablaAsistenciasPrincipal')) {
+                $('#tablaAsistenciasPrincipal').DataTable().destroy();
+            }
+            $('#tablaAsistenciasPrincipal').DataTable({
+                destroy: true,
+                order: [[0, 'desc']]
+            });
+        }
     }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciarTablaAsistencias);
+    } else {
+        iniciarTablaAsistencias();
+    }
+})();
 
     <?php if ($origen === 'instructor'): ?>
     var btns = document.querySelectorAll('.btn-ajustar-salida');

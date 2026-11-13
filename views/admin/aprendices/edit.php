@@ -1,17 +1,4 @@
 <?php
 $rolGestionado = 3;
 $edicion = true;
-require __DIR__ . '/../usuario_form.php';
-?>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var docInput = document.getElementById('documento');
-    if (docInput) {
-        document.getElementById('documento').addEventListener('input', function() {
-            let docValue = this.value;
-            document.getElementById('usuario').value = docValue;
-            document.getElementById('contrasena').value = docValue;
-        });
-    }
-});
-</script>
+require dirname(__DIR__, 2) . '/components/usuario_form.php';

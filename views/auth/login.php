@@ -1,27 +1,52 @@
 <?php
 /**
  * ============================================================
- * VISTA: INICIO DE SESION (LOGIN)
+ * VISTA: INICIO DE SESIÓN (LOGIN)
  * Sistema de Control de Ingreso de Aprendices - SENA
  * ------------------------------------------------------------
- * Usa el controlador de autenticacion real del proyecto.
+ * Integrado con LoginAttemptModel (Protección contra fuerza bruta).
+ * Bloqueo automático por 10 minutos tras 5 intentos fallidos.
  * ============================================================
  */
 
-// cabeceras anti cache para login
+// Cabeceras anti-caché estrictas para el formulario de autenticación
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-// Carga de rutas base y datos de demostracion
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 require_once dirname(__DIR__) . '/../includes/constantes.php';
+require_once dirname(__DIR__) . '/../models/LoginAttemptModel.php';
+
+// Verificación activa de bloqueo por IP o por sesión
+$ipCliente = LoginAttemptModel::obtenerIpCliente();
+$bloqueoActual = LoginAttemptModel::verificarBloqueo('', $ipCliente);
+
+$segundosBloqueo = 0;
+if ($bloqueoActual !== null && (int)$bloqueoActual['segundos_restantes'] > 0) {
+    $segundosBloqueo = (int)$bloqueoActual['segundos_restantes'];
+} elseif (isset($_SESSION['login_bloqueo_segundos']) && (int)$_SESSION['login_bloqueo_segundos'] > 0) {
+    $segundosBloqueo = (int)$_SESSION['login_bloqueo_segundos'];
+} elseif (isset($_GET['segundos']) && is_numeric($_GET['segundos']) && (int)$_GET['segundos'] > 0) {
+    $segundosBloqueo = (int)$_GET['segundos'];
+}
+
+$intentosRestantes = null;
+if (isset($_GET['restantes']) && is_numeric($_GET['restantes'])) {
+    $intentosRestantes = (int)$_GET['restantes'];
+} elseif (isset($_SESSION['login_intentos_restantes'])) {
+    $intentosRestantes = (int)$_SESSION['login_intentos_restantes'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SENA | Iniciar sesion</title>
+  <title>SENA | Iniciar sesión</title>
   <link rel="icon" href="<?= RUTA_BASE ?>assets/img/sena.svg">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=swap">
   <link rel="stylesheet" href="<?= RUTA_BASE ?>assets/icons/fontawesome/css/all.min.css">
@@ -35,7 +60,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
 <div id="pageTransitionBar" class="page-transition-bar"></div>
 
 <div class="login-split-container min-vh-100 d-flex flex-column flex-md-row fade-in-content">
-  <!-- Lado izquierdo / Banner superior movil: Marca y presentacion institucional -->
+  <!-- Lado izquierdo / Banner superior móvil: Marca y presentación institucional -->
   <div class="login-brand-side login-split-side col-md-6 col-12 d-flex flex-column justify-content-center align-items-center text-center p-4 p-md-5 text-white position-relative overflow-hidden">
     <!-- Contenido central -->
     <div class="login-brand-content d-flex flex-column align-items-center text-center my-auto w-100">
@@ -54,7 +79,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
     </div>
   </div>
 
-  <!-- Lado derecho / Seccion de autenticacion -->
+  <!-- Lado derecho / Sección de autenticación -->
   <div class="login-split-form-col col-md-6 col-12 d-flex flex-column justify-content-between align-items-center p-3 p-md-5">
 
     <!-- Contenedor central del formulario -->
@@ -64,15 +89,35 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
         <p class="text-muted small mb-0">Ingresa tus datos para acceder al sistema</p>
       </div>
 
+      <!-- Banner visual de bloqueo temporal con reloj regresivo en tiempo real -->
+      <div class="alert alert-warning border border-warning shadow-sm mb-4 rounded" id="bannerBloqueoLogin" role="alert" style="<?= $segundosBloqueo > 0 ? '' : 'display: none;' ?>">
+        <div class="d-flex align-items-center">
+          <div class="mr-3 text-warning">
+            <i class="fas fa-user-lock fa-3x"></i>
+          </div>
+          <div>
+            <h6 class="font-weight-bold mb-1 text-dark">
+              <i class="fas fa-shield-alt mr-1"></i> Acceso bloqueado temporalmente
+            </h6>
+            <p class="mb-1 text-muted small">
+              Has alcanzado el límite de <strong>5 intentos fallidos consecutivos</strong>. Por motivos de seguridad, debes esperar:
+            </p>
+            <div class="font-weight-bold text-danger h5 mb-0" id="contadorRegresivoReloj">
+              <i class="fas fa-clock mr-1"></i> <span id="tiempoRestanteTexto">--:--</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <?php if (isset($_GET['error'])): ?>
-        <!-- Muestra mensaje de error seguro como alternativa si JS esta desactivado -->
+        <!-- Mensaje de error accesible si JS está desactivado -->
         <noscript>
           <div class="alert alert-danger" role="alert">
             <?php
               if ($_GET['error'] === 'credenciales') {
                   echo 'El usuario o la contraseña no son correctos.';
-              } elseif ($_GET['error'] === 'limite') {
-                  echo 'Acceso temporalmente restringido por demasiados intentos fallidos. Inténtelo más tarde.';
+              } elseif ($_GET['error'] === 'bloqueado' || $_GET['error'] === 'limite') {
+                  echo 'Acceso temporalmente restringido por 5 intentos fallidos. Espere 10 minutos.';
               } else {
                   echo htmlspecialchars($_GET['error']);
               }
@@ -81,9 +126,10 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
         </noscript>
       <?php endif; ?>
 
-      <!-- Formulario de login que envia a controllers/AuthController.php -->
+      <!-- Formulario de login que envía a controllers/AuthController.php -->
       <form id="formLogin" action="<?= RUTA_BASE ?>controllers/AuthController.php" method="post" autocomplete="off" novalidate>
         <input type="hidden" name="accion" value="login">
+        
         <div class="form-group mb-3">
           <label for="nombre_usuario" class="font-weight-bold text-dark small">Usuario o número de cédula <span class="text-danger">*</span></label>
           <div class="input-group">
@@ -113,8 +159,9 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block py-2 font-weight-bold shadow-sm btn-submit-login">
-          <i class="fas fa-sign-in-alt mr-2"></i> Ingresar
+        <button type="submit" class="btn btn-primary btn-block py-2 font-weight-bold shadow-sm btn-submit-login" id="btnSubmitLogin" <?= $segundosBloqueo > 0 ? 'disabled' : '' ?>>
+          <i class="fas <?= $segundosBloqueo > 0 ? 'fa-lock' : 'fa-sign-in-alt' ?> mr-2" id="iconoSubmitLogin"></i>
+          <span id="textoSubmitLogin"><?= $segundosBloqueo > 0 ? 'Bloqueado por seguridad' : 'Ingresar' ?></span>
         </button>
       </form>
     </div>
@@ -131,7 +178,74 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
 <script src="<?= RUTA_BASE ?>assets/plugins/sweetalert2/sweetalert2.min.js"></script>
 <script>
 (function() {
-  // 1. Manejo seguro de errores desde el backend
+  // Configuración de bloqueo y tiempos
+  let tiempoRestante = <?= (int)$segundosBloqueo ?>;
+  const intentosRestantes = <?= json_encode($intentosRestantes) ?>;
+
+  const btnSubmit = document.getElementById('btnSubmitLogin');
+  const bannerBloqueo = document.getElementById('bannerBloqueoLogin');
+  const textoReloj = document.getElementById('tiempoRestanteTexto');
+  const textoSubmit = document.getElementById('textoSubmitLogin');
+  const iconoSubmit = document.getElementById('iconoSubmitLogin');
+  const inputUsuario = document.getElementById('nombre_usuario');
+  const inputContrasena = document.getElementById('contrasena');
+
+  function formatearTiempo(segundos) {
+    const min = Math.floor(segundos / 60);
+    const seg = segundos % 60;
+    return (min < 10 ? '0' : '') + min + ':' + (seg < 10 ? '0' : '') + seg;
+  }
+
+  function actualizarVisualReloj() {
+    const textoFmt = formatearTiempo(tiempoRestante);
+    if (textoReloj) {
+      textoReloj.textContent = textoFmt;
+    }
+    if (textoSubmit && btnSubmit && btnSubmit.disabled) {
+      textoSubmit.textContent = 'Bloqueado (' + textoFmt + ')';
+    }
+  }
+
+  // Activación del temporizador regresivo si existe bloqueo activo
+  if (tiempoRestante > 0) {
+    if (btnSubmit) btnSubmit.disabled = true;
+    if (iconoSubmit) {
+      iconoSubmit.classList.remove('fa-sign-in-alt');
+      iconoSubmit.classList.add('fa-lock');
+    }
+    actualizarVisualReloj();
+
+    const intervalo = setInterval(function() {
+      tiempoRestante--;
+      if (tiempoRestante <= 0) {
+        clearInterval(intervalo);
+        if (bannerBloqueo) {
+          bannerBloqueo.style.display = 'none';
+        }
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          if (textoSubmit) textoSubmit.textContent = 'Ingresar';
+          if (iconoSubmit) {
+            iconoSubmit.classList.remove('fa-lock');
+            iconoSubmit.classList.add('fa-sign-in-alt');
+          }
+        }
+        Swal.fire({
+          icon: 'info',
+          title: 'Tiempo de espera finalizado',
+          text: 'El bloqueo temporal de 10 minutos ha culminado. Ya puedes volver a ingresar tus credenciales.',
+          confirmButtonText: 'Continuar',
+          confirmButtonColor: '#39A900'
+        }).then(() => {
+          if (inputUsuario) inputUsuario.focus();
+        });
+      } else {
+        actualizarVisualReloj();
+      }
+    }, 1000);
+  }
+
+  // 1. Manejo de alertas con SweetAlert2 basadas en parámetros backend
   <?php if (isset($_GET['error'])): ?>
     const errorRecibido = <?= json_encode($_GET['error']) ?>;
     const errorMsgLower = errorRecibido.toLowerCase();
@@ -140,17 +254,25 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
     let titleText = 'No fue posible iniciar sesión';
     let messageText = 'Ocurrió un error al intentar iniciar sesión. Inténtelo de nuevo.';
 
-    if (errorRecibido === 'credenciales') {
-      titleText = 'Credenciales inválidas';
-      messageText = 'El usuario o la contraseña no son correctos.';
-    } else if (errorRecibido === 'limite' || errorRecibido === 'bloqueo' || errorMsgLower.includes('intentos')) {
+    if (errorRecibido === 'bloqueado' || errorRecibido === 'bloqueo' || errorRecibido === 'limite') {
       iconType = 'warning';
-      titleText = 'Acceso temporalmente restringido';
-      messageText = 'Ha superado el límite de intentos fallidos o debe esperar antes de reintentar. Por motivos de seguridad, espere unos minutos antes de volver a intentarlo.';
+      titleText = 'Acceso bloqueado temporalmente';
+      messageText = 'Has superado el límite de 5 intentos fallidos consecutivos. Por motivos de seguridad, el acceso ha quedado bloqueado durante 10 minutos.';
+    } else if (errorRecibido === 'credenciales' || errorRecibido === 'credenciales_intentos') {
+      iconType = 'warning';
+      titleText = 'Credenciales incorrectas';
+      if (intentosRestantes !== null && intentosRestantes > 0) {
+        const palabraIntento = (intentosRestantes === 1) ? 'intento' : 'intentos';
+        messageText = `El usuario o la contraseña no son correctos. Te quedan ${intentosRestantes} ${palabraIntento} antes del bloqueo temporal de 10 minutos.`;
+      } else {
+        messageText = 'El usuario o la contraseña no son correctos.';
+      }
     } else if (errorMsgLower.includes('obligatorio') || errorMsgLower.includes('incompleto') || errorMsgLower.includes('vacío')) {
       iconType = 'warning';
       titleText = 'Campos incompletos';
       messageText = 'Ingrese su usuario y contraseña para continuar.';
+    } else {
+      messageText = errorRecibido;
     }
 
     Swal.fire({
@@ -160,28 +282,38 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
       confirmButtonText: 'Entendido',
       confirmButtonColor: '#39A900'
     }).then(() => {
-      // Limpieza segura de la URL
+      // Limpieza segura de los parámetros de URL tras mostrar la alerta
       const url = new URL(window.location.href);
       url.searchParams.delete('error');
+      url.searchParams.delete('segundos');
+      url.searchParams.delete('restantes');
       window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
 
-      const userField = document.getElementById('nombre_usuario');
-      if (userField) {
-        userField.focus();
+      if (inputUsuario && !btnSubmit.disabled) {
+        inputUsuario.focus();
       }
     });
   <?php endif; ?>
 
-  // 2. Validación visual frontal antes de enviar con foco preciso
+  // 2. Validación visual frontal antes de enviar
   const formLogin = document.getElementById('formLogin');
   if (formLogin) {
     formLogin.addEventListener('submit', function(e) {
-      const userField = document.getElementById('nombre_usuario');
-      const passField = document.getElementById('contrasena');
-      const userVal = userField ? userField.value.trim() : '';
-      const passVal = passField ? passField.value : '';
+      if (btnSubmit && btnSubmit.disabled) {
+        e.preventDefault();
+        Swal.fire({
+          icon: 'warning',
+          title: 'Acceso bloqueado',
+          text: 'Debes esperar a que finalice el contador regresivo para volver a intentar.',
+          confirmButtonText: 'Entendido',
+          confirmButtonColor: '#39A900'
+        });
+        return;
+      }
 
-      // Si falta el usuario
+      const userVal = inputUsuario ? inputUsuario.value.trim() : '';
+      const passVal = inputContrasena ? inputContrasena.value : '';
+
       if (!userVal) {
         e.preventDefault();
         Swal.fire({
@@ -191,19 +323,12 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
           confirmButtonText: 'Entendido',
           confirmButtonColor: '#39A900',
           didClose: function() {
-            if (userField) {
-              userField.focus();
-            }
-          }
-        }).then(function() {
-          if (userField) {
-            userField.focus();
+            if (inputUsuario) inputUsuario.focus();
           }
         });
         return;
       }
 
-      // Si el usuario está lleno pero falta la contraseña
       if (!passVal) {
         e.preventDefault();
         Swal.fire({
@@ -213,41 +338,33 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
           confirmButtonText: 'Entendido',
           confirmButtonColor: '#39A900',
           didClose: function() {
-            if (passField) {
-              passField.focus();
-            }
-          }
-        }).then(function() {
-          if (passField) {
-            passField.focus();
+            if (inputContrasena) inputContrasena.focus();
           }
         });
         return;
       }
 
-      // Si ambos campos son válidos, activar la barra de carga de transición
       iniciarTransicion();
     });
   }
 
   // 3. Comportamiento para mostrar/ocultar contraseña
-  const input = document.getElementById('contrasena');
-  const btn = document.getElementById('btnToggleContrasena');
-  if (input && btn) {
-    btn.addEventListener('click', function(e) {
+  const btnToggle = document.getElementById('btnToggleContrasena');
+  if (inputContrasena && btnToggle) {
+    btnToggle.addEventListener('click', function(e) {
       e.preventDefault();
-      const mostrar = input.type === 'password';
-      input.type = mostrar ? 'text' : 'password';
-      btn.querySelector('i').classList.toggle('fa-eye', !mostrar);
-      btn.querySelector('i').classList.toggle('fa-eye-slash', mostrar);
-      btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
-      btn.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
+      const mostrar = inputContrasena.type === 'password';
+      inputContrasena.type = mostrar ? 'text' : 'password';
+      btnToggle.querySelector('i').classList.toggle('fa-eye', !mostrar);
+      btnToggle.querySelector('i').classList.toggle('fa-eye-slash', mostrar);
+      btnToggle.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+      btnToggle.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
     });
   }
 
   // 4. Control de barra de carga de navegación (Loading bar)
   function iniciarTransicion() {
-    var bar = document.getElementById('pageTransitionBar');
+    let bar = document.getElementById('pageTransitionBar');
     if (!bar) {
       bar = document.createElement('div');
       bar.id = 'pageTransitionBar';
@@ -261,7 +378,7 @@ require_once dirname(__DIR__) . '/../includes/constantes.php';
   }
 
   function finalizarTransicion() {
-    var bar = document.getElementById('pageTransitionBar');
+    const bar = document.getElementById('pageTransitionBar');
     if (bar) {
       bar.classList.remove('page-transition-loading');
       bar.classList.add('page-transition-finish');

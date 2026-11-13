@@ -50,8 +50,21 @@
   // ---------- DataTables: tablas con clase .tabla-datos ----------
   $(function () {
     $(".tabla-datos").each(function () {
-      var mensajeVacio = $(this).data("empty-message") || "No hay datos para mostrar.";
-      var tabla = $(this).DataTable({
+      var $tabla = $(this);
+
+      // Excluir tablas que se inicializan explícitamente por ID o tienen gestión propia
+      if (
+        $tabla.is("#tablaAsistenciasPrincipal, #tablaExcusasPrincipal, #tablaAlertasDesercion, #tablaResumenReporte, #tablaDetalleReporte") ||
+        $tabla.data("no-auto-datatable") ||
+        $tabla.hasClass("no-auto-datatable") ||
+        $.fn.DataTable.isDataTable(this)
+      ) {
+        return;
+      }
+
+      var mensajeVacio = $tabla.data("empty-message") || "No hay datos para mostrar.";
+      var tabla = $tabla.DataTable({
+        destroy: true,
         autoWidth: false,
         pageLength: 10,
         order: [],
@@ -369,13 +382,19 @@
     var $elem = $(selector);
     if (!$elem.length) return null;
 
-    if ($.fn.DataTable.isDataTable($elem)) {
-      $elem.DataTable().destroy();
+    // Blindaje anti-reinitialisation (tn/3): destruir limpiamente si ya existe instancia
+    if ($.fn.DataTable.isDataTable(selector) || $.fn.DataTable.isDataTable($elem[0])) {
+      try {
+        $elem.DataTable().destroy();
+      } catch (e) {
+        console.warn("Aviso al destruir instancia previa de DataTables:", e);
+      }
     }
 
     var mensajeVacio = $elem.data("empty-message") || "No se encontraron registros.";
 
     var configuracionPorDefecto = {
+      destroy: true,
       responsive: true,
       autoWidth: false,
       pageLength: 10,
