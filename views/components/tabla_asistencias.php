@@ -16,6 +16,8 @@
  * =============================================================================
  */
 
+require_once dirname(__DIR__, 2) . '/models/AsistenciaModel.php';
+
 $origen            = $origen ?? 'admin';
 $asistencias       = $asistencias ?? [];
 $fichas            = $fichas ?? [];

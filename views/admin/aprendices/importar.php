@@ -87,7 +87,8 @@ include __DIR__ . '/../../layouts/sidebar.php';
           <div class="row">
             <div class="col-md-8 col-lg-6 mx-auto">
               <div class="p-4 border rounded bg-white shadow-sm">
-                <form id="formImportarAprendices" enctype="multipart/form-data" method="post" action="<?= RUTA_BASE ?>controllers/admin/importar_aprendices_excel.php">
+                <form id="formImportarAprendices" enctype="multipart/form-data" method="post" action="<?= RUTA_BASE ?>controllers/admin/AprendizAdminController.php">
+                  <input type="hidden" name="accion" value="importar_excel">
                   <?php if (!empty($_SESSION['token_csrf'])): ?>
                     <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
                   <?php endif; ?>
@@ -143,7 +144,11 @@ include __DIR__ . '/../../layouts/sidebar.php';
                 <span aria-hidden="true">&times;</span>
               </button>
             </div>
-            <form id="formTestCorreo" method="post" action="<?= RUTA_BASE ?>controllers/admin/probar_correo.php">
+            <form id="formTestCorreo" method="post" action="<?= RUTA_BASE ?>controllers/CorreoController.php">
+              <input type="hidden" name="accion" value="prueba">
+              <?php if (!empty($_SESSION['token_csrf'])): ?>
+                <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
+              <?php endif; ?>
               <div class="modal-body py-4">
                 <p class="text-muted small mb-3">
                   Permite simular el envío de credenciales mediante PHPMailer sin modificar la base de datos ni alterar los registros de aprendices.
@@ -221,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const formData = new FormData(form);
-            const url = form.getAttribute('action') || '<?= RUTA_BASE ?>controllers/admin/importar_aprendices_excel.php';
+            const url = form.getAttribute('action') || '<?= RUTA_BASE ?>controllers/admin/AprendizAdminController.php';
 
             fetch(url, {
                 method: 'POST',
@@ -325,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const formData = new FormData(formTestCorreo);
-            const urlTest = formTestCorreo.getAttribute('action') || '<?= (defined("RUTA_BASE") ? RUTA_BASE : "/proyecto_juanca/") ?>controllers/admin/probar_correo.php';
+            const urlTest = formTestCorreo.getAttribute('action') || '<?= (defined("RUTA_BASE") ? RUTA_BASE : "/proyecto_juanca/") ?>controllers/CorreoController.php';
 
             fetch(urlTest, {
                 method: 'POST',

@@ -559,8 +559,8 @@ document.addEventListener('DOMContentLoaded', function () {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var tokenCsrf = <?= json_encode($_SESSION['token_csrf'] ?? '') ?>;
-  var urlMantener = <?= json_encode(RUTA_BASE . 'controllers/aprendiz/mantener_contrasena.php') ?>;
-  var urlCambio = <?= json_encode(RUTA_BASE . 'controllers/aprendiz/cambiar_contrasena.php') ?>;
+  var urlMantener = <?= json_encode(RUTA_BASE . 'controllers/aprendiz/PerfilAprendizController.php') ?>;
+  var urlCambio = <?= json_encode(RUTA_BASE . 'controllers/aprendiz/PerfilAprendizController.php') ?>;
 
   function abrirModalCambioClave() {
     var formHtml = ''
@@ -669,6 +669,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'X-Requested-With': 'XMLHttpRequest'
           },
           body: new URLSearchParams({
+            accion: 'cambiar_contrasena',
             token_csrf: tokenCsrf,
             clave_actual: claveActual,
             nueva_clave: nuevaClave,
@@ -725,6 +726,7 @@ document.addEventListener('DOMContentLoaded', function () {
             'X-Requested-With': 'XMLHttpRequest'
           },
           body: new URLSearchParams({
+            accion: 'mantener_contrasena',
             token_csrf: tokenCsrf
           })
         })

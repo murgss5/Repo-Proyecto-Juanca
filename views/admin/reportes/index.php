@@ -9,10 +9,10 @@
  * ============================================================
  */
 
-require_once dirname(__DIR__, 2) . '/includes/autenticacion.php';
+require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(1);
-require_once dirname(__DIR__, 2) . '/includes/constantes.php';
-require_once dirname(__DIR__, 2) . '/models/ReporteModel.php';
+require_once dirname(__DIR__, 3) . '/includes/constantes.php';
+require_once dirname(__DIR__, 3) . '/models/ReporteModel.php';
 
 // Filtros GET
 $filtroFechaIni = isset($_GET['fecha_inicio']) && $_GET['fecha_inicio'] !== '' ? $_GET['fecha_inicio'] : ($_GET['desde'] ?? null);

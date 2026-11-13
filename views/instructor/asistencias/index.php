@@ -9,11 +9,11 @@
  * ============================================================
  */
 
-require_once dirname(__DIR__, 2) . '/includes/autenticacion.php';
+require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(2);
-require_once dirname(__DIR__, 2) . '/includes/constantes.php';
-require_once dirname(__DIR__, 2) . '/models/AsistenciaModel.php';
-require_once dirname(__DIR__, 2) . '/models/FichaModel.php';
+require_once dirname(__DIR__, 3) . '/includes/constantes.php';
+require_once dirname(__DIR__, 3) . '/models/AsistenciaModel.php';
+require_once dirname(__DIR__, 3) . '/models/FichaModel.php';
 
 // Token CSRF para formularios seguros
 if (empty($_SESSION['token_csrf'])) {

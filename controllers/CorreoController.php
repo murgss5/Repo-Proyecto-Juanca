@@ -21,14 +21,30 @@ if (file_exists(__DIR__ . '/../config/mailer.php')) {
 
 date_default_timezone_set('America/Bogota');
 
+// Detectar si la petición es AJAX
+$esAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
+          (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
 // Solo procesar peticiones POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if ($esAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(405);
+        echo json_encode(['status' => 'error', 'message' => 'Método de solicitud no permitido.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     header('Location: ' . RUTA_BASE . 'views/admin/dashboard.php');
     exit;
 }
 
 // Validar token CSRF
 if (empty($_POST['token_csrf']) || empty($_SESSION['token_csrf']) || !hash_equals($_SESSION['token_csrf'], $_POST['token_csrf'])) {
+    if ($esAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'message' => 'Token CSRF inválido o sesión caducada.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     if (isset($_POST['aprendices_ids'])) {
         header('Location: ' . RUTA_BASE . 'views/admin/aprendices/index.php?error=' . urlencode('Token de seguridad inválido o sesión caducada.'));
     } else {
@@ -70,16 +86,31 @@ switch ($accion) {
  */
 function procesarCorreoPrueba(): void
 {
-    $cc = trim($_POST['cc'] ?? '');
+    $esAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ||
+              (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
+    $cc = trim($_POST['cc'] ?? $_POST['documento'] ?? '');
     $correo = trim($_POST['correo'] ?? '');
     $nombre = trim($_POST['nombre'] ?? 'Aprendiz Demo');
 
     if ($cc === '' || $correo === '') {
+        if ($esAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'El Documento y el Correo Electrónico son obligatorios.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
         header('Location: ' . RUTA_BASE . 'views/admin/prueba_correo.php?error=campos_requeridos');
         exit;
     }
 
     if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+        if ($esAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'La dirección de correo electrónico ingresada no es válida.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
         header('Location: ' . RUTA_BASE . 'views/admin/prueba_correo.php?error=correo_invalido&cc=' . urlencode($cc));
         exit;
     }
@@ -110,6 +141,7 @@ function procesarCorreoPrueba(): void
     $cabecerasStr = implode("\r\n", $headers);
 
     $enviado = false;
+    $errorDetalle = '';
     try {
         if (function_exists('enviarCredencialesSena')) {
             $enviado = enviarCredencialesSena($correo, $nombre, $cc, $cc);
@@ -120,9 +152,18 @@ function procesarCorreoPrueba(): void
         }
     } catch (\Throwable $e) {
         $enviado = false;
+        $errorDetalle = $e->getMessage();
     }
 
     if ($enviado) {
+        if ($esAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'status'  => 'success',
+                'message' => 'Correo enviado exitosamente a ' . $correo
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
         header('Location: ' . RUTA_BASE . 'views/admin/prueba_correo.php?mensaje=enviado&correo=' . urlencode($correo) . '&cc=' . urlencode($cc));
         exit;
     }
@@ -130,9 +171,26 @@ function procesarCorreoPrueba(): void
     $esEntornoLocal = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']) || ($_SERVER['SERVER_NAME'] ?? '') === 'localhost';
 
     if ($esEntornoLocal) {
+        if ($esAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'status'  => 'success',
+                'message' => 'Simulación local: En entorno de desarrollo (localhost) el correo para ' . $correo . ' fue simulado correctamente.'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
         header('Location: ' . RUTA_BASE . 'views/admin/prueba_correo.php?mensaje=simulado_local&correo=' . urlencode($correo) . '&cc=' . urlencode($cc));
         exit;
     } else {
+        if ($esAjax) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(500);
+            echo json_encode([
+                'status'  => 'error',
+                'message' => 'Fallo en el envío SMTP. ' . ($errorDetalle ?: 'No fue posible enviar el correo de prueba.')
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
         header('Location: ' . RUTA_BASE . 'views/admin/prueba_correo.php?error=fallo_envio&correo=' . urlencode($correo) . '&cc=' . urlencode($cc));
         exit;
     }

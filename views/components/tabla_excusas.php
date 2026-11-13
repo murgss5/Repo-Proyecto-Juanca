@@ -15,6 +15,8 @@
  * =============================================================================
  */
 
+require_once dirname(__DIR__, 2) . '/models/ExcusaModel.php';
+
 $origen          = $origen ?? 'admin';
 $excusas         = $excusas ?? [];
 $fichas          = $fichas ?? [];

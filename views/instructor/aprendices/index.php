@@ -12,6 +12,8 @@ require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(2);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/config/conexion.php';
+require_once dirname(__DIR__, 3) . '/models/FichaModel.php';
+require_once dirname(__DIR__, 3) . '/models/AprendizModel.php';
 
 // --- Variables del layout ---
 $paginaTitulo = 'Aprendices de mis fichas';
@@ -369,7 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btnSelf.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Consultando...');
 
         $.ajax({
-            url: '../../../controllers/ajax/listar_rfid_pendientes.php',
+            url: '../../../controllers/ajax/RfidAjaxController.php?accion=listar_pendientes',
             method: 'POST',
             dataType: 'json',
             data: {
@@ -457,7 +459,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const idFicha = $('#rfidIdFicha').val();
 
         $.ajax({
-            url: '../../../controllers/ajax/registrar_rfid.php',
+            url: '../../../controllers/ajax/RfidAjaxController.php?accion=registrar_tarjeta',
             method: 'POST',
             dataType: 'json',
             data: {

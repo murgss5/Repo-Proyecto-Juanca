@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const idFicha = $('#rfidIdFicha').val();
 
         $.ajax({
-            url: '../../../controllers/ajax/registrar_rfid.php',
+            url: '../../../controllers/ajax/RfidAjaxController.php?accion=registrar_tarjeta',
             method: 'POST',
             dataType: 'json',
             data: {

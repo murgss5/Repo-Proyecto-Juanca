@@ -11,6 +11,8 @@ exigirRol(1);
 require_once dirname(__DIR__, 3) . '/includes/constantes.php';
 require_once dirname(__DIR__, 3) . '/config/conexion.php';
 require_once dirname(__DIR__, 3) . '/models/HorarioModel.php';
+require_once dirname(__DIR__, 3) . '/models/FichaModel.php';
+require_once dirname(__DIR__, 3) . '/models/InstructorModel.php';
 
 if (empty($_SESSION['token_csrf'])) {
     $_SESSION['token_csrf'] = bin2hex(random_bytes(32));

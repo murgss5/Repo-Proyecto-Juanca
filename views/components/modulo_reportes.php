@@ -16,6 +16,9 @@
  * =============================================================================
  */
 
+require_once dirname(__DIR__, 2) . '/models/AsistenciaModel.php';
+require_once dirname(__DIR__, 2) . '/models/ExcusaModel.php';
+
 $origen = $origen ?? 'admin';
 $urlExportarCsv = $urlExportarCsv ?? 'exportar_csv.php';
 $filtros = $filtros ?? [];

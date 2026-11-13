@@ -10,9 +10,9 @@
  * ============================================================
  */
 
-require_once dirname(__DIR__, 2) . '/../includes/autenticacion.php';
+require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(2);
-require_once dirname(__DIR__, 2) . '/../models/ReporteModel.php';
+require_once dirname(__DIR__, 3) . '/models/ReporteModel.php';
 
 $idInstructor = (int)($_SESSION['instructor']['id_usuario'] ?? 0);
 

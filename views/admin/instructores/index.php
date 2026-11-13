@@ -4,12 +4,12 @@
  * Muestra el listado real de instructores con opciones de editar y eliminar.
  */
 
-require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
+require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(1);
 
-require_once dirname(__DIR__) . '/../../includes/constantes.php';
-require_once dirname(__DIR__) . '/../../config/conexion.php';
-require_once dirname(__DIR__) . '/../../models/InstructorModel.php';
+require_once dirname(__DIR__, 3) . '/includes/constantes.php';
+require_once dirname(__DIR__, 3) . '/config/conexion.php';
+require_once dirname(__DIR__, 3) . '/models/InstructorModel.php';
 
 // Genera token CSRF si no existe
 if (empty($_SESSION['token_csrf'])) {

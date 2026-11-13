@@ -342,7 +342,7 @@ ob_start();
     if (btnCambiarClave) {
       btnCambiarClave.addEventListener('click', function () {
         var tokenCsrf = <?= json_encode($_SESSION['token_csrf'] ?? '') ?>;
-        var urlCambio = <?= json_encode(RUTA_BASE . 'controllers/aprendiz/cambiar_contrasena.php') ?>;
+        var urlCambio = <?= json_encode(RUTA_BASE . 'controllers/aprendiz/PerfilAprendizController.php') ?>;
 
         var formHtml = ''
           + '<div class="text-left">'
@@ -453,6 +453,7 @@ ob_start();
                 'X-Requested-With': 'XMLHttpRequest'
               },
               body: new URLSearchParams({
+                accion: 'cambiar_contrasena',
                 token_csrf: tokenCsrf,
                 clave_actual: claveActual,
                 nueva_clave: nuevaClave,
@@ -595,7 +596,7 @@ ob_start();
         btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...';
 
         var tokenCsrf = <?= json_encode($_SESSION['token_csrf'] ?? '') ?>;
-        var urlUpdate = <?= json_encode(RUTA_BASE . 'controllers/aprendiz/actualizar_perfil.php') ?>;
+        var urlUpdate = <?= json_encode(RUTA_BASE . 'controllers/aprendiz/PerfilAprendizController.php') ?>;
 
         fetch(urlUpdate, {
           method: 'POST',

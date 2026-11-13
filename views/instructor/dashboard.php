@@ -502,7 +502,7 @@ include __DIR__ . '/../components/banner_alerta_desercion.php';
             }
             formData.append('token_csrf', tokenCsrf);
 
-            fetch(rutaBase + 'controllers/ajax/simular_ingreso_rfid.php', {
+            fetch(rutaBase + 'controllers/ajax/RfidAjaxController.php?accion=simular_ingreso', {
                 method: 'POST',
                 body: formData,
                 headers: {

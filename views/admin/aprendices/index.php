@@ -7,14 +7,14 @@
  */
 
 // Carga la autenticacion y verifica que sea administrador
-require_once dirname(__DIR__) . '/../../includes/autenticacion.php';
+require_once dirname(__DIR__, 3) . '/includes/autenticacion.php';
 exigirRol(1);
 
 // Carga constantes y conexion a la base de datos
-require_once dirname(__DIR__) . '/../../includes/constantes.php';
-require_once dirname(__DIR__) . '/../../config/conexion.php';
-require_once dirname(__DIR__) . '/../../models/AprendizModel.php';
-require_once dirname(__DIR__) . '/../../models/FichaModel.php';
+require_once dirname(__DIR__, 3) . '/includes/constantes.php';
+require_once dirname(__DIR__, 3) . '/config/conexion.php';
+require_once dirname(__DIR__, 3) . '/models/AprendizModel.php';
+require_once dirname(__DIR__, 3) . '/models/FichaModel.php';
 
 // Variables para el layout
 $paginaTitulo = 'Aprendices';
@@ -355,7 +355,8 @@ ob_start();
                 </button>
             </div>
 
-            <form action="<?= RUTA_BASE ?>controllers/admin/asignar_correo_aprendiz.php" method="post" id="formAsignarCorreo">
+            <form action="<?= RUTA_BASE ?>controllers/admin/AprendizAdminController.php" method="post" id="formAsignarCorreo">
+                <input type="hidden" name="accion" value="asignar_correo">
                 <input type="hidden" name="token_csrf" value="<?= htmlspecialchars($_SESSION['token_csrf']) ?>">
                 <input type="hidden" name="id_usuario" id="asignarIdUsuario" value="">
 
